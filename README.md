@@ -1,10 +1,7 @@
-# betzBirdiary
-Code Fork of Birdiary project (https://www.wiediversistmeingarten.org)
-
 The birdiary project 'https://www.wiediversistmeingarten.org/de/' provides a manual and software to upload videos of birds feeding in your garden to their internet platform. The videos are taken by a raspicam and triggered by a balance, that the feeding bird sits on. My code was derived from the project's 120423.img and https://abyz.me.uk/rpi/pigpio/ among others.
 
-My own image for flashing to SD Card is configured to the password: pi/bird24 (bird24root for su).
-Please adapt '/etc/wpa_supplicant/wpa_supplicant.conf' and '/etc/dhcpcd.conf' to your needs and use your own API keys for birdiary in 'station2/configBird.py' (configBird2.py).
+My own image for flashing to SD Card is configured to the password: pi/bird24 (bird24root for su). You can find the install instructions [here](image/imgInstall.md).
+Use your own API keys from birdiary in 'station2/configBird.py' (configBird2.py).
 Also use your own API keys or credentials in any communication scripts to the outside, like Macrodroid (mdroid.sh).
 When this is done, reboot and point any browser to http://your-stations-ip4:8080 .
 
@@ -21,5 +18,3 @@ Then after rebooting you can try out:
 - for 'picamera2' my script mainBird2.py (direct upload) or mainAckBird2.py (upload after confirmation)
 
 After you found your favorite setup, you can save it to startupNoTest.sh and link startup.sh to it.
-
-My station can be watched here: https://www.wiediversistmeingarten.org/view/station/87bab185-7630-461c-85e6-c04cf5bab180
