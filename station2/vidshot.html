@@ -1,0 +1,181 @@
+<!doctype html>
+<html>
+<head>
+    <title>PiCamera Stream</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+    <meta http-equiv="Pragma" content="no-cache"/>
+    <meta http-equiv="Expires" content="0"/>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="bird.css">
+</head>
+<body>
+    <div class="indented">
+        <div id="online"></div>
+        <a href="video.html" class="button" id="confirmbtn">confirm</a>
+        <a href="/reboot" class="button">reboot</a>
+        <a href="/shutdown" class="button">shutdown</a>
+    </div>
+    <h2>Umwelt</h2>
+    <div class="indented">
+        <div id="envir"></div>
+        <div id="vidmsg">video at <div id="lastvid"></div></div>
+        <div id="imgcontainer"><img id="jpeg_feed" src="" alt="PiCamera Stream" width="320" height="240"></div>
+    </div>
+    <h2>System</h2>
+    <div class="indented">
+        <div id="actity"></div>
+        <div id="sysmon"></div>
+    </div>
+    <div id="footer">
+        <a href="https://www.wiediversistmeingarten.org/view" target="_blank">Birdiary Karte</a><br>
+        <small>
+            <a href="./docs/index.html" target="_blank">Gestaltung:</a> H. Betz, herber7be7z@gmail.com<br>
+            /upload will capture video (no bird on balance)
+        </small>
+    </div>
+    <script>
+        //@ts-check
+        'use strict';
+        const imgElem = document.getElementById('jpeg_feed');
+        const onlineElem = document.getElementById('online');
+        const envirElem = document.getElementById('envir');
+        const actityElem = document.getElementById('actity');
+        const sysmonElem = document.getElementById('sysmon');
+        const lastvidElem = document.getElementById('lastvid');
+        const vidmsgElem = document.getElementById('vidmsg');
+        const confirmbtnElem = document.getElementById('confirmbtn');
+        const envirJson = "ramdisk/env.json";
+        const sysmonJson = "ramdisk/sysmon.json";
+        const vidmsgJson = "ramdisk/vidmsg.json";
+        //arrays for output (join() to string):
+        const envir = [" ", " ", " "];
+        const lines = [" ", " ", " ", " ", " "];
+        const sysmon = [];
+        const saved = {ImgNum: 0, linecnt: 0, envirEvt: 0, sysmonEvt: 0};
+        const birdPromises = []; //for fetch() synchronization
+
+//three async fetch() to avoid fetch concurrency:
+        async function getEnvir() {
+            await fetch(envirJson, {cache: 'reload', mode: 'no-cors'})
+                .then((response) => response.json())
+                .then((data) => {
+  	                // console.log(data);
+                    // show data:
+                    // implicit conversion, as they need not all be strings in JSON format or in pythons json.dump()
+                    envir[0] = data['date'];
+                    envir[1] = data['temperature'] + " °C";
+                    envir[2] = data['humidity'] + " rel.%";
+                    envirElem.innerHTML = envir.join('<br>')
+                });
+        }
+
+        async function getSysmon() {
+            await fetch(sysmonJson, {cache: 'reload', mode: 'no-cors'})
+                .then((response) => response.json())
+                .then((data) => {
+                    sysmon.length = 0; // empty array
+  	                // console.log(data);
+                    // data already IS the JS object:
+                    const keyValuePairs = Object.entries(data);
+                    let keyValStr = "";
+                    keyValuePairs.forEach(([key, value]) => {
+                        keyValStr = key + ": " + value;
+                        sysmon.push(keyValStr);
+                    });
+                    // show data:
+                    sysmonElem.innerHTML = sysmon.join('<br>')
+                    // envirReceived = true or own sysmonReceived?
+                });
+        }
+
+        async function loadImg(imgNum) {
+        // above <meta cache control ...> not working, therefore:
+            let orderImg = 0;
+            if (imgNum > 0) orderImg = imgNum - 1; //one earlier to avoid loading of incomplete img
+            else return;
+            let imgname = 'ramdisk/img' + String(orderImg) + '.jpg';
+            await fetch(imgname, {cache: 'reload', mode: 'no-cors'})
+                .then(function() {
+                    imgElem.src = imgname;
+                    onlineElem.textContent = "online";
+                })
+                .catch(function(error){
+                    onlineElem.textContent = error;
+                });
+        }
+
+        //https://www.jefersonsilva.me/articles/concurrency-with-fetch 
+        // collect all fetch() in birdPromises[]:
+        function getVidmsg() {
+                fetch(vidmsgJson, {cache: 'reload', mode: 'no-cors'})
+                .then((response) => response.json())
+                .then((data) => {
+  	                //console.log(data);
+                    let curImgNum = data['imgid']; // typeof number in msgBird.py
+                    if (curImgNum != saved.ImgNum) {
+                        birdPromises.push(loadImg(curImgNum));
+                        saved.ImgNum = curImgNum;
+                    }
+
+                    let envirEvt = data['envirEvt']
+                    if (envirEvt != saved.envirEvt) {
+                        birdPromises.push(getEnvir());
+                        saved.envirEvt = envirEvt;
+                    }
+
+                    let sysmonEvt = data['sysmonEvt']
+                    if (sysmonEvt != saved.sysmonEvt) {
+                        birdPromises.push(getSysmon());
+                        saved.sysmonEvt = sysmonEvt;
+                    }
+
+                    Promise.allSettled(birdPromises).then(() => {birdPromises.length = 0;}) //empty constant array birdPromises[]
+
+                    let msg = data['lastvid'];
+                    if (msg.trim().length === 0) {
+                        vidmsgElem.style.visibility = "hidden";
+                    } else {
+                        vidmsgElem.style.visibility = "visible";
+                        lastvidElem.textContent = msg;
+                    }
+
+                    // confirm btn:
+                    if (data['confirm']) { // typeof number 0 or 1 in msgBird.py
+                        confirmbtnElem.style.visibility = "visible";
+                    } else {
+                        confirmbtnElem.style.visibility = "hidden";
+                    }
+
+                    // logger lines:
+                    logLines(data['linecnt'], data['linetxt'])
+                });
+        }
+
+        function logLines(linecnt, txt){
+            //let cnt = Number(linecnt); 
+            //if (! Number.isInteger(linecnt)) {console.log('linecnt is not integer'); return;}
+            lines.shift(); // remove fst line
+            if (linecnt == saved.linecnt) { // if cnt has not changed
+                lines.push(" ");
+            } else { //cnt has changed
+                lines.push(txt);
+            }
+            actityElem.innerHTML = lines.join('<br>');
+            saved.linecnt = linecnt; //save last cnt
+        }
+
+        function updateStream() {
+            getVidmsg(); // fetches window.curImgNum
+            setTimeout(updateStream, 1000); // Update every 1000 milliseconds (adapt to capture scripts mainBirdX.py, event?)
+        }
+
+        // Call the updateStream function when the page loads
+        window.onload = function() {
+            // getEnvir(); //to early
+            updateStream(); //update loop
+        };
+    </script>
+</body>
+</html>
