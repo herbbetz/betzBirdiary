@@ -21,3 +21,5 @@ Then after rebooting you can try out:
 - for 'picamera2' my script mainBird2.py (direct upload) or mainAckBird2.py (upload after confirmation)
 
 After you found your favorite setup, you can save it to startupNoTest.sh and link startup.sh to it.
+
+My station can be watched here: https://www.wiediversistmeingarten.org/view/station/87bab185-7630-461c-85e6-c04cf5bab180
