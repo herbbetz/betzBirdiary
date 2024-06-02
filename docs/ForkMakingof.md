@@ -32,7 +32,7 @@ To avoid uploading too many failed videos to birdiary, I finally chose a setup, 
 
 ##### What next:
 
-To make my life simpler, I left out the microfon and only upload a minimal .wav at the moment, which is required by the birdiary site. Maybe some day, another .wav could replace this minimal. Raspberry could recognize bird sounds and collect them in the .wav for upload. While feeding the birds are mostly not very talkative anyway. The current code uses under 10% of CPU power on RPi4B.
+To make my life simpler, I left out the microfon and only upload a minimal .wav at the moment, which is required by the birdiary site. Maybe some day, another .wav could replace this minimal. Raspberry could recognize bird sounds and collect them in the .wav for upload. While feeding, the birds are mostly not very talkative anyway. The current code uses under 10% of CPU power on RPi4B.
 
 The FIFO could also be triggered by another web client, that is interested in the picam's view. My birdhouse seemed mainly interesting to tits, a lot of other bird species ignored it.
 
