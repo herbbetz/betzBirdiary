@@ -15,6 +15,6 @@ Picamera2 is more advanced and preinstalled with bullseye, but can only flip it'
 After a reboot you can try it:
 
 - for 'picamera' my scripts mainFoBird.py (direct video upload on balance trigger) or mainAckBird.py (upload only after confirmation within browser)
-- for 'picamera2' my script mainBird2.py (direct upload) or mainAckBird2.py (upload after confirmation)
+- for 'picamera2' mainBird2.py (direct upload) or mainAckBird2.py (upload after confirmation)
 
 After you have found your favourite setup, you can save it to startupNoTest.sh and link startup.sh to it. Watch the code working as a beta on my [station](https://www.wiediversistmeingarten.org/view/station/87bab185-7630-461c-85e6-c04cf5bab180) and learn [more](docs/ForkMakingof.md) about my making.
