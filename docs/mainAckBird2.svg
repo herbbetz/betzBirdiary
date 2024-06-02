@@ -1,0 +1,620 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="210mm"
+   height="297mm"
+   viewBox="0 0 210 297"
+   version="1.1"
+   id="svg1"
+   inkscape:version="1.3 (0e150ed6c4, 2023-07-21)"
+   sodipodi:docname="mainAckBird2.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     inkscape:zoom="0.73139029"
+     inkscape:cx="396.50513"
+     inkscape:cy="558.52533"
+     inkscape:window-width="1920"
+     inkscape:window-height="1017"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs1">
+    <inkscape:path-effect
+       effect="bspline"
+       id="path-effect1"
+       is_visible="true"
+       lpeversion="1.3"
+       weight="33.333333"
+       steps="2"
+       helper_size="0"
+       apply_no_weight="true"
+       apply_with_weight="true"
+       only_selected="false"
+       uniform="false" />
+    <inkscape:path-effect
+       effect="bspline"
+       id="path-effect32"
+       is_visible="true"
+       lpeversion="1.3"
+       weight="33.333333"
+       steps="2"
+       helper_size="0"
+       apply_no_weight="true"
+       apply_with_weight="true"
+       only_selected="false"
+       uniform="false" />
+    <inkscape:path-effect
+       effect="bspline"
+       id="path-effect29"
+       is_visible="true"
+       lpeversion="1.3"
+       weight="33.333333"
+       steps="2"
+       helper_size="0"
+       apply_no_weight="true"
+       apply_with_weight="true"
+       only_selected="false"
+       uniform="false" />
+    <inkscape:path-effect
+       effect="bspline"
+       id="path-effect25"
+       is_visible="true"
+       lpeversion="1.3"
+       weight="33.333333"
+       steps="2"
+       helper_size="0"
+       apply_no_weight="true"
+       apply_with_weight="true"
+       only_selected="false"
+       uniform="false" />
+    <inkscape:path-effect
+       effect="bspline"
+       id="path-effect24"
+       is_visible="true"
+       lpeversion="1.3"
+       weight="33.333333"
+       steps="2"
+       helper_size="0"
+       apply_no_weight="true"
+       apply_with_weight="true"
+       only_selected="false"
+       uniform="false" />
+  </defs>
+  <g
+     inkscape:label="Ebene 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.93889px;line-height:7.05556px;font-family:'Roboto Mono';-inkscape-font-specification:'Roboto Mono, Normal';font-variant-ligatures:none;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:0.264583"
+       x="26.483002"
+       y="16.706221"
+       id="text19"><tspan
+         sodipodi:role="line"
+         id="tspan2">Bullseye 32bit, no X-windows</tspan></text>
+    <g
+       id="g13">
+      <g
+         id="g8"
+         transform="translate(-7.2350804,210.17905)">
+        <rect
+           style="opacity:0.501613;fill:#d38d5f;fill-opacity:1;stroke:#001fff;stroke-width:0.765764;stroke-linecap:round;stroke-linejoin:bevel;paint-order:stroke fill markers"
+           id="rect7-0"
+           width="35.324368"
+           height="11.448608"
+           x="31.429178"
+           y="44.79541" />
+        <text
+           xml:space="preserve"
+           style="font-size:4.23333px;line-height:7.05556px;font-family:'Roboto Mono';-inkscape-font-specification:'Roboto Mono, Normal';font-variant-ligatures:none;stroke-width:0.264583"
+           x="32.557858"
+           y="52.454323"
+           id="text2"><tspan
+             sodipodi:role="line"
+             style="stroke-width:0.264583"
+             x="32.557858"
+             y="52.454323"
+             id="tspan3">MicrofonAudio</tspan></text>
+      </g>
+      <path
+         style="opacity:0.501613;fill:#6c6753;stroke:#001fff;stroke-width:3;stroke-linecap:round;stroke-linejoin:bevel;paint-order:stroke fill markers"
+         d="m 24.599269,251.05725 c 34.004872,19.53471 34.004872,19.53471 34.004872,19.53471"
+         id="path2" />
+      <path
+         style="opacity:0.501613;fill:#6c6753;stroke:#001fff;stroke-width:3;stroke-linecap:round;stroke-linejoin:bevel;paint-order:stroke fill markers"
+         d="m 57.993169,251.51857 c -34.00487,19.53471 -34.00487,19.53471 -34.00487,19.53471"
+         id="path2-0" />
+    </g>
+    <g
+       id="g16"
+       transform="translate(-66.200976,-38.345919)">
+      <rect
+         style="opacity:0.501613;fill:#6c6753;fill-opacity:1;stroke:#001fff;stroke-width:1.04455;stroke-linecap:round;stroke-linejoin:bevel;stroke-dasharray:none;paint-order:stroke fill markers"
+         id="rect12-0-9"
+         width="52.962746"
+         height="25.107695"
+         x="138.54829"
+         y="77.76194" />
+      <g
+         id="g9"
+         transform="translate(111.78197,8.6820953)">
+        <rect
+           style="opacity:0.501613;fill:#008000;fill-opacity:1;stroke:#001fff;stroke-width:0.802356;stroke-linecap:round;stroke-linejoin:bevel;paint-order:stroke fill markers"
+           id="rect7-02"
+           width="38.905315"
+           height="11.412016"
+           x="34.616631"
+           y="74.306557" />
+        <text
+           xml:space="preserve"
+           style="font-size:4.23333px;line-height:7.05556px;font-family:'Roboto Mono';-inkscape-font-specification:'Roboto Mono, Normal';font-variant-ligatures:none;stroke-width:0.264583"
+           x="36.537148"
+           y="81.394646"
+           id="text4"><tspan
+             sodipodi:role="line"
+             id="tspan4"
+             style="stroke-width:0.264583"
+             x="36.537148"
+             y="81.394646">BalanceTrigger</tspan></text>
+      </g>
+      <text
+         xml:space="preserve"
+         style="font-size:4.23333px;line-height:7.05556px;font-family:'Roboto Mono';-inkscape-font-specification:'Roboto Mono, Normal';stroke-width:0.264583"
+         x="140.33557"
+         y="74.338509"
+         id="text22-6"><tspan
+           sodipodi:role="line"
+           id="tspan22-0"
+           style="fill:#0000ff;stroke-width:0.264583"
+           x="140.33557"
+           y="74.338509">hxFiBird.py</tspan></text>
+    </g>
+    <g
+       id="g3">
+      <rect
+         style="opacity:0.501613;fill:#6c6753;fill-opacity:1;stroke:#001fff;stroke-width:1.0778;stroke-linecap:round;stroke-linejoin:bevel;stroke-dasharray:none;paint-order:stroke fill markers"
+         id="rect12"
+         width="46.417923"
+         height="30.500753"
+         x="129.21902"
+         y="224.51718" />
+      <g
+         id="g10"
+         transform="translate(100.92936,124.80512)">
+        <rect
+           style="opacity:0.501613;fill:#800080;fill-opacity:1;stroke:#001fff;stroke-width:0.651416;stroke-linecap:round;stroke-linejoin:bevel;paint-order:stroke fill markers"
+           id="rect7-5"
+           width="25.309608"
+           height="11.562956"
+           x="31.922258"
+           y="101.6775" />
+        <text
+           xml:space="preserve"
+           style="font-size:4.23333px;line-height:7.05556px;font-family:'Roboto Mono';-inkscape-font-specification:'Roboto Mono, Normal';font-variant-ligatures:none;stroke-width:0.264583"
+           x="33.281361"
+           y="108.88794"
+           id="text5"><tspan
+             sodipodi:role="line"
+             id="tspan5"
+             style="stroke-width:0.264583"
+             x="33.281361"
+             y="108.88794">DHTsensor</tspan></text>
+      </g>
+      <g
+         id="g11"
+         transform="translate(100.5676,104.54689)">
+        <rect
+           style="opacity:0.501613;fill:#00ffff;fill-opacity:1;stroke:#001fff;stroke-width:0.809457;stroke-linecap:round;stroke-linejoin:bevel;paint-order:stroke fill markers"
+           id="rect7-6"
+           width="39.621723"
+           height="11.404914"
+           x="32.584301"
+           y="136.01189" />
+        <text
+           xml:space="preserve"
+           style="font-size:4.23333px;line-height:7.05556px;font-family:'Roboto Mono';-inkscape-font-specification:'Roboto Mono, Normal';font-variant-ligatures:none;stroke-width:0.264583"
+           x="34.366623"
+           y="142.89281"
+           id="text6"><tspan
+             sodipodi:role="line"
+             id="tspan6"
+             style="stroke-width:0.264583"
+             x="34.366623"
+             y="142.89281">UploadBirdiary</tspan></text>
+      </g>
+      <text
+         xml:space="preserve"
+         style="font-size:4.23333px;line-height:7.05556px;font-family:'Roboto Mono';-inkscape-font-specification:'Roboto Mono, Normal';stroke-width:0.264583"
+         x="133.49503"
+         y="223.20091"
+         id="text22-2"><tspan
+           sodipodi:role="line"
+           id="tspan22-9"
+           style="fill:#0000ff;stroke-width:0.264583"
+           x="133.49503"
+           y="223.20091">dhtBird.py</tspan></text>
+      <text
+         xml:space="preserve"
+         style="font-size:4.23333px;line-height:7.05556px;font-family:'Roboto Mono';-inkscape-font-specification:'Roboto Mono, Normal';stroke-width:0.264583"
+         x="86.279007"
+         y="223.65982"
+         id="text16"><tspan
+           sodipodi:role="line"
+           id="tspan16"
+           style="stroke-width:0.264583"
+           x="86.279007"
+           y="223.65982">crontab (pi) ---&gt;</tspan></text>
+    </g>
+    <g
+       id="g5">
+      <g
+         id="g12"
+         transform="translate(43.772227,-39.069428)">
+        <rect
+           style="opacity:0.501613;fill:#833c3c;fill-opacity:1;stroke:#001fff;stroke-width:0.780625;stroke-linecap:round;stroke-linejoin:bevel;paint-order:stroke fill markers"
+           id="rect7-08"
+           width="36.756523"
+           height="11.433745"
+           x="39.065071"
+           y="159.34634" />
+        <text
+           xml:space="preserve"
+           style="font-size:4.23333px;line-height:7.05556px;font-family:'Roboto Mono';-inkscape-font-specification:'Roboto Mono, Normal';font-variant-ligatures:none;stroke-width:0.264583"
+           x="40.516441"
+           y="167.13033"
+           id="text7"><tspan
+             sodipodi:role="line"
+             id="tspan7"
+             style="stroke-width:0.264583"
+             x="40.516441"
+             y="167.13033">localFileSave</tspan></text>
+      </g>
+      <rect
+         style="opacity:0.501613;fill:#6c6753;fill-opacity:1;stroke:#001fff;stroke-width:1.21259;stroke-linecap:round;stroke-linejoin:bevel;stroke-dasharray:none;paint-order:stroke fill markers"
+         id="rect12-0"
+         width="53.879963"
+         height="33.259987"
+         x="74.560982"
+         y="101.89256" />
+      <rect
+         style="opacity:0.501613;fill:#d4aa00;fill-opacity:1;stroke:#001fff;stroke-width:0.735056;stroke-linecap:round;stroke-linejoin:bevel;paint-order:stroke fill markers"
+         id="rect7"
+         width="32.461044"
+         height="11.479315"
+         x="84.517952"
+         y="104.77618" />
+      <text
+         xml:space="preserve"
+         style="font-size:4.23333px;line-height:7.05556px;font-family:'Roboto Mono';-inkscape-font-specification:'Roboto Mono, Normal';font-variant-ligatures:none;stroke-width:0.264583"
+         x="86.459198"
+         y="112.14372"
+         id="text1"><tspan
+           sodipodi:role="line"
+           id="tspan1"
+           style="stroke-width:0.264583"
+           x="86.459198"
+           y="112.14372">CameraVideo</tspan></text>
+      <text
+         xml:space="preserve"
+         style="font-size:4.23333px;line-height:7.05556px;font-family:'Roboto Mono';-inkscape-font-specification:'Roboto Mono, Normal';stroke-width:0.264583"
+         x="76.823738"
+         y="97.956665"
+         id="text22-9"><tspan
+           sodipodi:role="line"
+           id="tspan22-05"
+           style="fill:#0000ff;stroke-width:0.264583"
+           x="76.823738"
+           y="97.956665">mainAckBird.py</tspan></text>
+    </g>
+    <g
+       id="g20"
+       transform="translate(-0.36175396,-6.5115713)">
+      <rect
+         style="opacity:0.501613;fill:#ff5555;fill-opacity:0.7;stroke:#001fff;stroke-width:0.238411"
+         id="rect22-0"
+         width="41.266121"
+         height="7.261251"
+         x="148.57837"
+         y="87.992508" />
+      <text
+         xml:space="preserve"
+         style="font-size:4.23333px;line-height:7.05556px;font-family:'Roboto Mono';-inkscape-font-specification:'Roboto Mono, Normal';stroke-width:0.264583"
+         x="157.60992"
+         y="93.218826"
+         id="text16-9-0"><tspan
+           sodipodi:role="line"
+           id="tspan16-0-5"
+           style="stroke-width:0.264583"
+           x="157.60992"
+           y="93.218826">FIFO File</tspan></text>
+      <text
+         xml:space="preserve"
+         style="font-size:4.23333px;line-height:7.05556px;font-family:'Roboto Mono';-inkscape-font-specification:'Roboto Mono, Normal';stroke-width:0.264583"
+         x="148.58453"
+         y="86.217552"
+         id="text22-1"><tspan
+           sodipodi:role="line"
+           id="tspan22-1"
+           style="fill:#0000ff;stroke-width:0.264583"
+           x="148.58453"
+           y="86.217552">ramdisk/birdfifo</tspan></text>
+    </g>
+    <g
+       id="g21"
+       transform="translate(-2.5322777,-2.1705238)">
+      <text
+         xml:space="preserve"
+         style="font-size:4.23333px;line-height:7.05556px;font-family:'Roboto Mono';-inkscape-font-specification:'Roboto Mono, Normal';stroke-width:0.264583"
+         x="22.414459"
+         y="153.73232"
+         id="text22"><tspan
+           sodipodi:role="line"
+           id="tspan22"
+           style="fill:#0000ff;stroke-width:0.264583"
+           x="22.414459"
+           y="153.73232">flaskBird.py</tspan></text>
+      <rect
+         style="opacity:0.501613;fill:#0000ff;fill-opacity:0.431373;stroke:#001fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:bevel;stroke-dasharray:none;paint-order:stroke fill markers"
+         id="rect23"
+         width="30.025578"
+         height="9.4056034"
+         x="30.327675"
+         y="177.83867" />
+      <rect
+         style="opacity:0.501613;fill:#ff5555;fill-opacity:0.7;stroke:#001fff;stroke-width:0.277784"
+         id="rect21"
+         width="45.92955"
+         height="8.3071394"
+         x="22.013931"
+         y="156.14005" />
+      <text
+         xml:space="preserve"
+         style="font-size:4.23333px;line-height:7.05556px;font-family:'Roboto Mono';-inkscape-font-specification:'Roboto Mono, Normal';stroke-width:0.264583"
+         x="33.221706"
+         y="161.92151"
+         id="text15"><tspan
+           sodipodi:role="line"
+           id="tspan15"
+           style="stroke-width:0.264583"
+           x="33.221706"
+           y="161.92151">Webserver</tspan></text>
+      <text
+         xml:space="preserve"
+         style="font-size:4.23333px;line-height:7.05556px;font-family:'Roboto Mono';-inkscape-font-specification:'Roboto Mono, Normal';font-variant-ligatures:none;stroke-width:0.264583"
+         x="35.753979"
+         y="183.98849"
+         id="text23"><tspan
+           sodipodi:role="line"
+           id="tspan23"
+           style="stroke-width:0.264583"
+           x="35.753979"
+           y="183.98849">Browser</tspan></text>
+      <path
+         style="opacity:0.501613;fill:#0000ff;fill-opacity:0.431373;stroke:#001fff;stroke-width:1;stroke-linecap:round;stroke-linejoin:bevel;stroke-dasharray:none;paint-order:stroke fill markers"
+         d="m 44.436074,164.09202 0.36176,13.3849"
+         id="path23" />
+      <rect
+         style="opacity:0.501613;fill:#ff5555;fill-opacity:0.7;stroke:#001fff;stroke-width:0.254262"
+         id="rect22-0-7"
+         width="47.038334"
+         height="7.2454004"
+         x="21.600552"
+         y="129.7101" />
+      <text
+         xml:space="preserve"
+         style="font-size:4.23333px;line-height:7.05556px;font-family:'Roboto Mono';-inkscape-font-specification:'Roboto Mono, Normal';stroke-width:0.264583"
+         x="30.985935"
+         y="134.9285"
+         id="text16-9-0-9"><tspan
+           sodipodi:role="line"
+           id="tspan16-0-5-2"
+           style="stroke-width:0.264583"
+           x="30.985935"
+           y="134.9285">JSON Files</tspan></text>
+      <text
+         xml:space="preserve"
+         style="font-size:4.23333px;line-height:7.05556px;font-family:'Roboto Mono';-inkscape-font-specification:'Roboto Mono, Normal';stroke-width:0.264583"
+         x="25.21633"
+         y="127.56547"
+         id="text22-1-7"><tspan
+           sodipodi:role="line"
+           id="tspan22-1-1"
+           style="fill:#0000ff;stroke-width:0.264583"
+           x="25.21633"
+           y="127.56547">ramdisk/*.json</tspan></text>
+      <path
+         style="opacity:0.501613;fill:#0000ff;fill-opacity:0.431373;stroke:#001fff;stroke-width:0.955807;stroke-linecap:round;stroke-linejoin:bevel;stroke-dasharray:none;paint-order:stroke fill markers"
+         d="m 44.198554,137.36708 0.405954,10.89682"
+         id="path23-2" />
+    </g>
+    <g
+       id="g28"
+       transform="translate(-15.55542,5.0645554)">
+      <path
+         style="opacity:0.501613;fill:none;stroke:#001fff;stroke-width:3;stroke-linecap:round;stroke-linejoin:bevel;paint-order:stroke fill markers"
+         d="m 144.33982,47.028014 c 27.13155,4.341048 38.34592,21.343485 38.34592,21.343485"
+         id="path21" />
+      <path
+         style="opacity:0.501613;fill:none;stroke:#001fff;stroke-width:3;stroke-linecap:round;stroke-linejoin:bevel;paint-order:stroke fill markers"
+         d="m 183.77101,62.583434 -0.72351,5.788065"
+         id="path25"
+         inkscape:transform-center-x="3.2557856"
+         inkscape:transform-center-y="1.0852619" />
+      <path
+         style="opacity:0.501613;fill:none;stroke:#001fff;stroke-width:3;stroke-linecap:round;stroke-linejoin:bevel;paint-order:stroke fill markers"
+         d="m 176.53593,67.286235 6.51157,2.170526"
+         id="path26" />
+    </g>
+    <g
+       id="g29"
+       transform="translate(-21.705238,-15.193666)">
+      <path
+         style="opacity:0.501613;fill:none;stroke:#001fff;stroke-width:3;stroke-linecap:round;stroke-linejoin:bevel;paint-order:stroke fill markers"
+         d="m 165.68331,91.885504 c -3.49695,4.341047 -6.99391,8.682096 -12.90264,11.636436 -5.90873,2.95434 -14.22891,4.52191 -22.54925,6.08951"
+         id="path24"
+         inkscape:path-effect="#path-effect25"
+         inkscape:original-d="m 165.68331,91.885504 c -3.49695,4.341048 -6.99391,8.682096 -10.49086,13.023146 -8.32051,1.56763 -16.64069,3.1352 -24.96103,4.7028"
+         transform="translate(23.514007,15.193666)" />
+      <path
+         style="opacity:0.501613;fill:none;stroke:#001fff;stroke-width:3;stroke-linecap:round;stroke-linejoin:bevel;paint-order:stroke fill markers"
+         d="m 155.5542,119.01705 -2.53228,5.06456"
+         id="path27" />
+      <path
+         style="opacity:0.501613;fill:none;stroke:#001fff;stroke-width:3;stroke-linecap:round;stroke-linejoin:bevel;paint-order:stroke fill markers"
+         d="m 158.44824,129.14616 -5.42632,-3.97929"
+         id="path28" />
+    </g>
+    <g
+       id="g31"
+       transform="translate(1.447016)">
+      <path
+         style="opacity:0.501613;fill:none;stroke:#001fff;stroke-width:3;stroke-linecap:round;stroke-linejoin:bevel;paint-order:stroke fill markers"
+         d="M 68.009743,51.730817 C 61.498172,57.036541 54.986601,62.342264 50.705825,73.496515 46.425049,84.650767 44.375152,101.65286 42.325213,118.6553"
+         id="path29"
+         inkscape:path-effect="#path-effect29"
+         inkscape:original-d="M 68.009743,51.730817 C 61.498172,57.036541 54.986602,62.342265 48.475029,67.647988 46.42505,84.650767 44.375151,101.65286 42.325213,118.6553" />
+      <path
+         style="opacity:0.501613;fill:none;stroke:#001fff;stroke-width:3;stroke-linecap:round;stroke-linejoin:bevel;paint-order:stroke fill markers"
+         d="m 46.666261,114.676 -3.979294,3.9793"
+         id="path30" />
+      <path
+         style="opacity:0.501613;fill:none;stroke:#001fff;stroke-width:3;stroke-linecap:round;stroke-linejoin:bevel;paint-order:stroke fill markers"
+         d="m 38.345919,113.95249 3.61754,5.06456"
+         id="path31" />
+    </g>
+    <g
+       id="g34"
+       transform="translate(-0.72350792,0.36175396)">
+      <path
+         style="opacity:0.501613;fill:none;stroke:#001fff;stroke-width:3;stroke-linecap:round;stroke-linejoin:bevel;paint-order:stroke fill markers"
+         d="m 71.265528,106.35566 c -4.461632,0.96468 -8.923263,1.92936 -11.576133,4.09992 -2.65287,2.17055 -3.496947,5.54686 -4.341039,8.92323"
+         id="path32"
+         inkscape:path-effect="#path-effect32"
+         inkscape:original-d="m 71.265528,106.35566 c -4.461632,0.96468 -8.923263,1.92936 -13.384895,2.89404 -0.844111,3.37643 -1.688185,6.75274 -2.532277,10.12911" />
+      <path
+         style="opacity:0.501613;fill:none;stroke:#001fff;stroke-width:3;stroke-linecap:round;stroke-linejoin:bevel;paint-order:stroke fill markers"
+         d="m 52.454323,114.31425 2.532279,5.42631"
+         id="path33" />
+      <path
+         style="opacity:0.501613;fill:none;stroke:#001fff;stroke-width:3;stroke-linecap:round;stroke-linejoin:bevel;paint-order:stroke fill markers"
+         d="m 60.051155,116.12302 -3.979293,3.61754"
+         id="path34" />
+    </g>
+    <g
+       id="g2">
+      <g
+         id="g14-4"
+         transform="translate(60.598988,30.434184)">
+        <rect
+           style="opacity:0.501613;fill:#00ffff;fill-opacity:1;stroke:#001fff;stroke-width:0.809457;stroke-linecap:round;stroke-linejoin:bevel;paint-order:stroke fill markers"
+           id="rect7-6-0"
+           width="39.621723"
+           height="11.404914"
+           x="18.114138"
+           y="151.92908" />
+        <text
+           xml:space="preserve"
+           style="font-size:4.23333px;line-height:7.05556px;font-family:'Roboto Mono';-inkscape-font-specification:'Roboto Mono, Normal';font-variant-ligatures:none;stroke-width:0.264583"
+           x="19.896458"
+           y="158.81"
+           id="text6-6"><tspan
+             sodipodi:role="line"
+             id="tspan6-2"
+             style="stroke-width:0.264583"
+             x="19.896458"
+             y="158.81">UploadBirdiary</tspan></text>
+      </g>
+      <text
+         xml:space="preserve"
+         style="font-size:4.23333px;line-height:7.05556px;font-family:'Roboto Mono';-inkscape-font-specification:'Roboto Mono, Normal';stroke-width:0.264583"
+         x="80.972725"
+         y="179.67416"
+         id="text22-7"><tspan
+           sodipodi:role="line"
+           id="tspan22-6"
+           style="fill:#0000ff;stroke-width:0.264583"
+           x="80.972725"
+           y="179.67416">uploadBird.py</tspan></text>
+    </g>
+    <g
+       id="g4"
+       transform="translate(-18.449452,10.129111)">
+      <path
+         style="opacity:0.501613;fill:none;stroke:#001fff;stroke-width:3;stroke-linecap:round;stroke-linejoin:bevel;paint-order:stroke fill markers"
+         d="m 69.818514,158.44823 c 8.682096,1.08526 17.364188,2.17053 22.187584,4.88372 4.823396,2.7132 5.788053,7.05416 6.752731,11.39521"
+         id="path1"
+         inkscape:path-effect="#path-effect1"
+         inkscape:original-d="m 69.818514,158.44823 c 8.682095,1.08527 17.364188,2.17053 26.046284,3.25579 0.964697,4.34113 1.929355,8.68209 2.894031,13.02314"
+         transform="translate(17.002436,-11.576127)" />
+      <path
+         style="opacity:0.501613;fill:none;stroke:#001fff;stroke-width:3;stroke-linecap:round;stroke-linejoin:bevel;paint-order:stroke fill markers"
+         d="m 117.57003,157.72472 -1.44701,5.42631 v 0"
+         id="path3" />
+      <path
+         style="opacity:0.501613;fill:none;stroke:#001fff;stroke-width:3;stroke-linecap:round;stroke-linejoin:bevel;paint-order:stroke fill markers"
+         d="m 110.69671,159.5335 5.06456,3.97929"
+         id="path4" />
+    </g>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.93889px;line-height:7.05556px;font-family:'Roboto Mono';-inkscape-font-specification:'Roboto Mono, Normal';font-variant-ligatures:none;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:0.264583"
+       x="26.451035"
+       y="22.274157"
+       id="text19-6"><tspan
+         sodipodi:role="line"
+         id="tspan2-6"
+         x="26.451035"
+         y="22.274157">Video Upload after confirmation in browser</tspan></text>
+    <g
+       id="g1">
+      <g
+         id="g17"
+         transform="translate(42.686967,6.5115713)">
+        <rect
+           style="opacity:0.501613;fill:#ff5555;fill-opacity:0.7;stroke:#001fff;stroke-width:0.264583"
+           id="rect22"
+           width="51.007305"
+           height="7.2350788"
+           x="95.703011"
+           y="30.757132" />
+        <text
+           xml:space="preserve"
+           style="font-size:4.23333px;line-height:7.05556px;font-family:'Roboto Mono';-inkscape-font-specification:'Roboto Mono, Normal';stroke-width:0.264583"
+           x="84.101494"
+           y="35.608612"
+           id="text16-9"><tspan
+             sodipodi:role="line"
+             id="tspan16-0"
+             style="stroke-width:0.264583"
+             x="84.101494"
+             y="35.608612">---&gt; restartScriptOnFail</tspan></text>
+      </g>
+      <text
+         xml:space="preserve"
+         style="font-size:4.23333px;line-height:7.05556px;font-family:'Roboto Mono';-inkscape-font-specification:'Roboto Mono, Normal';stroke-width:0.264583"
+         x="164.19762"
+         y="34.895493"
+         id="text22-7-8"><tspan
+           sodipodi:role="line"
+           id="tspan22-6-8"
+           style="fill:#0000ff;stroke-width:0.264583"
+           x="164.19762"
+           y="34.895493">startup.sh</tspan></text>
+    </g>
+  </g>
+</svg>

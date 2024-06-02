@@ -1,0 +1,213 @@
+Install Bullseye lite (ohne Desktop) 32Bit using RPi Imager
+    WLAN data and PI password can be preconfigured in RPi Imager
+    so ssh and sftp (e.g. for putty, WinSCP) will already be possible
+    you may configure your own pi and root pw, I chose 'pi / bird24' and 'root / bird24root'
+
+As user Pi:
+==========
+You can prepend all the root commands by sudo, like the useful cmds 'sudo ps aux| grep pi' or 'sudo top -u pi' ('alias' shows my short cmds from .bashrc: 'px', 'tp', 'cs')
+    or else you can 'su' after setting PW and work as root without 'sudo'.
+    As root you might have to change back ownership below /home/pi by 'chown -R pi.pi <file or dir>' .
+
+    set root PW: sudo passwd root
+    mkdir station2
+    cd station2, mkdir pigpioBird environments movements logs ramdisk wav
+    cp min.wav ./station2/wav
+    python --version -> 3.9.2
+    python REPL:
+        >>> help("modules")     shows installed modules (no pip install -> conflicting with apt-get)
+        >>> help("picamera2")
+    without pip module you could uninstall using 'apt-get remove ...' or maybe 'rm -f' inside /lib/python3/dist-packages/ or /usr/lib/...
+        in /lib there is also python2.7, but not found with 'apt list --installed | grep python2', same with /usr/lib
+        in /usr/lib there is python3 and python3.9
+
+    install pigpio for python (https://abyz.me.uk/rpi/pigpio/download.html)
+        This provides scripts for DHT22 and HX711. The pigpiod has to run for this to work.
+        The gpiozero installed in bullseye is only a frontend for RPi.GPIO or pigpio or others.
+            sudo apt install python-setuptools python3-setuptools
+            sudo apt-get install pigpio python-pigpio python3-pigpio
+            => /usr/bin/pigpiod is now available, and after cmd 'sudo pigpiod' shown by 'sudo ps aux|grep pigpiod'
+            systemctl enable pigpiod, systemctl start pigpiod, systemctl status pigpiod to show pigpiod active after reboot (either this or cmd 'sudo pigpiod', not both!)
+
+
+    ./station2/configBird.py: 
+        fill in the boxID that birdiary gave you
+        and according to your hardware setup the balance calibration values and GPIO Pins
+    
+    enable your bash scripts in ./station2: 'chmod +x *.sh'
+
+    pi crontab -e rsp. -l:
+        load your scripts using absolute paths, e.g.:
+----
+@reboot /home/pi/station2/startup.sh
+@daily /home/pi/station2/diskAlert.sh
+# m h  dom mon dow   command
+# read sys params every 15 min:
+*/15 * * * * /home/pi/station2/sysMon.sh &> /home/pi/station2/logs/sysmon.log
+# upload environment data hourly:
+*/60 * * * * python3 /home/pi/station2/dhtBird.py &> /home/pi/station2/logs/envDHT.log
+# shut down station at 18:54 daily before disconnecting mains at 19:00 :
+54 18 * * * /home/pi/station2/birdShutdown.sh
+----
+    test your mailsetup with 'echo "`date` Hello, it s me..." | mail -s "Testmessage" pi@localhost' (after installation of mailutils and exim4 below)
+        mail, and at ? type '1', then 'd 1', then 'q' to delete or 'exit' to keep msg#1
+
+As root:    (this avoids prepending 'sudo' all the time)
+=======
+    apt-get update
+    apt-get upgrade (necessary?)
+    apt list --installed | less
+        -> python3-picamera2/oldstable,now 0.3.12-2 all [installed]
+    
+    some packages could be removed:
+        apt-get remove --auto-remove avahi* bluez* python-is-python2       remove the old python 2
+    some should be installed (helpers for bash and python scripts):
+        apt-get install bc curl ffmpeg iperf exim4 mailutils jq screen
+            'screen python3 any.py' starts program, CTRL-A D detaches from terminal session, 'screen -r' reattaches to this or other terminal
+            'nohup python3 any.py &' (or without &) may have a similar effect, program output goes to nohup.out in dir of cmd executed
+        dpkg-reconfigure exim4-config, nano /etc/exim4/exim4.conf.template -> disable_ipv6 = true, update-exim4.conf, service exim4 restart
+            thereafter 'netstat -tulpn | grep :25' should not listen on ipv6 like ::1
+        dpkg -i wiringpi_3.2-bullseye_armhf.deb (from https://github.com/WiringPi/WiringPi/releases)
+        software for communicating with smartphone, e.g. webserver (flask) or webhook for Macrodroid APP
+        
+    install python modules:
+        better do not install pip (or at least not outside venv) because of conflicts with apt-get.
+        'apt search pip' does not find pip, but 'apt-cache search pip' shows 'python3-pip - Python package installer'
+        apt-get install pigpio, sudo systemctl start pigpiod, sudo systemctl enable pigpiod ->  bind to port 8888 failed -> remote GPIO enable in raspi-config, according to chatGPT 'dtoverlay=disable-bt' in config.txt frees up the pins for remote GPIO access (?)
+        apt-get install python3-pigpio
+        apt-get install python3-flask       for web server
+        apt-get install python3-picamera    only needed to try picamera1, but enabling old legacy camera will no longer allow picamera2 to work!
+    raspi-config
+        best change in /boot/config.txt and reboot:
+            # Enable audio (loads snd_bcm2835)
+            # dtparam=audio=on
+            dtparam=audio=off
+            # Automatically load overlays for detected cameras
+            start_x=1
+            # Enable DRM VC4 V3D driver
+            #dtoverlay=vc4-kms-v3d
+            max_framebuffers=2
+            [pi4]
+            dtoverlay=vc4-fkms-v3d
+            # Run as fast as firmware / board allows
+            arm_boost=1
+            [all]
+            # comment out gpu_mem and disable legacy camera in raspi-config/interfaces, if you use picamera2:
+            gpu_mem=256
+            disable_camera_led=1
+            # dtoverlay=disable-bt # bluez deinstalliert 
+            # only disabled by sysctl.conf:
+            # ipv6.disable=1
+    some hacks for system stability or sanity of SDcard:
+        increase swap size (https://pimylifeup.com/raspberry-pi-swap-file/):
+            dphys-swapfile swapoff
+            change in /etc/dphys-swapfile:
+                CONF_SWAPSIZE=1024
+            dphys-swapfile setup
+            dphys-swapfile swapon
+            reboot
+        create 5 MB ramdisk (owner: pi) for intensive data exchange between scripts:
+            as pi 'mkdir /home/pi/station/ramdisk'
+            in /etc/fstab:
+                tmpfs /home/pi/station2/ramdisk tmpfs nodev,nosuid,size=5M 0 0
+                OR: tmpfs  /home/pi/station2/ramdisk  tmpfs  defaults,noatime,size=5M  0  0
+            sudo mount -a OR reboot
+            'df -h' will show, if mount was successful
+
+    setting up wlan0:
+    check your wlan afterwards using 'iwconfig', 'ifconfig', iPerf scripts ...
+        switch off wlan sleeping mode:
+            /etc/network/interfaces:
+                iface wlan0 inet dhcp
+                wireless-power off
+            /etc/rc.local:
+                # start here, what should be booted by root (boot as pi in pi's crontab under @reboot)
+                # e.g. the following contains '/usr/sbin/iwconfig wlan0 power off'
+                /home/pi/station2/rclocal.sh
+                exit 0
+
+        disable ipv6 (ipv4 alone will be faster):
+            /etc/hosts and /etc/hostname:
+                remove all ipv6 entries (::1) from hosts
+127.0.0.1       localhost
+127.0.1.1       rpiBird
+            /etc/sysctl.conf:
+                # https://www.howtoraspberry.com/2020/04/disable-ipv6-on-raspberry-pi/
+net.ipv6.conf.all.disable_ipv6 = 1
+net.ipv6.conf.default.disable_ipv6 = 1
+net.ipv6.conf.lo.disable_ipv6 = 1
+
+        give it a static IP in a range, that your home router will not use for DHCP (Fritzbox above .200 by default):
+        /etc/dhcpcd.conf:
+# denyinterfaces wlan1
+interface wlan0
+static ip_address=192.168.178.210/24
+static routers=192.168.178.1
+static domain_name_servers=192.168.178.1
+
+        your wlan credentials are mostly already filled in by RPi imager above:
+            /etc/wpa_supplicant/wpa_supplicant.conf:
+                network={
+                    ssid="your-SID"
+                    psk="your-WLAN-PW"
+                }
+
+Hardware:
+=========
+
+Sparkfun HX711 has VCC and VDD. VCC is the analog voltage to power the load cell. VDD is the digital supply voltage used to set the logic level. In many cases, you can just short VCC and VDD together. If your microcontroller uses 3.3V logic however, you'll want to connect VCC to 5V and VDD to 3.3V. (https://forum.arduino.cc/t/hx711-module-vcc-and-no-vdd/623955)
+
+Troubleshooting:
+================
+- station shutting down:
+     internetTest2.sh shuts down after 3 minutes of bad internet connection, type 'mail' on next terminal login.
+
+- weight constantly over 40 or unexplained weight swings leading to unwanted video capturing /upload:
+    double check the wiring of balance strain gauge to hx711 unit, as the thin leads can become disconnected easily.
+    recalibrate offset automatically using calibHxOffset.py or manually using calibrateHx711.py, while hxFiBird.py is not active.
+
+- weight measurement freezes on one fixed value that is no longer dependant on balance:
+    two processes talked to the same GPIO, e.g. running hx711Test.py or calibrateHx711.py, while hxFiBird.py is active (and constantly being restarted by startupFifo.sh)
+
+
+- test of fifo (simple in bash):
+    create: mkfifo ramdisk/birdpipe
+        OR: if [[ ! -p "testpipe" ]]; then mkfifo "testpipe"; fi
+    write: echo "0.0" > ramdisk/birdpipe (see station2/zeroBirdpipe.sh)
+        OR: c=0; while (( $c < 100 )); do echo $c > ramdisk/birdpipe; ((c=c+1)); sleep 1; done
+    read: 
+        tail -f ramdisk/birdpipe
+        OR: cat ramdisk/birdpipe
+        OR: while read line; do echo "$line"; done < ramdisk/birdpipe (see station2/readPipe.sh)
+        OR: while read line < ramdisk/birdpipe; do echo "$line"; done 
+    clear:
+        cat ramdisk/birdpipe > /dev/null
+        OR: while read line; do: done < ramdisk/birdpipe
+        OR: while read line < ramdisk/birdpipe; do: done
+        sometimes only removing and recreating the fifo file will help for sure
+
+- search for 'searchtxt' in current dir: 'grep -rl searchtxt .' (https://www.baeldung.com/linux/bash-alias-with-parameters)
+
+Versions:
+=========
+The birdiary project 'https://www.wiediversistmeingarten.org/de/' provides a manual and software to upload videos of birds feeding in your garden to their internet platform. The videos are taken by a raspicam and triggered by a balance, that the feeding bird sits on. My code was derived from the project's 120423.img and https://abyz.me.uk/rpi/pigpio/ among others.
+
+My own image for flashing to SD Card is configured to the password: pi/bird24 (bird24root for su).
+Please adapt '/etc/wpa_supplicant/wpa_supplicant.conf' and '/etc/dhcpcd.conf' to your needs and use your own API keys for birdiary in 'station2/configBird.py' (configBird2.py).
+Also use your own API keys or credentials in any communication scripts to the outside, like Macrodroid (mdroid.sh).
+When this is done, reboot and point any browser to http://your-stations-ip4:8080 .
+
+I recommend testing out my different versions of mainXXBird.py. For this first point the link station2/startup.sh to startupTest.sh, using 'rm startup.sh' and 'ln -s startupTest.sh startup.sh'.
+Then reboot and kill the hxFiBird.py process, using 'kill PID' after you found its PID by 'ps aux|grep pi'.
+Only when hxFiBird is not active, can you calibrate your scale with 'station2/calibrateHx711.py' and write hxScale to 'configBird.py' (and 'configBird2.py', if using picamera2).
+
+Decide for your version of picamera software, i.e. for python module 'picamera' choose legacy picamera in raspi-config and gpu_mem=256 in /boot/config.txt, but for 'picamera2' disable them both.
+Picamera2 is more advanced and preinstalled with bullseye, but can only flip it's view. If you have built in your raspicam sideways, you may prefer the legacy 'picamera', which can rotate it's view.
+
+Then after rebooting you can try out:
+
+- for 'picamera' my scripts mainFoBird.py (direct video upload on balance trigger) or mainAckBird.py (upload only after confirmation within browser)
+- for 'picamera2' my script mainBird2.py (direct upload) or mainAckBird2.py (upload after confirmation)
+
+After you found your favorite setup, you can save it to startupNoTest.sh and link startup.sh to it.
+
