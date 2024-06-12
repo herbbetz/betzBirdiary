@@ -1,0 +1,24 @@
+<!doctype html>
+<html>
+<head>
+<meta charset='UTF-8'><meta name='viewport' content='width=device-width initial-scale=1'>
+<title>troubleshoot</title>
+</head>
+<body><p>How to debug some issues I had with station2:</p>
+<ul>
+<li>station shutting down:
+internetTest2.sh shuts down after 3 minutes of bad internet connection, see logs/internet.log and type &#39;mail&#39; on next terminal login.</li>
+<li>weight constantly over 40 or unexplained weight swings leading to unwanted video capturing /upload:
+double check the wiring of balance strain gauge to hx711 unit, as the thin leads can become disconnected easily.
+recalibrate offset automatically using calibHxOffset.py or manually using calibrateHx711.py, while hxFiBird.py is not active.</li>
+<li>weight measurement freezes on one fixed value that is no longer dependant on balance:
+two processes talked to the same GPIO, e.g. running hx711Test.py or calibrateHx711.py, while hxFiBird.py is active (and constantly being restarted by startupNoTest.sh)</li>
+<li>error &#39;OLD_img&#39;, image stream view in browser no longer updating: mainXXBird.py failure, see logs/main.log and &#39;ps aux|grep pi&#39;</li>
+<li>http://IP4:8080/viddata.html shows viddata (main JSON data) instead of image, used for debugging</li>
+<li>http://IP4:8080/upload fakes an empty bird video, used for debugging</li>
+<li>If you built in your camera sideways, you cannot get the sky to the top by the flip options of picamera2. Instead use the legacy picamera, which can rotate its view.</li>
+
+</ul>
+<p>further hints also in docs/howto.txt</p>
+</body>
+</html>
