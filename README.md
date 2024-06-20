@@ -21,3 +21,4 @@ If you need to calibrate your scale, first kill the process 'hxFiBird.py'. You f
 Using the python3 modules 'picamera2' and 'pigpio' (for DHT20 and HX711) the code should work on RaspberryZero2W as well as Raspberry4 and with Raspbian Bullseye (Debian 11) and Bookworm (Debian 12).
 
 I did not install any code for the microfone. Adafruit I2S MEMS Mikrofon SPH0645LM4H may not yet be working with Bookworm anyway. Bird song monitoring can be an RPi project of its own, using an USB soundcard mic, sonograms and a sound world map like in [BirdNET-PI](https://github.com/mcguirepr89/BirdNET-Pi).
+$\color{green}{test}$
