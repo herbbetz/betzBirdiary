@@ -8,13 +8,18 @@ sources:
 Images und Pictures
 ![favicon](favicon.svg)
 
+
+das geht irgendwie nicht:
+```habs jetzt mal mit code-Backticks umgeben:
 <picture>
  <source media="(prefers-color-scheme: dark)" srcset="YOUR-DARKMODE-IMAGE">
  <source media="(prefers-color-scheme: light)" srcset="YOUR-LIGHTMODE-IMAGE">
  <img alt="favicon" src="favicon.svg">
 </picture>
+```
 
 und Videos:
+
 See example video of birds chasing each other: [birdChase](https://dateicloud.de/index.php/s/3ktaDZBxxmaoHbw)
 Nur als externe Videos aus der Cloud, Vimeo, Youtube (oder als Anhang einer .md), selbst wenn unter 25MB groß.
 
