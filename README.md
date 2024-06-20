@@ -1,3 +1,4 @@
+![](station2/favicon.svg)
 The [birdiary project](https://www.wiediversistmeingarten.org) provides a [manual](https://docs.google.com/document/d/1ItowLull5JF3irzGtbR-fCmgelG3B7DSaU1prOeQXA4/edit#heading=h.d6tejpvjrrs8) and [software](https://github.com/Birdiary) to upload videos of birds feeding in your garden to their internet platform. The videos are taken with a raspicam and triggered by a balance on which the feeding bird sits. My code was derived from the project's [120423.img](https://uni-muenster.sciebo.de/s/ZZWtPM9miId9ctM) and the [pigpio library](https://abyz.me.uk/rpi/pigpio/) among others.
 
 My own image for flashing to the SD card is configured with the password: 'pi / bird24' ('bird24root' for su). You can find the installation instructions [here](image/imgInstall.md).
