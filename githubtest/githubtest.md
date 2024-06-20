@@ -21,7 +21,8 @@ das geht irgendwie nicht:
 und Videos:
 
 See example video of birds chasing each other: [birdChase](https://dateicloud.de/index.php/s/3ktaDZBxxmaoHbw)
-Nur als externe Videos aus der Cloud, Vimeo, Youtube (oder als Anhang einer .md), selbst wenn unter 25MB groß.
+Nur als externe Videos aus der Cloud, Vimeo, Youtube (oder als Anhang einer .md), selbst wenn unter 25MB groß,
+wie [video](birdiary.mp4).
 
 ```was mit python
 ist das quellcode modus?
