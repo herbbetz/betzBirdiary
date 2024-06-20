@@ -29,6 +29,7 @@ ist das quellcode modus?
 print('Hallo')
 ```
 
+Details funktioniert auf Github, nicht in Typora:
 <details>
 <summary>Markup for table and to hide details</summary>
 
@@ -42,7 +43,7 @@ print('Hallo')
 
 Here are some tests using LaTeX:
 
-textcolor (lines): $\color{green}{test}$
+textcolor (lines): $\color{green}{test}$, aber leider nicht Texthintergrund wie \colorbox{}
 
 Math-Line: $\sqrt{3x-1}+(1+x)^2$
 or $`\sqrt{\$4}`$
