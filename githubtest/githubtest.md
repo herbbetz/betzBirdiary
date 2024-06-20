@@ -15,7 +15,7 @@ Images und Pictures
 </picture>
 und Videos:
 
-See example video of birds chasing each other: ![birdChase](https://dateicloud.de/index.php/s/3ktaDZBxxmaoHbw)
+See example video of birds chasing each other: [birdChase](https://dateicloud.de/index.php/s/3ktaDZBxxmaoHbw)
 Nur als externe Videos aus der Cloud, Vimeo, Youtube (oder als Anhang einer .md), selbst wenn unter 25MB groß.
 
 ```was mit python
