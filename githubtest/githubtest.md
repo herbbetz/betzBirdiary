@@ -13,8 +13,8 @@ Images und Pictures
  <source media="(prefers-color-scheme: light)" srcset="YOUR-LIGHTMODE-IMAGE">
  <img alt="favicon" src="favicon.svg">
 </picture>
-und Videos:
 
+und Videos:
 See example video of birds chasing each other: [birdChase](https://dateicloud.de/index.php/s/3ktaDZBxxmaoHbw)
 Nur als externe Videos aus der Cloud, Vimeo, Youtube (oder als Anhang einer .md), selbst wenn unter 25MB groß.
 
