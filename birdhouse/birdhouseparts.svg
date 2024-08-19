@@ -1,0 +1,34 @@
+<svg width="460mm" height="720mm" viewBox="0 0 460 720" xmlns="http://www.w3.org/2000/svg">
+    <style>
+        svg { stroke-width: 1px;
+            background-color:  #edbb99; }
+    </style>
+<!-- draw each object at the left top corner and use transform matrix for positioning 
+beware: think coordinates and not additions, test object in https://svg-path-visualizer.netlify.app -->
+  <path id="frontroof" d="M 0,0 H 200 V 150 H 0 Z" fill="none" stroke="blue" stroke-width="0.5mm" transform="matrix(1,0,0,1,10,0)" />
+  <path id="backroof" d="M 0,0 H 155 V 150 H 0 Z" fill="none" stroke="blue" stroke-width="0.5mm" transform="matrix(1,0,0,1,240,0)" />
+  <path id="frontrooflatch" d="M 0,0 H 120 V 25 H 0 Z" fill="none" stroke="blue" stroke-width="0.5mm" transform="matrix(1,0,0,1,10,160)" />
+  <path id="backrooflatch" d="M 0,0 H 120 V 25 H 0 Z" fill="none" stroke="blue" stroke-width="0.5mm" transform="matrix(1,0,0,1,275,160)" />
+  <g id="frontwall" transform="matrix(1,0,0,1,0,245)">
+    <path d="M 0,190 H 120 V 0 H 0 Z" fill="none" stroke="blue" stroke-width="0.5mm" />
+    <!-- arccircle:   -->
+    <path d="M 47,145 a 13,13 0 1 0 26,0 a 13,13 0 1 0 -26,0" fill="none" stroke="blue" stroke-width="0.5mm" />
+  </g>
+  <path id="frontlatch" d="M 0,0 H 120 V 25 H 68 V 10 H 52 V 25 H 0 Z" fill="none" stroke="blue" stroke-width="0.5mm" transform="matrix(1,0,0,1,0,470)" />
+  <g id="sidewall" transform="matrix(1,0,0,1,130,150)">
+    <path d="M 0,95 L 95,0 L 190,95 V 345 H 0 Z" fill="none" stroke="blue" stroke-width="0.5mm" />
+    <circle cx="28" cy="302" r="2" />
+    <circle cx="84" cy="291" r="2" />
+    <circle cx="105" cy="240" r="2" />
+    <circle cx="123" cy="149" r="2" />
+  </g>
+  <path id="backwall" d="M 0,250 H 120 V 0 H 0 Z" fill="none" stroke="blue" stroke-width="0.5mm" transform="matrix(1,0,0,1,330,245)" />
+
+  <g id="floor" transform="matrix(1,0,0,1,130,505)">
+    <path d="M 0,0 H 180 V 120 H 0 Z" fill="none" stroke="blue" stroke-width="0.5mm" />
+    <circle cx="10" cy="60" r="2" />
+    <circle cx="70" cy="60" r="2" />
+  </g>
+  <path id="silofloor" d="M 0,0 H 120 V 135 H 0 Z" fill="none" stroke="blue" stroke-width="0.5mm" transform="matrix(1,0,0,1,0,505)" />
+  <path id="siloback" d="M 0,0 H 120 V 210 H 0 Z" fill="none" stroke="blue" stroke-width="0.5mm" transform="matrix(1,0,0,1,330,505)" />
+</svg>
