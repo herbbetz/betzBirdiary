@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="140px" height="240px" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 140 240" preserveAspectRatio="none">
+<g id="herb1" style="display:inline">
+<image width="140" height="240" preserveAspectRatio="none" x="0" y="0"
+xlink:href="herb83.png" />
+</g>
+<g id="herb2" style="display:inline">
+<image width="140" height="240" preserveAspectRatio="none" x="0" y="0"
+xlink:href="herb00.png" />
+<animate id="showherb2" attributeName="opacity" from="0" to="1" dur="3s" begin="fadeherb2.end + 0.5s" fill="freeze"/>
+<animate id="fadeherb2" attributeName="opacity" from="1" to="0" dur="3s" begin="fadeherb3.end + 0.5s" fill="freeze"/>
+</g>
+<g id="herb3" style="display:inline">
+<image width="140" height="240" preserveAspectRatio="none" x="0" y="0"
+xlink:href="herb23.png" />
+<animate id="showherb3" attributeName="opacity" from="0" to="1" dur="3s" begin="showherb2.end + 0.5s" fill="freeze"/>
+<animate id="fadeherb3" attributeName="opacity" from="1" to="0" dur="3s" begin="0.5s; showherb3.end + 0.5s" fill="freeze"/>
+</g>
+</svg>
