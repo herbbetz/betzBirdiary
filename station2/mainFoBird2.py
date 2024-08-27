@@ -81,6 +81,9 @@ def send_realtime_movement(files):
 
 def send_movement(wght):
     global circOut, vid_cnt
+    if (vid_cnt > upmaxcnt):
+        ms.log("upload limit reached")
+        return
     print("***movement upload***")
     movementStartDate = datetime.now()
     set_filenames(movementStartDate)
