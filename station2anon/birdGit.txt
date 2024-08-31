@@ -1,0 +1,77 @@
+Quickguide:
+a) anonymisieren:
+- fahre Vogelstation hoch und putty in
+- lösche /home/pi/station2credentials
+- führe station2anon aus
+- lösche alte Dateien in d:\birdiary\github\ (bes. betreffs /station2, /docs, README.md)
+- kopiere station2 auf d:\birdiary\github\station2 ohne die /logs, /pycache und /docs
+- kopieren /docs extra nach d:\birdiary\github\
+- fahre Station runter
+b) github upload
+- alles in d:\birdiary\github\ aktuell?
+- lösche Github online Verzeichnisse (vermeide Versionen)
+- uploade /station2 und /docs
+c) IMG reading
+- SD-Karte mit Win32 Disk Imager auslesen (30 min) -> IMG nach G:\birdiary-images
+- PIshrink: Docker in Admin starten, dann aber auf Kommandozeile (Admin Powershell) in G:\birdiary-images
+    docker run --privileged=true --rm --volume g:\birdiary-images:/workdir borgesnotes/pishrink pishrink rpibird2024XXXX.img
+- komprimieren mit 7zip -> rpibird2024XXXX.7z
+- Hochladen (1GB, 30 min) auf Dateicloud.de
+d) IMG writing:
+- z.B. mit Etcher auf neue SD-Karte bzw. anonymisierte SD-Karte verwenden
+- SSH und wpa_supplicant.conf ins Hauptverzeichnis kopieren -> Heimnetzwerkzugang! (ohne dies kein Internetzugang -> script fährt Station wieder runter nach 3 min)
+e) Inbetriebnahme:
+- SDcard ins Vogelhäuschen und booten
+- http://rpibird:8080
+- station2credentials hochkopieren und ausführen und REBOOT, erst jetzt wird durch config2.py nach birdiary hochgeladen!
+
+
+1) Optimiere station2 via WLAN
+	auf station2 in README.md interne links als .html (ohne style) statt als .md, dann referenzierte .html hochladen, nicht .md
+	auf Github jedoch als .md referenzieren und als solche hochladen!
+
+	Achtung Typora: keine automatischen Hyperlinks (sonst wird auch 'http://your-IP4:8080' zum Hyperlink!), dagegen relative Pfade.
+	Achtung: Github baut wieder ein 'http://your-IP4:8080' zum Hyperlink, also schreibe mit spaces: 'http:// your-IP4 :8080'!
+
+	dateicloud downlink zeigt auf /birdiary, nicht auf einzeldatei
+
+2) Kopiere via WLAN ~/station2 usw. in neues Einzelverzeichnis
+	Lösche ./docs, ./logs, __pycache__ usw.
+
+3) Anonymisiere Station
+	2 Sätze von fast gleichen Dateien mit jeweiligem Installationsscript:
+	- ..\station2anon: Dateien mit anonymisierten Credentials, installiert von anonStation.sh
+	- ..\station2credentials: Dateien mit meinen persönlichen oder geheimen Credentials, installiert von herbStation.sh
+
+	anonStation.sh und herbStation.sh tun dasselbe aus ihrem jeweiligen Verzeichnis heraus,
+		anonStation.sh kopiert aber auch noch Dateien auf die /boot Partition (die als Fat32 keine Rechte kennt und von Windows bearbeitbar ist).
+
+ACHTUNG: station2 von SD-card erst nach dem Anonymisieren separat kopieren vor Github Upload!
+
+4) SDcard Backup:
+	die SDcard aus dem RPiZero2W lässt sich nicht einfach auf dem RPi4 erreichbar booten (SSD disconnected), vielleicht wegen der statischen WLAN-Konfig? Raspbians grafischer SDcard copier fällt also aus.
+	https://beebom.com/how-clone-raspberry-pi-sd-card-windows-linux-macos/
+	    Windows: Win32 Disk Imager liest vom SDcard-Reader (SDcard 32 MB) in ein .img auf die Festplatte (Lesedauer 20 min, umgekehrt Schreibdauer 35 min, 31.9GB)
+	    Ubuntu: sudo fdisk -l (oder GParted, zeigt boot- und root-Partition auf der SD-card im usb-Reader als sde1 und sde2), sudo dd if=/dev/sde of=./birdSDuntu.img (Lesedauer 30 min, identisch 31.9 GB)
+	PiShrink:
+		https://github.com/Drewsif/PiShrink
+			>>funktioniert! auf Ubuntu 20 as root: ./pishrink.sh birdSDuntu24-3-24.img birdSDuntu24-3-24small.img
+				2. Dateiname optional, dann wird das img erst in das newimg kopiert, anschließend geschrumpft.		
+		https://github.com/borgesnotes/pishrink-docker -> https://hub.docker.com/r/borgesnotes/pishrink, diese pishrink Dockerversion beruht auf Drewsif.
+		aus admin Eingabeaufforderung (win10, powershell): docker run --privileged=true --rm --volume d:\birdiary:/workdir borgesnotes/pishrink pishrink -Zv birdiary24-3-24.img birdiary24-3-24small.img
+			--rm remove container after running task, -Zv means Compress .img after shrinking with xz and be verbous
+			in Docker Desktop aus dem pishrink img einen Container einrichten mit den richtigen Volume-Eigenschaften
+				dann auf Commandozeile: docker run --privileged=true --rm --volume g:\birdiary-images:/workdir borgesnotes/pishrink pishrink -Zv bird240601.img (überschreibt selbiges großes .img)
+					oder ohne -Z (zum Neuflashen des Img) und Kompression anschließend, z.B. mit 7-zip
+					docker run --privileged=true --rm --volume g:\birdiary-images:/workdir borgesnotes/pishrink pishrink bird240612.img
+
+5) Dateien auf Github / Nextcloud zum Download anbieten
+	Vergiss nicht "commit changes"
+    Github löscht leere Verzeichnisse, also schreib dort ein leeres 'github-dummy' hinein .
+
+6) Neuschreiben mit Etcher oder RPi Imager: RPIModel= no filtering, OS= custom img, settings= only WLAN SID/PW
+	WLAN-Daten auf boot/wpa-supplicant.conf eintragen, dann booten
+	im Router dynamische IP4 suchen, pingen
+	De-anonymisiere station2, siehe unter 3), also credentials in ~/station2credentials (ohne wpa-supplicant.conf), ./herbStation.sh und reboot
+
+7) Wird auf Github vor neuem Upload nicht gelöscht, bleibt auch eine alte Version erhalten. Wie ist die dann zu löschen?
