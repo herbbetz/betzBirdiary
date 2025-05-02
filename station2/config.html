@@ -1,0 +1,63 @@
+<!doctype html>
+<html>
+<head>
+    <title>PiCamera Settings</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+    <meta http-equiv="Pragma" content="no-cache"/>
+    <meta http-equiv="Expires" content="0"/>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="bird.css">
+</head>
+<body>
+    <h2>Settings</h2>
+    <div class="indented">
+        <div class="rowed"><div class="prebutton">Upload:</div><a href="/chmain" class="button" id="chmain"></a></div>
+    </div>
+    <h2>Actions</h2>
+    <div class="indented">
+        <a href="/upload" class="button">snapshot</a>
+        <a href="keep/gallery.html" class="button">gallery</a>
+        <a href="mybirds/mybirds.html" class="button">Station's Birds</a>
+        <a href="/reboot" class="button">reboot</a>
+        <a href="/shutdown" class="button">shutdown</a>
+        <a href="vidshot.html" class="button">back</a>
+    </div>
+</body>
+<script>
+    //@ts-check
+    'use strict';
+    const chmainElem = document.getElementById('chmain');
+    const vidmsgJson = "/msgjson"; //"ramdisk/vidmsg.json";
+    
+    function getVidmsg() {
+        fetch(vidmsgJson, {cache: 'reload', mode: 'no-cors'})
+        .then((response) => response.json())
+        .then((data) => {
+            let upmode = data['upmode']
+            if (upmode == 1){
+                chmainElem.textContent = "direct"
+            }
+            else if (upmode == 2){
+                chmainElem.textContent = "confirmed"
+            }
+            else {
+                chmainElem.textContent = "?"
+            }
+        })
+    }
+
+
+    function updateStream() {
+        getVidmsg(); // fetches window.curImgNum
+        setTimeout(updateStream, 1000); // Update every 1000 milliseconds (adapt to capture scripts mainBirdX.py, event?)
+    }
+
+    // Call the updateStream function when the page loads
+    window.onload = function() {
+        updateStream(); //update loop
+    };
+
+</script>
+</html>
