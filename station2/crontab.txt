@@ -1,0 +1,17 @@
+# ----pi crontab on 4thJune2025:
+@reboot /home/pi/station2/startup.sh
+@daily /home/pi/station2/diskAlert.sh
+# min hour dayOfMonth month dayOfWeek(0=sunday)   command
+# Calling with bash does not need file permissions like 'chmod +x *.sh'
+# run on even hours like 0:00, 2:00, 4:00
+0 */2 * * * bash /home/pi/station2/statist/getStats.sh >> /home/pi/station2/logs/statist.log 2>&1
+# read sys params every 15 min:
+*/15 * * * * bash /home/pi/station2/sysMon.sh >> /home/pi/station2/logs/sysmon.log 2>&1
+# upload environment data every 15 min:
+*/15 * * * * python3 /home/pi/station2/dhtBird.py
+# print(msgStr, flush=True) instead of  subprocess not working? */15 * * * * ( python3 /home/pi/station2/dhtBird.py|xargs -t /home/pi/station2/mdroid.sh ) &> /home/pi/station2/logs/envDHT.log
+# shut down on sunset:
+*/15 * * * * python3 /home/pi/station2/sunset2.py
+# shut down station at 18:54 daily before disconnecting mains at 19:00 :
+54 18 * * * bash /home/pi/station2/tasmotaDown.sh eveningDown >> /home/pi/station2/logs/down.log 2>&1
+# ----
