@@ -1,0 +1,229 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>PiCamera Stream</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#ffffff">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+    <meta http-equiv="Pragma" content="no-cache"/>
+    <meta http-equiv="Expires" content="0"/>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="bird.css">
+</head>
+<body>
+    <div class="indented">
+        <div class="rowed">
+            <div id="online"></div>&nbsp;&nbsp;<div id="jsons"></div>&nbsp;&nbsp;<div id="stdby"></div>
+        </div>
+        <div class="rowed">
+            <a href="video.html" class="button" id="confirmbtn">confirm</a>
+            <a href="config.html" class="button">config/actions</a>
+        </div>
+    </div>
+    <h2>Umwelt</h2>
+    <div class="indented">
+        <div id="envir"></div>
+        <div id="vidmsg">video <span id="vidcnt"></span> at <span id="lastvid"></span></div>
+        <div id="imgcontainer"><img id="jpeg_feed" src="" alt="Live camera feed from PiCamera" width="320" height="240"></div>
+    </div>
+    <h2>System</h2>
+    <div class="indented">
+        <div id="actity"></div>
+        <div id="sysmon"></div>
+    </div>
+    <div id="footer">
+        <a href="https://www.wiediversistmeingarten.org/view" target="_blank" rel="noopener noreferrer">Birdiary Karte</a><br>
+        <small>
+            <a href="README.md" target="_blank" rel="noopener noreferrer">Gestaltung:</a> H. Betz, herber7be7z@gmail.com<br>
+            /upload will capture video (no bird on balance)<br>
+            <a href="https://github.com/herbbetz/betzBirdiary" target="_blank" rel="noopener noreferrer">
+                <svg width="24" height="26" xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd" clip-rule="evenodd" 
+                    d="M 12,0 
+                    C 5,0 0,6 0,13 0,19 3,23 8,25 9,25 9,25 9,24 9,24 9,23 9,22 6,23 5,20 5,20 4,19 4,18 4,18 3,17 4,17 4,17 
+                    c 1,0 2,1 2,1 1,2 3,1 3,1 0,-1 0,-1 1,-2 C 7,17 5,16 5,11 5,10 5,8 6,8 6,8 5,6 6,5 6,5 7,5 9,6 a 12,12 0 0 1 3,0 
+                    c 1,0 2,0 3,0 2,-2 3,-1 3,-1 1,2 0,3 0,3 1,1 1,2 1,3 0,5 -3,6 -5,6 0,0 1,1 1,2 0,2 0,3 0,3 0,0 0,1 1,1 5,0 8,-5 8,-10 
+                    C 24,6 19,0 12,0 Z" fill="#24292f"/>
+                </svg>Github
+            </a>
+        </small>
+    </div>
+    <script>
+        'use strict';
+        // refactored by github copilot on 30.5.25, old version see vidshot0.html
+        // DOM references
+        const dom = {
+            img: document.getElementById('jpeg_feed'),
+            online: document.getElementById('online'),
+            jsmsg: document.getElementById('jsons'),
+            stdbymsg: document.getElementById('stdby'),
+            envir: document.getElementById('envir'),
+            actity: document.getElementById('actity'),
+            sysmon: document.getElementById('sysmon'),
+            vidcnt: document.getElementById('vidcnt'),
+            lastvid: document.getElementById('lastvid'),
+            vidmsg: document.getElementById('vidmsg'),
+            confirmbtn: document.getElementById('confirmbtn'),
+            tabcolor: document.querySelector("meta[name=theme-color]"),
+            icon: document.querySelector("link[rel~='icon']")
+        };
+
+        // Constants for data sources
+        const URLS = {
+            envir: "ramdisk/env.json",
+            sysmon: "ramdisk/sysmon.json",
+            vidmsg: "/msgjson"
+        };
+
+        // State for UI and freshness tracking
+        const state = {
+            envir: [" ", " ", " "],
+            lines: [" ", " ", " ", " ", " "],
+            sysmon: [],
+            saved: { ImgNum: 0, linecnt: 0, envirEvt: 0, sysmonEvt: 0 },
+            fetchPromises: []
+        };
+
+        // Utility function to safely set HTML/text
+        function setHTMLSafe(elem, html) {
+            // For trusted, generated HTML (like <br>-joined simple strings), this is OK
+            elem.innerHTML = html;
+        }
+        function setText(elem, text) {
+            elem.textContent = text;
+        }
+
+        // Fetch and update environment
+        async function fetchEnvir() {
+            try {
+                const response = await fetch(URLS.envir, {cache: 'reload'});
+                const data = await response.json();
+                state.envir[0] = data['date'] ?? '';
+                state.envir[1] = (data['temperature'] ?? '') + " °C";
+                state.envir[2] = (data['humidity'] ?? '') + " rel.%";
+                setHTMLSafe(dom.envir, state.envir.join('<br>'));
+            } catch (e) {
+                setText(dom.envir, "Error loading environment data");
+            }
+        }
+
+        // Fetch and update system monitor
+        async function fetchSysmon() {
+            try {
+                const response = await fetch(URLS.sysmon, {cache: 'reload'});
+                const data = await response.json();
+                state.sysmon.length = 0;
+                Object.entries(data).forEach(([key, value]) => {
+                    state.sysmon.push(`${key}: ${value}`);
+                });
+                setHTMLSafe(dom.sysmon, state.sysmon.join('<br>'));
+            } catch (e) {
+                setText(dom.sysmon, "Error loading system data");
+            }
+        }
+
+        // Load new image if needed
+        async function fetchImg(imgNum) {
+            if (imgNum > 0) {
+                const orderImg = imgNum - 1;
+                const imgname = `ramdisk/img${orderImg}.jpg`;
+                try {
+                    // Try preloading image
+                    await fetch(imgname, {cache: 'reload'});
+                    dom.img.src = imgname;
+                } catch (e) {
+                    // Optionally show an error or fallback image
+                }
+            }
+        }
+
+        // Handle video message update, including all relevant UI state
+        async function fetchVidmsg() {
+            try {
+                const response = await fetch(URLS.vidmsg, {cache: 'reload'});
+                const data = await response.json();
+
+                setText(dom.online, "online");
+                const curImgNum = data['imgid'];
+                if (curImgNum !== state.saved.ImgNum) {
+                    setText(dom.jsmsg, "");
+                    state.fetchPromises.push(fetchImg(curImgNum));
+                    state.saved.ImgNum = curImgNum;
+                } else {
+                    setText(dom.jsmsg, "OLD_img");
+                }
+
+                if (data['standby'] == 0) {setText(dom.stdbymsg, "🎥");} else {setText(dom.stdbymsg, "STANDBY");}
+                // or setHTMLSafe(dom.stdbymsg, '&#127909;');
+                        
+                // Environment event
+                if (data['envirEvt'] !== state.saved.envirEvt) {
+                    state.fetchPromises.push(fetchEnvir());
+                    state.saved.envirEvt = data['envirEvt'];
+                }
+
+                // System monitor event
+                if (data['sysmonEvt'] !== state.saved.sysmonEvt) {
+                    state.fetchPromises.push(fetchSysmon());
+                    state.saved.sysmonEvt = data['sysmonEvt'];
+                }
+
+                // Wait for all async updates to finish and clear the array
+                await Promise.allSettled(state.fetchPromises);
+                state.fetchPromises.length = 0;
+
+                // Video message display
+                const msg = data['lastvid'] ?? "";
+                if (msg.trim().length === 0) {
+                    dom.vidmsg.style.visibility = "hidden";
+                    document.title = "Picamera Stream";
+                    dom.icon.href = "favicon.svg";
+                    dom.tabcolor.setAttribute("content", "#ffffff");
+                } else {
+                    dom.vidmsg.style.visibility = "visible";
+                    const vidcnt = data['vidcnt'];
+                    setText(dom.vidcnt, vidcnt > 0 ? `#${vidcnt}` : "");
+                    setText(dom.lastvid, msg);
+                    document.title = "NEW video";
+                    dom.icon.href = "faviconRed.svg";
+                    dom.tabcolor.setAttribute("content", "#ff5733");
+                }
+
+                // Confirm button
+                dom.confirmbtn.style.visibility = data['confirm'] ? "visible" : "hidden";
+
+                // Logger lines
+                updateLogLines(data['linecnt'], data['linetxt']);
+            } catch (error) {
+                setText(dom.online, "Offline or error: " + (error?.message ?? error));
+            }
+        }
+
+        // Update activity log lines
+        function updateLogLines(linecnt, txt) {
+            state.lines.shift(); // Remove oldest
+            if (linecnt === state.saved.linecnt) {
+                state.lines.push(" ");
+            } else {
+                txt = String(txt ?? '').trim();
+                if (txt.length > 0) state.lines.push(txt);
+            }
+            setHTMLSafe(dom.actity, state.lines.join('<br>'));
+            state.saved.linecnt = linecnt;
+        }
+
+        // Polling loop for the stream
+        function startStreamPolling() {
+            fetchVidmsg().finally(() => {
+                setTimeout(startStreamPolling, 1000);
+            });
+        }
+
+        // On page load
+        window.onload = function() {
+            startStreamPolling();
+        };
+    </script>
+</body>
+</html>
