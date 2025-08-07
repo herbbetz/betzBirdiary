@@ -18,7 +18,7 @@ Ein handwerklicher Freund hat das [Holzhaus](docs/birdhouse/birdhouse.md) liebev
 
 Die Birdiary Plattform besitzt auch eine API, die eine [statistische Auswertung](statist/doc/statsREADME.md) der hochgeladenen Vogeldateien ermöglicht.
 
-Landshut im Juni 2025, herber7be7z@gmail.com
+Landshut im August 2025, herber7be7z@gmail.com
 
 
 
