@@ -9,7 +9,11 @@ betzBirdiary is a software clon for raspberry/ bookworm to upload bird videos to
 
 # Beiträge
 
-{% for post in site.posts %}
-  <h2><a href="{{ post.url }}">{{ post.title }}</a></h2>
-  <p>{{ post.excerpt }}</p>
-{% endfor %}
+<ul>
+  {% for post in site.posts %}
+    <li>
+      <a href="{{ post.url }}">{{ post.title }}</a>
+      <span>({{ post.date | date: "%Y-%m-%d" }})</span>
+    </li>
+  {% endfor %}
+</ul>
