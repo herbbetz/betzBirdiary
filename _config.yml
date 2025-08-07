@@ -4,6 +4,7 @@ theme: minima
 domain: herbbetz.github.io
 baseurl: "/betzBirdiary/" # Set to "/repository-name" if using project site (not user/organization site)
 url: "https://herbbetz.github.io" # Set to your GitHub Pages URL if you want absolute URLs
+show_downloads: [true]
 plugins:
   - jekyll-feed
 
