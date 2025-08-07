@@ -1,6 +1,6 @@
 ---
-layout: home
-title: "betzBirdiary blog!"
+layout: default
+title: "betzBirdiary blog"
 ---
 
 Welcome to the blog about betzBirdiary.
