@@ -12,5 +12,4 @@ plugins:
 #twitter_username: your_twitter
 github_username:  herbbetz
 
-# Build settings
 markdown: kramdown
