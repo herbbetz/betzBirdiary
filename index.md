@@ -2,6 +2,7 @@
 layout: home
 title: "betzBirdiary blog"
 ---
+[About]({{ "/about" | relative_url }})
 
 Welcome to the blog about betzBirdiary.
 Besides the manuals this is intended for more easy reading about this project.
