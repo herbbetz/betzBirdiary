@@ -324,7 +324,6 @@ def main():
         time.sleep(1.5)
         gains = tuple(round(g, 2) for g in picam.capture_metadata()["ColourGains"])
         camsetting = {
-            "AeEnable": False,
             "AwbEnable": False,
             "ColourGains": gains
         }
