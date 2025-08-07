@@ -1,0 +1,30 @@
+*,
+*::after,
+*::before {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  outline: none;
+  font-family: monospace;
+}
+
+body {
+  display: flex;
+  flex-direction: column;
+  width: 640px;
+  height: 430px;
+  overflow: hidden;
+  background-color: #fcdeb9;
+  cursor: crosshair;
+}
+
+.webgl {
+  position: fixed;
+  top: 0;
+  left: 0;
+}
+
+#pretalk {
+  font-size: 24px;
+  z-index: 10;
+}

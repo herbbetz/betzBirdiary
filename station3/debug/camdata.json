@@ -1,0 +1,282 @@
+[
+  {
+    "timestamp": "2025:08:06:10:50",
+    "metaLux": 5166,
+    "exposure": 5785,
+    "gain": 1,
+    "luxcategory": 4
+  },
+  {
+    "timestamp": "2025:08:06:11:00",
+    "metaLux": 5197,
+    "exposure": 5785,
+    "gain": 1,
+    "luxcategory": 4
+  },
+  {
+    "timestamp": "2025:08:06:11:11",
+    "metaLux": 5220,
+    "exposure": 5742,
+    "gain": 1,
+    "luxcategory": 4
+  },
+  {
+    "timestamp": "2025:08:06:11:15",
+    "metaLux": 5313,
+    "exposure": 5742,
+    "gain": 1,
+    "luxcategory": 4
+  },
+  {
+    "timestamp": "2025:08:06:12:00",
+    "metaLux": 5363,
+    "exposure": 5742,
+    "gain": 1,
+    "luxcategory": 4
+  },
+  {
+    "timestamp": "2025:08:06:12:15",
+    "metaLux": 3438,
+    "exposure": 5742,
+    "gain": 1,
+    "luxcategory": 3
+  },
+  {
+    "timestamp": "2025:08:06:12:30",
+    "metaLux": 5433,
+    "exposure": 5742,
+    "gain": 1,
+    "luxcategory": 4
+  },
+  {
+    "timestamp": "2025:08:06:12:45",
+    "metaLux": 5384,
+    "exposure": 5742,
+    "gain": 1,
+    "luxcategory": 4
+  },
+  {
+    "timestamp": "2025:08:06:13:00",
+    "metaLux": 5421,
+    "exposure": 5742,
+    "gain": 1,
+    "luxcategory": 4
+  },
+  {
+    "timestamp": "2025:08:06:13:15",
+    "metaLux": 5476,
+    "exposure": 5742,
+    "gain": 1,
+    "luxcategory": 4
+  },
+  {
+    "timestamp": "2025:08:06:13:30",
+    "metaLux": 5447,
+    "exposure": 5742,
+    "gain": 1,
+    "luxcategory": 4
+  },
+  {
+    "timestamp": "2025:08:06:13:45",
+    "metaLux": 4439,
+    "exposure": 5742,
+    "gain": 1,
+    "luxcategory": 3
+  },
+  {
+    "timestamp": "2025:08:06:14:00",
+    "metaLux": 5232,
+    "exposure": 5742,
+    "gain": 1,
+    "luxcategory": 4
+  },
+  {
+    "timestamp": "2025:08:06:14:15",
+    "metaLux": 5317,
+    "exposure": 5742,
+    "gain": 1,
+    "luxcategory": 4
+  },
+  {
+    "timestamp": "2025:08:06:14:30",
+    "metaLux": 5356,
+    "exposure": 5742,
+    "gain": 1,
+    "luxcategory": 4
+  },
+  {
+    "timestamp": "2025:08:06:14:45",
+    "metaLux": 5357,
+    "exposure": 5742,
+    "gain": 1,
+    "luxcategory": 4
+  },
+  {
+    "timestamp": "2025:08:06:15:00",
+    "metaLux": 5454,
+    "exposure": 5742,
+    "gain": 1,
+    "luxcategory": 4
+  },
+  {
+    "timestamp": "2025:08:06:15:15",
+    "metaLux": 5439,
+    "exposure": 5742,
+    "gain": 1,
+    "luxcategory": 4
+  },
+  {
+    "timestamp": "2025:08:06:15:30",
+    "metaLux": 5445,
+    "exposure": 5742,
+    "gain": 1,
+    "luxcategory": 4
+  },
+  {
+    "timestamp": "2025:08:06:15:45",
+    "metaLux": 5765,
+    "exposure": 5742,
+    "gain": 1,
+    "luxcategory": 4
+  },
+  {
+    "timestamp": "2025:08:06:15:53",
+    "metaLux": 4200,
+    "exposure": 7258,
+    "gain": 1,
+    "luxcategory": 3
+  },
+  {
+    "timestamp": "2025:08:06:18:45",
+    "metaLux": 4695,
+    "exposure": 7258,
+    "gain": 1,
+    "luxcategory": 3
+  },
+  {
+    "timestamp": "2025:08:06:19:00",
+    "metaLux": 3671,
+    "exposure": 7258,
+    "gain": 1,
+    "luxcategory": 3
+  },
+  {
+    "timestamp": "2025:08:06:19:15",
+    "metaLux": 3046,
+    "exposure": 7258,
+    "gain": 1,
+    "luxcategory": 3
+  },
+  {
+    "timestamp": "2025:08:06:19:30",
+    "metaLux": 3051,
+    "exposure": 7258,
+    "gain": 1,
+    "luxcategory": 3
+  },
+  {
+    "timestamp": "2025:08:06:19:45",
+    "metaLux": 2122,
+    "exposure": 7258,
+    "gain": 1,
+    "luxcategory": 2
+  },
+  {
+    "timestamp": "2025:08:06:20:00",
+    "metaLux": 1283,
+    "exposure": 7258,
+    "gain": 1,
+    "luxcategory": 1
+  },
+  {
+    "timestamp": "2025:08:06:20:15",
+    "metaLux": 680,
+    "exposure": 7258,
+    "gain": 1,
+    "luxcategory": 1
+  },
+  {
+    "timestamp": "2025:08:06:20:30",
+    "metaLux": 284,
+    "exposure": 7258,
+    "gain": 1,
+    "luxcategory": 1
+  },
+  {
+    "timestamp": "2025:08:06:20:45",
+    "metaLux": 125,
+    "exposure": 7258,
+    "gain": 1,
+    "luxcategory": 1
+  },
+  {
+    "timestamp": "2025:08:06:20:51",
+    "metaLux": 124,
+    "exposure": 33239,
+    "gain": 7,
+    "luxcategory": 1
+  },
+  {
+    "timestamp": "2025:08:07:06:15",
+    "metaLux": 286,
+    "exposure": 33239,
+    "gain": 8,
+    "luxcategory": 1
+  },
+  {
+    "timestamp": "2025:08:07:06:30",
+    "metaLux": 384,
+    "exposure": 33239,
+    "gain": 8,
+    "luxcategory": 1
+  },
+  {
+    "timestamp": "2025:08:07:06:45",
+    "metaLux": 476,
+    "exposure": 33239,
+    "gain": 8,
+    "luxcategory": 1
+  },
+  {
+    "timestamp": "2025:08:07:07:00",
+    "metaLux": 548,
+    "exposure": 33239,
+    "gain": 8,
+    "luxcategory": 1
+  },
+  {
+    "timestamp": "2025:08:07:07:15",
+    "metaLux": 593,
+    "exposure": 33239,
+    "gain": 8,
+    "luxcategory": 1
+  },
+  {
+    "timestamp": "2025:08:07:07:30",
+    "metaLux": 615,
+    "exposure": 33239,
+    "gain": 8,
+    "luxcategory": 1
+  },
+  {
+    "timestamp": "2025:08:07:07:44",
+    "metaLux": 2316,
+    "exposure": 9967,
+    "gain": 1,
+    "luxcategory": 2
+  },
+  {
+    "timestamp": "2025:08:07:07:45",
+    "metaLux": 2327,
+    "exposure": 9967,
+    "gain": 1,
+    "luxcategory": 2
+  },
+  {
+    "timestamp": "2025:08:07:08:00",
+    "metaLux": 2564,
+    "exposure": 9967,
+    "gain": 1,
+    "luxcategory": 2
+  }
+]

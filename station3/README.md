@@ -4,7 +4,7 @@
 
 Anfang 2024 begann ich, meine Software aus dem [station120423.img](https://uni-muenster.sciebo.de/s/ZZWtPM9miId9ctM)  des [ ![Github](github.svg)Birdiary Projektes](https://github.com/Birdiary/station) zu entwickeln. Das Futterhäuschen in Landshut/Niederbayern mit der "Raspicam v3" an einem Raspberry 4B hat eine Sitzstange als Trigger zur Aufnahme von Vogelvideos, die dann an die  [<img src="favicon.svg" alt="birdiary" style="zoom:67%;" />Birdiary Plattform](https://wiediversistmeingarten.org/view/station/87bab185-7630-461c-85e6-c04cf5bab180) hochgeladen werden.
 
-Die Releases meines Raspbian Images stelle ich in die [Cloud](https://drive.google.com/drive/folders/11WduKyMzzzmW61bC7l0BlDjjx6e_ImHC?usp=sharing) . Sie können nach [Anleitung](docs/buildimg/buildimg.md) installiert werden. Öfter stehen dort auch erneuerte Dateien als sogenannte Patches. Mein Code ist natürlich auch auf [![Github](github.svg)Github](https://github.com/herbbetz/betzBirdiary), wo die Dateien ebenfalls aktueller sind als im letzten Image Release. Auch [Github Pages](https://herbbetz.github.io/betzBirdiary/mybirds/mybirds.html) ist dort aktiviert mit einer Auswahl von [Vogelvideos](https://herbbetz.github.io/betzBirdiary/keep/gallery.html).
+Die Releases meines Raspbian Images stelle ich in die [Cloud](https://drive.google.com/drive/folders/11WduKyMzzzmW61bC7l0BlDjjx6e_ImHC?usp=sharing) . Sie können nach [Anleitung](docs/buildimg/buildimg.md) installiert werden. Öfter stehen dort auch erneuerte Dateien als sogenannte Patches. Mein Code ist natürlich auch auf [![Github](github.svg)Github](https://github.com/herbbetz/betzBirdiary), wo die Dateien ebenfalls aktueller sind als im letzten Image Release. Auch [Github Pages](https://herbbetz.github.io/betzBirdiary/station3/mybirds/mybirds.html) ist dort aktiviert mit einer Auswahl von [Vogelvideos](https://herbbetz.github.io/betzBirdiary/station3/keep/gallery.html).
 
 Die Dateien im Hauptverzeichnis sind gedacht für das Verzeichnis /home/pi/station3 von einem Raspian OS light (no desktop) auf SD-Karte. Dabei sollte das Verzeichnis station3/ramdisk wegen häufiger Schreibzugriffe als Ramdisk (50MB) gemountet sein. Die einzelnen Dateien meines Hauptverzeichnisses 'station3' sind [hier](filelist.md) erklärt.
 
@@ -38,4 +38,4 @@ A handy friend lovingly designed and later restored the [wooden house](docs/bird
 
 The Birdiary platform also has an API that enables [statistical analysis](statist/doc/statsREADME.md) of the uploaded bird files.
 
-Landshut, June 2025, herber7be7z@gmail.com
+Landshut, August 2025, herber7be7z@gmail.com

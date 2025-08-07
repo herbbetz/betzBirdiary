@@ -1,0 +1,10 @@
+# end of .bashrc:
+### betzBirdiary:
+alias px='ps aux|grep -e "^pi" -e "gpio"' # not only ^pi but also pigpiod/lgpiod is wanted
+# Change to station directory on login
+loginsetup="$HOME/station3/bashrc.sh"
+if [ -f "$loginsetup" ]; then
+    source "$loginsetup" # bash $loginsetup would execute in a subshell, we need execute it in login shell
+else
+    echo "not found: $loginsetup" >&2
+fi

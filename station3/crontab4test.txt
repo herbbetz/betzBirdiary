@@ -1,0 +1,16 @@
+# ----pi crontab on 15thJune2025:
+# this is for testing purposes, where 'crontab crontab4test.txt' switches off all crontab triggers
+APPDIR=/home/pi/station3
+PYTHON=$APPDIR/birdvenv/bin/python3
+# use /etc/systemd/system/bird-startup.service with systemctl instead
+# @reboot bash $APPDIR/startup.sh >> /home/pi/station3/logs/cron_startup.log 2>&1
+#
+# min hour dayOfMonth month dayOfWeek(0=sunday)   command
+# Calling with bash does not need file permissions like 'chmod +x *.sh'
+# run on even hours like 0:00, 2:00, 4:00
+# 0 */2 * * * bash $APPDIR/statist/getStats.sh >> $APP_DIR/logs/statist.log 2>&1
+# read sys params every 15 min:
+# */15 * * * * bash $APPDIR/sysMon.sh >> $APP_DIR/logs/sysmon.log 2>&1
+# upload environment data every 15 min:
+# */15 * * * * $PYTHON $APPDIR/dhtBird.py
+# ----

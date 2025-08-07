@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Picam Settings</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<style>
+  body {
+    font-size: 16px;
+    margin: 20px;
+  }
+  table {
+    border-collapse: collapse;
+    width: 50%;
+    max-width: 600px;
+  }
+  th, td {
+    border: 1px solid #ddd;
+    padding: 8px 12px;
+  }
+  th {
+    background-color: #f4f4f4;
+    text-align: left;
+  }
+</style>
+</head>
+<body>
+
+<h2>Settings</h2>
+These are the current settings loaded from <code>config.json</code>.<br>
+To change a setting, log in to the station and edit <code>config.json</code>.
+<table id="configTable">
+  <thead>
+    <tr>
+      <th></th>
+      <th>setting</th>
+    </tr>
+  </thead>
+  <tbody>
+    <!-- rows will be inserted here by JavaScript -->
+  </tbody>
+</table>
+
+<script>
+  // Load config.json and display keys and values in the table
+  fetch('config.json')
+    .then(response => response.json())
+    .then(data => {
+      const tbody = document.querySelector('#configTable tbody');
+      for (const [key, value] of Object.entries(data)) {
+        const tr = document.createElement('tr');
+
+        const tdKey = document.createElement('td');
+        tdKey.textContent = key;
+        tr.appendChild(tdKey);
+
+        const tdValue = document.createElement('td');
+        // Convert arrays/objects to JSON string, else use value directly
+        tdValue.textContent = (typeof value === 'object') ? JSON.stringify(value) : value;
+        tr.appendChild(tdValue);
+
+        tbody.appendChild(tr);
+      }
+    })
+    .catch(err => {
+      const tbody = document.querySelector('#configTable tbody');
+      tbody.innerHTML = `<tr><td colspan="2">Error loading config.json: ${err}</td></tr>`;
+    });
+</script>
+
+</body>
+</html>

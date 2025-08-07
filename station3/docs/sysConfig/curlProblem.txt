@@ -1,0 +1,44 @@
+curl Problem, ChatGPT 23.6.25
+startet nicht mit boot, sh. logs/curl.log und mdroid.sh
+----
+1. Edit the systemd service unit
+
+sudo systemctl edit bird-startup.service
+This will open a drop-in override file (safer than editing the original). To fully override the [Service] section, use:
+
+[Service]
+ExecStart=
+ExecStart=/usr/bin/curl -w "@/etc/curl-format.txt" -o /dev/null -s http://example.com
+Note:
+
+The first ExecStart= clears the existing command (this is required).
+
+The second line adds your custom curl command.
+
+Put your curl format file at /etc/curl-format.txt (more on that below).
+
+📄 2. Create the curl-format.txt file
+Create the file with your desired timing output format:
+
+sudo tee /etc/curl-format.txt > /dev/null <<'EOF'
+time_namelookup:  %{time_namelookup}\n
+time_connect:  %{time_connect}\n
+time_appconnect:  %{time_appconnect}\n
+time_starttransfer:  %{time_starttransfer}\n
+-------------------------\n
+EOF
+Make sure it’s readable:
+
+sudo chmod 644 /etc/curl-format.txt
+✅ 3. Reload and restart the service
+sudo systemctl daemon-reexec
+sudo systemctl daemon-reload
+sudo systemctl restart bird-startup.service
+📋 4. View logs to see the output
+Use journalctl to view the logs from your service:
+
+journalctl -u bird-startup.service
+This should now include the detailed timing output from curl.
+
+Let me know if you'd like to keep both the original command and the diagnostic curl in the service — that can be done with a wrapper script.
+
