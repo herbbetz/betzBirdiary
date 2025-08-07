@@ -1,0 +1,14 @@
+title: "betzBirdiary Blog"
+description: "betzBirdiary for uploading bird videos to https://www.wiediversistmeingarten.org/"
+theme: minima
+baseurl: "/betzBirdiary" # Set to "/repository-name" if using project site (not user/organization site)
+url: "https://herbbetz.github.io/betzBirdiary/" # Set to your GitHub Pages URL if you want absolute URLs
+plugins:
+  - jekyll-feed
+
+# Optional: Social links (uncomment and edit)
+#twitter_username: your_twitter
+github_username:  herbbetz
+
+# Build settings
+markdown: kramdown
