@@ -1,8 +1,0 @@
-# interfaces(5) file used by ifup(8) and ifdown(8)
-# Include files from /etc/network/interfaces.d:
-source /etc/network/interfaces.d/*
-# wireless-power off wirkt hier nicht -> iwconfig wlan0 power off in /etc/rc.local
-iface wlan0 inet dhcp
-wireless-power off
-iface wlan1 inet dhcp
-wireless-power off
