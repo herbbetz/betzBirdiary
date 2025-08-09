@@ -13,3 +13,7 @@ plugins:
 github_username:  herbbetz
 
 markdown: kramdown
+collections:
+  posts_folder:
+    output: true
+    permalink: /:year/:month/:day/:slug/
