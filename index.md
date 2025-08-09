@@ -14,5 +14,5 @@ Besides the manuals this is intended for more easy reading about this project.
 
 **Blog Posts**
 
-- [Bookworm Bird](/betzbirdiary/posts/2025-08-09-2bookworm/)
+- [Bookworm Bird](/betzBirdiary/posts/2025-08-09-2bookworm/)
 - [bworm rel]({{ "/posts/2025-08-09-2bookworm/" | relative_url }})
