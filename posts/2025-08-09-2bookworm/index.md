@@ -1,8 +1,8 @@
 ---
-layout: default
+layout: post
 title: "Umbau von betzBirdiary für bookworm"
 date: 2025-08-09
-permalink: /posts/2bookworm/
+slug: 2bookworm
 ---
 
 <img src="webIFrec8-25.jpg" alt="webGUI" style="zoom: 67%;" /><img src="mainFoBird.svg" alt="mainFoBird" style="zoom: 67%;" />

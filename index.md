@@ -14,11 +14,10 @@ Besides the manuals this is intended for more easy reading about this project.
 
 **Blog Posts**
 
-{% assign all_posts = site.posts_folder | sort: "date" | reverse %}
 <ul>
-  {% for post in all_posts %}
-    <li>
-      <a href="{{ post.url | relative_url }}">{{ post.title }}</a>
-    </li>
-  {% endfor %}
+{% assign posts_pages = site.pages | where_exp: "page", "page.url contains '/posts/'" %}
+{% assign sorted_posts = posts_pages | sort: "date" | reverse %}
+{% for post in sorted_posts %}
+  <li><a href="{{ post.url }}">{{ post.title }}</a> — {{ post.date | date: "%Y-%m-%d" }}</li>
+{% endfor %}
 </ul>
