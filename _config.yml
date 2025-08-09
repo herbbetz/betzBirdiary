@@ -17,3 +17,4 @@ collections:
   posts_folder:
     output: true
     permalink: /:year/:month/:day/:slug/
+    static_files: true
