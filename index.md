@@ -18,7 +18,7 @@ Besides the manuals this is intended for more easy reading about this project.
 <ul>
   {% for post in all_posts %}
     <li>
-      <a href="{{ post.url }}">{{ post.title }}</a>
+      <a href="{{ site.baseurl }}{{ post.url }}">{{ post.title }}</a>
     </li>
   {% endfor %}
 </ul>
