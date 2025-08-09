@@ -13,10 +13,11 @@ Besides the manuals this is intended for more easy reading about this project.
 *betzBirdiary* is a software clon for *raspberry/ bookworm* to upload bird videos to the [birdiary platform](https://www.wiediversistmeingarten.org/).
 
 **Blog Posts**
-<!--
+{% comment %}
 - [Bookworm Bird](/betzBirdiary/posts/2025-08-09-2bookworm/)
 - [betzBirdiary für bookworm (2025-08-09)]({{ "/posts/2025-08-09-2bookworm/" | relative_url }})
--->
+- html comments are displayed by jekyll !??
+{% endcomment %}
 <ul>
 {% assign posts_pages = site.pages | where_exp: "page", "page.url contains '/posts/'" %}
 {% assign sorted_posts = posts_pages | sort: "date" | reverse %}
