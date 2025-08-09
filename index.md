@@ -1,6 +1,6 @@
 ---
 layout: home
-title: "betzBirdiary blog"
+title: "Welcome"
 ---
 [About]({{ "/about" | relative_url }})
 
@@ -16,7 +16,7 @@ Besides the manuals this is intended for more easy reading about this project.
 {% comment %}
 - [Bookworm Bird](/betzBirdiary/posts/2025-08-09-2bookworm/)
 - [betzBirdiary für bookworm (2025-08-09)]({{ "/posts/2025-08-09-2bookworm/" | relative_url }})
-- html comments are displayed by jekyll !??
+- html comments are displayed by jekyll, because converted to '&lt;!–'
 {% endcomment %}
 <ul>
 {% assign posts_pages = site.pages | where_exp: "page", "page.url contains '/posts/'" %}
