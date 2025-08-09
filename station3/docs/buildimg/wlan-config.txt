@@ -1,0 +1,45 @@
+sudo nmcli connection modify bird-static210 connection.autoconnect yes      will remove autoconnect=true from bird-static210.connection, as this is default
+        bird-static210 is the id=bird-static210, not the files name
+sudo nmcli connection modify bird-ap-dhcp connection.autoconnect no         will insert autoconnect=false into bird-ap-dhcp.nmconnection
+
+
+new connection:
+nmcli connection add type wifi ifname wlan0 con-name test ssid MySSID
+
+remove connection:
+    die test.nmconnection zu löschen reicht nicht!
+    nmcli connection delete test
+
+clone connection:
+sudo nmcli connection clone bird-static210 test
+
+
+----
+sudo nmcli connection modify test 802-11-wireless.ssid "NewSSID"
+sudo nmcli connection modify test 802-11-wireless-security.psk "NewPassword123" funktioniert meist nicht, will PW Hash nicht ändert
+sudo nmcli connection modify test ipv4.method manual \
+    ipv4.addresses "192.168.1.50/24" \
+    ipv4.gateway "192.168.1.1"
+sudo nmcli connection modify test ipv4.dns "8.8.8.8 1.1.1.1"
+
+
+----all the above in one go
+sudo nmcli connection modify test \
+    802-11-wireless.ssid "NewSSID" \
+    802-11-wireless-security.key-mgmt wpa-psk \
+    802-11-wireless-security.psk "NewPassword123" \
+    ipv4.method manual \
+    ipv4.addresses "192.168.1.50/24" \
+    ipv4.gateway "192.168.1.1" \
+    ipv4.dns "8.8.8.8 1.1.1.1"
+
+
+----
+
+
+apply without reboot, but this will drop the ssh session!:
+sudo nmcli connection down test
+sudo nmcli connection up test
+
+
+prevent wlan0 sleeping mode: 'sudo nmcli connection modify static210 802-11-wireless.powersave 2' oder in '/etc/NetworkManager/conf.d/disable-powersave.conf', verifiziere mit 'iw wlan0 get power_save'

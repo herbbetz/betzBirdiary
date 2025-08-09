@@ -259,7 +259,7 @@ def cleanAndExit(picam, child):
         ms.log(f"{sys.argv[0]} exiting {datetime.now()}")
         # if picam.running -> no .running or similar attribute
         try:
-            picam.close()
+            picam.close() # freezes camsettings from the night before?
         except Exception:
             pass
         if child.is_alive():

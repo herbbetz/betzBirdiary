@@ -18,5 +18,5 @@ PYTHON=/home/pi/station3/birdvenv/bin/python3
 # shut down on sunset:
 */16 * * * * $PYTHON $APPDIR/sunset2.py >> $APPDIR/logs/dht_sun.log 2>&1
 # shut down station at 18:54 daily before disconnecting mains at 19:00 :
-54 21 * * * bash $APPDIR/tasmotaDown.sh eveningDown >> /home/pi/station2/logs/down.log 2>&1
+54 21 * * * bash $APPDIR/tasmotaDown.sh eveningDown >> $APPDIR/logs/down.log 2>&1
 # ----
