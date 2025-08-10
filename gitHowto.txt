@@ -1,0 +1,15 @@
+git config --global user.email "herbertbetz@csi.com"
+git config --global user.name "herbbetz"
+git config --global core.autocrlf false
+git config --global --add safe.directory D:/birdiary/githubMirror/betzBirdiary      global alle win11 user
+
+Download into \githubMirror:
+    git clone https://github.com/herbbetz/betzBirdiary.git
+        for https://github.com/herbbetz/betzBirdiary
+    cd betzBirdiary
+        to make changes
+
+Upload after changes from inside \githubMirror\betzBirdiary:
+    git add -A
+    git commit -m "my update 2025-08-07-11-00"
+    git push
