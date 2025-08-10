@@ -28,6 +28,12 @@ Funktioniert diese online Konfig nicht, ist da noch die Möglichkeit, die SD-Kar
 
 In */home/pi/station3/config.json* muss man noch seine *boxId* (eigene Kennung für die birdiary Internet Plattform) eintragen und rebooten. Die anderen Parametern von *config.json* sind erklärt in *configjson.md*.
 
+```
+Ein Tipp: Laptop in Nähe des Vogelhäuschens bringen, mit dessen WLAN-Hotspot verbinden, eine Textdatei mit den Schlüsseln (Heim-WLAN-PW, birdiary-boxId) vorbereiten und in der Sitzung *ssh pi@192.168.4.1* mit copy-paste in *nano config.json*, dann in *sudo ./wlan-dialog.sh* eintragen. 
+```
+
+
+
 **Ausblick**
 
 *bookworm*  (Debian 12) hat noch weitere Neuerungen zum Standard gemacht wie boot Management mit *.service* Dateien oder das *Python Venv*. Debian 13 "Trixie" lauert auch schon. Die Portierung auf das neueste Raspbian bringt etliche Umstellungen, aber auch bessere Unterstützung für die neuesten Versionen von *picamera2*. Vielleicht möchte jemand den Desktop nachinstallieren oder MQTT oder Docker? Wer mir seine Erfahrungen mit *betzBirdiary* berichtet, den kann ich auch schneller über Fixes informieren. Meine Mail lautet *herber7be7z@gmail.com*. Happy Birding!
