@@ -29,7 +29,10 @@ Funktioniert diese online Konfig nicht, ist da noch die Möglichkeit, die SD-Kar
 In */home/pi/station3/config.json* muss man noch seine *boxId* (eigene Kennung für die birdiary Internet Plattform) eintragen und rebooten. Die anderen Parametern von *config.json* sind erklärt in *configjson.md*.
 
 ```
-Ein Tipp: Laptop in Nähe des Vogelhäuschens bringen, mit dessen WLAN-Hotspot verbinden, eine Textdatei mit den Schlüsseln (Heim-WLAN-PW, birdiary-boxId) vorbereiten und in der Sitzung *ssh pi@192.168.4.1* mit copy-paste in *nano config.json*, dann in *sudo ./wlan-dialog.sh* eintragen. 
+Ein Tipp: Laptop in Nähe des Vogelhäuschens bringen, mit dessen WLAN-Hotspot verbinden,
+eine Textdatei mit den Schlüsseln (Heim-WLAN-PW, birdiary-boxId) vorbereiten und
+in der Sitzung *ssh pi@192.168.4.1* mit copy-paste in *nano config.json*,
+dann in *sudo ./wlan-dialog.sh* eintragen. 
 ```
 
 
