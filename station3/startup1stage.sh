@@ -22,17 +22,13 @@ fi
 if [ -d "$VENVDIR" ]; then
     source "$VENVDIR/bin/activate"
 fi
-# starting with & -> don't wait for programm exit, but run parallel (in background)
-# some unknown problem makes start with 'systemctl enable pigpiod' fail: pigpiod bind to port 8888 failed -> how get it more stable?
-# if ! pgrep pigpiod > /dev/null; then
-#   sudo pigpiod
-# fi
+
 # FIFO programming in bash simpler than in python -> https://www.linuxjournal.com/content/using-named-pipes-fifos-bash
 if [[ ! -p "$FIFO" ]]; then
     mkfifo "$FIFO"
     # echo "created: "$fifo
 fi
-# waits for internet, even /etc/systemd/system/bird-startup.service does not guarantee for this:
+# waits for internet, even /etc/systemd/system/bird-startup.service does not guarantee for this, despite 'After=network-online.target, Wants=network-online.target'
 # Wait for DNS to resolve webhook target
 dnshost=trigger.macrodroid.com # or cloudfare.com (1.1.1.1)
 dns_ok=false
@@ -45,10 +41,17 @@ for i in {1..30}; do
     log "Waiting for DNS ($i)"
     sleep 2
 done
+# CON_NAME="bird-static210"
+# OLD_CON="bird-ap-dhcp"
 if [ "$dns_ok" = false ]; then
-    log "DNS lookup failed after 30 tries — continuing anyway"
+    log "DNS lookup failed after 30 tries — hope continuing as hotspot" # hotspot activated by NetworkManagers system-connection priority
+    # sudo nmcli connection modify "$CON_NAME" connection.autoconnect no
+    # sudo nmcli connection modify "$OLD_CON" connection.autoconnect yes
+    # sudo nmcli connection reload
+    ## setsid or nohup ->also workes after ssh session dropped, connection up involves previous_conn down:
+    # setsid bash -c "sleep 5 && sudo nmcli connection up '$OLD_CON'" > /dev/null 2>&1 &
 fi
 # from now on start programs
-setsid bash "$APPDIR/mdroid.sh" stationLoaded  & # mdroid.sh writes to curl.log
+setsid bash "$APPDIR/mdroid.sh" stationLoaded & # mdroid.sh writes to curl.log
 # or start stage 2 with all scripts:
 setsid bash "$APPDIR/startup2stage.sh" >> "$LOGFILE" 2>&1

@@ -1,0 +1,6 @@
+con_name: bird-static210
+old_con: bird-ap-dhcp
+ssid: MyNetworkName
+psk: mySecretPass
+ipaddr: 192.168.178.210
+gateway: 192.168.178.1

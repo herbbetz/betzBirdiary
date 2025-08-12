@@ -8,9 +8,11 @@ Das Image der Vogelhaussoftware enthält das ganze Raspbian OS mit allen Softwar
 
 - In 'bookworm' ist das betzBirdiary als WLAN Hotspot (access point) konfiguriert mit IP '192.168.4.1' und dem Passwort 'bird24root'. Der Zugang entsteht nach WLAN-Verbindung mit 'bird-ap-dhcp'. 'ping 192.168.4.1' zeigt den Erfolg. Einloggen mit 'ssh pi@192.168.4.1'.
 
-- Der folgende Prozess wird automatisch durch das Skript mit dem Kommando **sudo ./wlan-dialog.sh** erledigt:
+- Der folgende Prozess wird automatisch durch das Skript mit dem Kommando **sudo ./wlan-dialog.sh** (copy-paste aus vorbereiteter Textdatei) oder **sudo ./wlan-yaml.sh** (nach Eintragen der eigenen WLAN Parameter in **wlan.yml**) erledigt:
 
-  In '/etc/NetworkManager/system-connections/bird-ap-dhcp.nmconnection' das 'autoconnect=false' setzen. In 'bird-static210.nmconnection' dagegen die Werte des eigenen Heimnetzwerkes eintragen (passende IP4, ssid=WLANname, psk=Passwort) und 'autoconnect=true' setzen. Alternativ kann auch die SD-Karte an einem Linux-Laptop gemountet werden, um als user 'root' in '.../rootfs/etc/NetworkManager/system-connections/bird-ap-dhcp.nmconnection' diese Werte einzutragen. In einem .nmconnection für 'wlan0' muss 'autoconnect=true', in den anderen 'autoconnect=false' eingetragen sein. Auch möglich: *sudo nmcli connection modify bird-ap-dhcp connection.autoconnect no*  bzw. *yes* für *bird-static210* nach Eintragen der WLAN-Schlüssel.
+  In 'bird-static210.nmconnection' die Werte des eigenen Heimnetzwerkes eintragen (statische IP4, ssid=WLANname, psk=Passwort) und 'autoconnect=true'  und 'autoconnect-priority=100' setzen. Dabei verschwindet ein 'autoconnect=false' Parameter, weil fehlendes 'autoconnect' den Defaultwert 'true' bedeutet. Da auch bird-ap-dhcp.nmconnection kein 'autoconnect' also 'true' und keine 'autoconnect-priority' also default '0' beinhaltet, dient es für 'After=network-online.target, Wants=network-online.target' in 'bird-startup.service' als 'wifi failover priority fallback'. Der Hotspot 'bird-ap-dhcp' springt ein, wenn das WLAN von 'bird-static210' nicht zustande kommt. Ohne dieses failover hängt der Bootprocess an dem strikten 'After=network-online.target' in 'bird-startup.service' . Der Hotspot 'bird-ap-dhcp' hat keinen Internetzugang, weshalb DNS-Suche in 'startup1stage.sh' oder 'birdiary upload' nicht erfolgreich sind (selbst bei gültigen Werten in 'config.json'). 
+
+  Alternativ kann auch die SD-Karte an einem Linux-Laptop gemountet werden, um als user 'root' in '.../rootfs/etc/NetworkManager/system-connections/bird-static210.nmconnection' diese Werte über ein 'nmcli' Kommando oder manuell einzutragen.
 
 - Danach den Raspberry mit der SD-Karte hochfahren und **Login mit pi/bird24** (su mit 'bird24root').
 

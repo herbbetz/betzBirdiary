@@ -2,9 +2,9 @@
 id=bird-static210
 uuid=7e59e478-ffcb-4e03-84d5-0bccb78f727f
 type=wifi
-autoconnect=false
+autoconnect-priority=100
 interface-name=wlan0
-timestamp=1754639245
+timestamp=1754651512
 
 [wifi]
 mode=infrastructure

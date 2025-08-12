@@ -26,9 +26,9 @@ sunset = observer.next_setting(sun) # will always be in the future of now, there
 sunsettime = ephem.localtime(sunset)
 todaySunsetMinutes = sunsettime.hour * 60 + sunsettime.minute
 # print("Sunset:", sunsettime)
-if (todaySunsetMinutes < todayminutes):
+if (todaySunsetMinutes - 30 < todayminutes): # 30 minutes before sunset
     # print("shutdown from sunset")
-    cmd = f"{birdpath['appdir']}/tasmotaDown.sh sunsetDown"
+    cmd = f"{birdpath['appdir']}/tasmotaDown.sh sunset-30Down"
     subprocess.call(cmd, shell=True)
 # else:
 #     print("next sunset awaited")
