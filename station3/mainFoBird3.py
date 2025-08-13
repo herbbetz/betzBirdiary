@@ -132,12 +132,12 @@ def luxProtocol(lData):
                 ms.log(f"Error decoding JSON from {camdatafile}")
                 pass
 
-    data.append(lData)
-    if len(data) > maxdata:
-        data = data[-maxdata:]
+        data.append(lData)
+        if len(data) > maxdata:
+            data = data[-maxdata:]
 
-    with open(camdatafile, "w") as outfile:
-        json.dump(data, outfile, indent=2)
+        with open(camdatafile, "w") as outfile:
+            json.dump(data, outfile, indent=2)
 
 def send_realtime_movement(files):
     uploadFail = True # in case of upload failure save locally

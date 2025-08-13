@@ -42,6 +42,10 @@ done
 # Simple IPv4 validation function
 valid_ip() {
     local ip=$1
+    # Strip leading/trailing whitespace
+    ip="${ip#"${ip%%[![:space:]]*}"}"  # trim leading whitespace
+    ip="${ip%"${ip##*[![:space:]]}"}"  # trim trailing whitespace
+
     local IFS=.
     local -a octets=($ip) # leave $ip unquoted, else octets will not be an array of 4 elems derived from ip split at the dots
     [[ ${#octets[@]} -eq 4 ]] || return 1
@@ -98,7 +102,8 @@ sleep 3 # give time for reload
 echo
 echo "Current configuration for '$CON_NAME':"
 echo "----------------------------------------"
-nmcli -g all connection show "$CON_NAME"
+# nmcli -g all connection show "$CON_NAME" # this or 'nmcli connection show "$CON_NAME"' will show to many settings
+cat "/etc/NetworkManager/system-connections/$CON_NAME.nmconnection"
 echo "----------------------------------------"
 
 echo

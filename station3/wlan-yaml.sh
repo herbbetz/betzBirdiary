@@ -32,7 +32,7 @@ fi
 # Function to read key:value from YAML without yq, as long as simplest flat YAML
 get_yaml_value() {
     local key=$1
-    grep -E "^${key}:" "$WLAN_YML" | sed -E "s/^${key}:[[:space:]]*//" | tr -d '"'
+    grep -E "^${key}:" "$WLAN_YML" | sed -E "s/^${key}:[[:space:]]*//" | tr -d '"' | tr -d '\r' # Remove quotes and carriage returns from win11
 }
 
 CON_NAME=$(get_yaml_value "con_name")
@@ -45,6 +45,11 @@ GATEWAY=$(get_yaml_value "gateway")
 # Simple IPv4 validation function
 valid_ip() {
     local ip=$1
+    # Strip leading/trailing whitespace and carriage returns
+    # ip="${ip//$'\r'/}"           # remove carriage returns is already done by get_yaml_value()
+    ip="${ip#"${ip%%[![:space:]]*}"}"  # trim leading whitespace
+    ip="${ip%"${ip##*[![:space:]]}"}"  # trim trailing whitespace
+
     local IFS=.
     local -a octets=($ip)
     [[ ${#octets[@]} -eq 4 ]] || return 1
@@ -102,7 +107,8 @@ sleep 3
 echo
 echo "Current configuration for '$CON_NAME':"
 echo "----------------------------------------"
-nmcli -g all connection show "$CON_NAME"
+# nmcli -g all connection show "$CON_NAME" # this or 'nmcli connection show "$CON_NAME"' will show to many settings
+cat "/etc/NetworkManager/system-connections/$CON_NAME.nmconnection"
 echo "----------------------------------------"
 
 echo
