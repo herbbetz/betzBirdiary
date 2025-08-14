@@ -1,5 +1,6 @@
-# This script generates a contents.md file that lists all markdown files. It uses an array called 'keywords:[love, hate, ennui]', that is hidden for github markdown inside html comments <!--XX-->.
-# github.com/copilot on 2025-06-19
+# The following script scans recursively all .md files for their keywords[] on bookworm.
+# This script generates a contents.md file that lists all markdown files. When following symlinks to the parent dir it avoids loops.
+# It uses an array called 'keywords:[love, hate, ennui]', that is hidden for github markdown inside html comments <!--XX-->.
 import os
 import re
 from collections import defaultdict
@@ -7,7 +8,19 @@ from collections import defaultdict
 def find_markdown_files(root='.'):
     """Recursively find all .md files under root."""
     md_files = []
-    for dirpath, _, filenames in os.walk(root):
+    seen_dirs = set()  # Track visited directories by inode to avoid cycles
+
+    # Enable following symlinked directories
+    for dirpath, _, filenames in os.walk(root, followlinks=True):
+        # Avoid revisiting the same directory via different symlinks
+        try:
+            stat_info = os.stat(dirpath)
+        except FileNotFoundError:
+            continue
+        if stat_info.st_ino in seen_dirs:
+            continue
+        seen_dirs.add(stat_info.st_ino)
+
         for fname in filenames:
             if fname.lower().endswith('.md') and fname != 'contents.md':
                 md_files.append(os.path.relpath(os.path.join(dirpath, fname), root))

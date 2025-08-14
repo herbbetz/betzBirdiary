@@ -24,8 +24,8 @@ ExecStart=/usr/bin/bash /home/pi/station3/startup.sh
 StandardOutput=append:/home/pi/station3/logs/startup.service.log
 StandardError=append:/home/pi/station3/logs/startup.service.err
 
-Environment=PATH=/home/pi/station3/birdvenv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-Environment=VIRTUAL_ENV=/home/pi/station3/birdvenv
+Environment=PATH=/home/pi/birdvenv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+Environment=VIRTUAL_ENV=/home/pi/birdvenv
 Environment=HOME=/home/pi
 Environment=PYTHONUNBUFFERED=1
 

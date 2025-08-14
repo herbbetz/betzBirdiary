@@ -1,7 +1,7 @@
 #!/bin/bash
 # softlink this to startup.sh for testing and load all scripts manually:
 APPDIR=/home/pi/station3
-VENVDIR=/home/pi/station3/birdvenv
+VENVDIR=/home/pi/birdvenv # put outside /station3 and chown root:root to avoid deletion
 FIFO=/home/pi/station3/ramdisk/birdpipe
 LOGFILE="/home/pi/station3/logs/startup.log"
 
@@ -21,6 +21,12 @@ fi
 # Python venv:
 if [ -d "$VENVDIR" ]; then
     source "$VENVDIR/bin/activate"
+else
+    log "$VENVDIR not found - exiting"
+    exit 1
+    # python3 -m venv birdvenv --system-site-packages
+    # source "birdvenv/bin/activate"
+    # pip3 install flask markdown matplotlib
 fi
 
 # FIFO programming in bash simpler than in python -> https://www.linuxjournal.com/content/using-named-pipes-fifos-bash
