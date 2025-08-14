@@ -22,20 +22,11 @@ Die Aufzeichnung der Lichtmessungen über die Kamera (Raspicam v3) findet konsta
 Das neue *bookworm* Image von *betzBirdiary* findet sich in der [Cloud](https://drive.google.com/drive/folders/11WduKyMzzzmW61bC7l0BlDjjx6e_ImHC?usp=sharing) und wird nach dem Download auf die SD-Karte geflasht, z.B. mit *balena Etcher*. Nach dem Hochfahren im Raspberry 4 oder 5 baut es zunächst einen WLAN-Hotspot auf namens *bird-ap210*, in den man sich per Laptop einloggt mit dem WLAN-Passwort *bird24root*. Der Hotspot hat die IP *192.168.4.1*. Über *ssh pi@192.168.4.1* ist die Konsole erreichbar (Login-Passwort: *bird24*).
 
 Eine kleine Herausforderung ist die Umkonfiguration vom Hotspot auf das Heim-WLAN.
-*nmtui* ist das Kommandozeilen-GUI des *NetworkManager*s von *bookworm*.  Es sind zwei Konfigurationen hinterlegt, das aktive *bird-ap-dhcp* für den Hotspot und das *bird-static210*. Um letzteres mit den eigenen WLAN-Daten zu versehen und dann zu aktivieren, empfehle ich mein Skript mit *sudo ./wlan-dialog.sh* aufzurufen. Mit *nmtui* hatte ich da Probleme. Nach *sudo reboot* sollte der Zugang im Heimnetz mit sowas wie *ping 192.168.178.210* oder *ssh pi@192.168.178.210* oder im Browser auf *http://192.168.178.210:8080* funktionieren bzw. mit der selbst eingetragenen *IP*.
+*nmtui* ist das Kommandozeilen-GUI des *NetworkManager*s von *bookworm*.  Ich habe zwei Konfigurationen hinterlegt, das aktive *bird-ap-dhcp* für den Hotspot und das *bird-static210*. Um letzteres mit den eigenen WLAN-Daten zu versehen und dann zu aktivieren, empfehle ich mein Skript mit *sudo ./wlan-yaml.sh wlan.yml* aufzurufen, nachdem dieses *wlan.yml* auf die eigenen Werte angepasst wurde. Umkonfigurieren mit *nmtui* machte mir Probleme. Nach *sudo reboot* sollte der Zugang im Heimnetz mit sowas wie *ping 192.168.178.210* oder *ssh pi@192.168.178.210* oder im Browser auf *http://192.168.178.210:8080* funktionieren bzw. mit der selbst eingetragenen *IP*.
 
-Funktioniert diese online Konfig nicht, ist da noch die Möglichkeit, die SD-Karte mit einem USB-Lesegerät an einen Ubuntu-Laptop zu stecken. Als Ubuntu *root*  kommt man dann auch ans *rootfs* (bei mir */media/herb/rootfs/etc/NetworkManager/system-connections*) und trägt in eine der beiden WLAN-Konfigurationen *autoconnect=true* ein, in die andere *autoconnect=false*.
+Funktioniert diese online Konfig nicht, ist da noch die Möglichkeit, die SD-Karte mit einem USB-Lesegerät an einen Ubuntu-Laptop zu stecken. Als Ubuntu *root*  kommt man dann auch ans *rootfs* (bei mir */media/herb/rootfs/etc/NetworkManager/system-connections*) und trägt in die *bird-static210* WLAN-Konfiguration *autoconnect-priority=100* ein, in die andere *autoconnect-priority=0*. Damit wird *bird-static210* bevorzugt und bei Scheitern auf das *bird-ap-dhcp* WLAN ausgewichen.
 
-In */home/pi/station3/config.json* muss man noch seine *boxId* (eigene Kennung für die birdiary Internet Plattform) eintragen und rebooten. Die anderen Parametern von *config.json* sind erklärt in *configjson.md*.
-
-```
-Ein Tipp: Laptop in Nähe des Vogelhäuschens bringen, mit dessen WLAN-Hotspot verbinden,
-eine Textdatei mit den Schlüsseln (Heim-WLAN-PW, birdiary-boxId) vorbereiten und
-in der Sitzung *ssh pi@192.168.4.1* mit copy-paste in *nano config.json*,
-dann in *sudo ./wlan-dialog.sh* eintragen. 
-```
-
-
+In */home/pi/station3/config.json* muss man noch seine *boxId* (eigene Kennung für die birdiary Internet Plattform) eintragen und rebooten. Die anderen Parametern von *config.json* sind erklärt in *configjson.md*. Wie oben bei *wlan.yml* kann man auch hier ein eigenes *config.yml* erstellen, das mit *config-yaml.sh config.yml* String-Werte in das *config.json* überträgt.
 
 **Ausblick**
 

@@ -40,16 +40,6 @@ def capture_img(picam, dest):
     os.replace(tmp_dest, dest)
     if testmode: ms.log(f"Captured still to {dest}")
 
-'''
-# only needed when using picam.stop_recorder(), which contains a picam.stop() and will therefore hang a following .capture_file() or .capture_metadata()! Use picam.stop_encoder() instead!
-def reset_camera(picam, camsetting, config):
-    start_ns = time.time_ns()
-    picam.stop()
-    picam.configure(config)
-    picam.start()
-    picam.set_controls(camsetting)
-    ms.log(f"reset_cam_time {(time.time_ns() - start_ns) // 1_000_000} ms")
-'''
 def get_brightness(picam, camsetting, now):
     # frame = picam.capture_array(name="main")
     # if testmode: ms.log(f"frame shape in brightness calc: {frame.shape}")
@@ -59,27 +49,6 @@ def get_brightness(picam, camsetting, now):
     metalux = round(metadata.get("Lux")) # metadata["Lux"], metadata.get("Lux", None)
     exposure = round(metadata.get("ExposureTime"))
     gain = round(metadata.get("AnalogueGain"))
-    # reset cam for extreme cases:
-    expoScore = gain * exposure
-    if expoScore < luxLimit[0] or expoScore > luxLimit[1]: # luxLimit = [1000,7000] in config.json
-        ms.log(f"resetting camera due to extreme exposure score {expoScore} at {now}")
-        picam.set_controls({'ExposureTime': 0, 'AnalogueGain': 1.5}) # 0 means "AeEnable resets exposure according to preselected gain", see https://github.com/raspberrypi/picamera2/issues/1305
-        time.sleep(0.5)
-    '''avg_brightness is dependant on the exposure/gain of the camsetting, so if it hits light_level thresholds (i.e. avg_brightness <40 or <80 or <150 or else),
-        it will alternate between two levels despite the same scene illumination.
-        Therefore make an independant scene_brightness (a lux estimate, that could be calibrated by a scale factor to an external lux meter)
-    scalefactor = 1e6
-    # read back camsetting from picam might be delayed:
-    # exposure = metadata.get("ExposureTime")
-    # gain = metadata.get("AnalogueGain")
-    exposure = camsetting["ExposureTime"]
-    gain = camsetting["AnalogueGain"]
-
-    if not exposure or not gain:
-        return  # Skip frame if metadata invalid and div by zero
-    sc_brightness = (avg_brightness * scalefactor) / (gain * exposure)
-    sc_brightness = round(sc_brightness)
-    # luxThreshold = [600, 3000, 6000] in config.json, lux thresholds for dark, dim, normal, bright'''
     luxdata = {
         "timestamp": f"{now.year:04d}:{now.month:02d}:{now.day:02d}:{now.hour:02d}:{now.minute:02d}",
         "metaLux": metalux,
@@ -88,37 +57,36 @@ def get_brightness(picam, camsetting, now):
     }
 
     if metalux < luxThreshold[0]: # luxThreshold is a list from config.json
-        light_level, luxcategory = "dark", 1
+        luxcategory = 1 # dark
     elif metalux < luxThreshold[1]:
-        light_level, luxcategory = "dim", 2
+        luxcategory = 2 # dim
     elif metalux < luxThreshold[2]:
-        light_level, luxcategory = "normal", 3
+        luxcategory = 3 # normal
     else:
-        light_level, luxcategory = "bright", 4
-    
-    luxdata["luxcategory"] = luxcategory
+        luxcategory = 4 # bright
+    # check for over-/under-expo:
+    # luxLimit = [1000,7000] in config.json
+    expoScore = gain * exposure
+    if expoScore < luxLimit[0]:
+        luxcategory = 5 # underexposed
+    elif expoScore > luxLimit[1]:
+        luxcategory = 6 # overexposed
 
+    luxdata["luxcategory"] = luxcategory
     # if light_level != set_brightness.last_light_level:
     ms.setLux(luxcategory)
     ms.setLuxRaw(f'{metalux} at {luxdata["timestamp"]}, gain {gain}/ expo {exposure}')
+    
     if now.minute % 15 == 0 or get_brightness.last_logged_minute == -1: # log every 15 minutes or at first call
         if now.minute != get_brightness.last_logged_minute:
             get_brightness.last_logged_minute = now.minute
             luxProtocol(luxdata)
-    '''
-    camsetting.update({
-        "ExposureTime": { "dark": 50000, "dim": 30000, "normal": 15000, "bright": 6000 }[light_level], # 100–1,000,000 µs (e.g., 50,000 µs = 1/20s)
-        "AnalogueGain": { "dark": 6.0, "dim": 3.0, "normal": 1.5, "bright": 1.0 }[light_level] # Set gain (e.g., 1.0 to 16.0 typical range)
-    })
-    picam.set_controls({
-        "ExposureTime": camsetting["ExposureTime"],
-        "AnalogueGain": camsetting["AnalogueGain"]
-    })
-    ms.log(f'changed when scene_bright={sc_brightness}/ avg_bright={avg_brightness}/ metaLux={metalux} to exposure:{camsetting["ExposureTime"]}/ gain:{camsetting["AnalogueGain"]}')        
-    set_brightness.last_light_level = light_level
-    '''
-# set_brightness.last_light_level = "normal" # static variable
-get_brightness.last_logged_minute = -1
+            if luxcategory > 4:
+                ms.log(f"resetting camera due to extreme exposure score {expoScore} at {now}")
+                picam.set_controls({'ExposureTime': 0, 'AnalogueGain': 1.5}) # 0 means "AeEnable resets exposure according to preselected gain", see https://github.com/raspberrypi/picamera2/issues/1305
+                time.sleep(0.5)
+
+get_brightness.last_logged_minute = -1 #static var
 
 def luxProtocol(lData):
     camdatafile = "camdata/camdata.json"
@@ -381,4 +349,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

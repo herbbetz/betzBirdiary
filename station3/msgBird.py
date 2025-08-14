@@ -138,7 +138,7 @@ def setClientActive(active):
     setmsgprop('clientactive', active)
 
 def setLux(luxcategory):
-    # lux is 4 (brigth) to 1 (dim), set by mainFoBird3.py
+    # lux is 6 (overexposed) to 1 (dark), set by mainFoBird3.py
     setmsgprop('lux', luxcategory)
 
 def setLuxRaw(lux):

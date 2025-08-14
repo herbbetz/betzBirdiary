@@ -8,8 +8,12 @@ fi
 
 set -e
 
-WLAN_YML="wlan.yml"
-
+# WLAN_YML="wlan.yml"
+if [[ $# -ne 1 ]]; then
+    echo "Usage: ${0##*/} <yaml_file>"
+    exit 1
+fi
+WLAN_YML="$1"
 if [ ! -f "$WLAN_YML" ]; then
     echo "YAML file '$WLAN_YML' not found."
     exit 1
@@ -23,11 +27,6 @@ fi
 #fi
 ## Read values from YAML
 #CON_NAME=$(yq '.con_name' "$WLAN_YML")
-#OLD_CON=$(yq '.old_con' "$WLAN_YML")
-#SSID=$(yq '.ssid' "$WLAN_YML")
-#PSK=$(yq '.psk' "$WLAN_YML")
-#IPADDR=$(yq '.ipaddr' "$WLAN_YML")
-#GATEWAY=$(yq '.gateway' "$WLAN_YML")
 
 # Function to read key:value from YAML without yq, as long as simplest flat YAML
 get_yaml_value() {
@@ -35,8 +34,8 @@ get_yaml_value() {
     grep -E "^${key}:" "$WLAN_YML" | sed -E "s/^${key}:[[:space:]]*//" | tr -d '"' | tr -d '\r' # Remove quotes and carriage returns from win11
 }
 
-CON_NAME=$(get_yaml_value "con_name")
-OLD_CON=$(get_yaml_value "old_con")
+CON_NAME="bird-static210"
+OLD_CON="bird-ap-dhcp"
 SSID=$(get_yaml_value "ssid")
 PSK=$(get_yaml_value "psk")
 IPADDR=$(get_yaml_value "ipaddr")

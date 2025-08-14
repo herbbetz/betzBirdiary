@@ -90,7 +90,9 @@
             sun: "sun.svg",
             cloudy: "cloudy.svg",
             cloud: "cloud.svg",
-            moon: "moon.svg"
+            moon: "moon.svg",
+            underexpo: "eye-closed.svg",
+            overexpo: "x-eyes.svg"
         };
 
         // Constants for data sources
@@ -246,7 +248,11 @@
                 // or setHTMLSafe(dom.stdbymsg, '&#127909;');
                 if (data['standby'] == 0) {dom.stdbyimg.src = "icons/" + icons['vidcam'];} else {dom.stdbyimg.src = "icons/" + icons['crossedcam'];}
 
-                if (data['lux'] == 4) {
+                if (data['lux'] == 6) {
+                    dom.luximg.src = "icons/" + icons['overexpo'];
+                } else if (data['lux'] == 5) {
+                    dom.luximg.src = "icons/" + icons['underexpo'];
+                } else if (data['lux'] == 4) {
                     dom.luximg.src = "icons/" + icons['sun'];
                 } else if (data['lux'] == 3) {
                     dom.luximg.src = "icons/" + icons['cloudy'];
