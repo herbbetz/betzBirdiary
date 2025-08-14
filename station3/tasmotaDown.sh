@@ -23,4 +23,5 @@ while [[ $CNT -lt 3 ]]; do
     fi
     CNT=$((CNT+1))
 done
+sudo sync
 sudo shutdown -h +1

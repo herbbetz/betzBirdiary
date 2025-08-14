@@ -68,9 +68,9 @@ def get_brightness(picam, camsetting, now):
     # luxLimit = [1000,7000] in config.json
     expoScore = gain * exposure
     if expoScore < luxLimit[0]:
-        luxcategory = 5 # underexposed
+        luxcategory = 6 # too dark
     elif expoScore > luxLimit[1]:
-        luxcategory = 6 # overexposed
+        luxcategory = 5 # too bright
 
     luxdata["luxcategory"] = luxcategory
     # if light_level != set_brightness.last_light_level:
