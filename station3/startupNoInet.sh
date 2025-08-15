@@ -1,7 +1,6 @@
 #!/bin/bash
 # softlink this to startup.sh for testing and load all scripts manually:
 APPDIR=/home/pi/station3
-VENVDIR=/home/pi/station3/birdvenv
 FIFO=/home/pi/station3/ramdisk/birdpipe
 LOGFILE="/home/pi/station3/logs/startup.log"
 
@@ -18,10 +17,7 @@ else
     log "exit $0: cd $APPDIR failed! Current directory: $(pwd)"
     exit 1
 fi
-# Python venv:
-if [ -d "$VENVDIR" ]; then
-    source "$VENVDIR/bin/activate"
-fi
+# Python venv: in bird-startup.service and bashrc.sh
 
 # FIFO programming in bash simpler than in python -> https://www.linuxjournal.com/content/using-named-pipes-fifos-bash
 if [[ ! -p "$FIFO" ]]; then

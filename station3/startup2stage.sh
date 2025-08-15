@@ -11,7 +11,33 @@ else
     echo "not found: $configfile" >&2
     exit 1
 fi 
-sleep 2
+# waits for internet, even /etc/systemd/system/bird-startup.service does not guarantee for this, despite 'After=network-online.target, Wants=network-online.target'
+# Wait for DNS to resolve webhook target
+dnshost=trigger.macrodroid.com # or cloudfare.com (1.1.1.1)
+dns_ok=false
+for i in {1..30}; do
+    if getent hosts $dnshost >/dev/null; then # getent from 'apt install dnsutils'
+        log "DNS is up ($dnshost, $i tries)"
+        dns_ok=true
+        break
+    fi
+    log "Waiting for DNS ($i)"
+    sleep 2
+done
+# CON_NAME="bird-static210"
+# OLD_CON="bird-ap-dhcp"
+if [ "$dns_ok" = false ]; then
+    log "DNS lookup failed after 30 tries — hope continuing as hotspot" # hotspot activated by NetworkManagers system-connection priority
+    # sudo nmcli connection modify "$CON_NAME" connection.autoconnect no
+    # sudo nmcli connection modify "$OLD_CON" connection.autoconnect yes
+    # sudo nmcli connection reload
+    ## setsid or nohup ->also workes after ssh session dropped, connection up involves previous_conn down:
+    # setsid bash -c "sleep 5 && sudo nmcli connection up '$OLD_CON'" > /dev/null 2>&1 &
+fi
+# from now on start programs
+setsid bash "$APPDIR/mdroid.sh" stationLoaded & # mdroid.sh writes to curl.log
+#
+sudo systemctl list-unit-files | grep avahi
 # &> redirects stderr and stdout to file, &>> appends redirected to file, final & means background (works only for bash, but crontab is sh)
 # example: python3 flaskBird.py &>> logs/flask.log & 
 # better like in crontab: bash /home/pi/station2/statist/getStats.sh >> /home/pi/station2/logs/statist.log 2>&1 & (works for all posix shells like sh)

@@ -5,7 +5,7 @@
 - Raspian OS "Bookworm" (Debian 12) verspricht die aktuellste Unterstützung von Pythonmodul "picamera2". Version siehe 'apt show python3-picamera2', oder 'pip show picamera2'.
 - Installation von "bookworm light 64bit" mit "Raspberry Pi Imager" (*pi/bird24* Passwort, Fat32 Bootpartition mit ssh und wpa_supplicant.conf versehen), hochfahren und im Heimnetz suchen (DHCP). Sollte zumindest im LAN konnektieren.
 - putty/ssh bzw. WinSCP/Filezilla, 'sudo passwd root' ("*bird24root*""), 'sudo apt update && sudo apt full-upgrade' 🕦= *takes time*
-- static IP (192.168.178.210), mit **NetworkManager** (default on fst boot, nmtui) **oder** 'systemd-networkd' **oder** '/etc/network/interfaces (dhcdcp.conf)'. 'rpibird' als hostname. IPv6 can be disabled for wlan0. In nmtui benannte ich meine statische IP configuration mit 'bird-static210' ('nmcli connection show'). Later reset to DHCP Hotspot, before you produce an OS image for distribution to others (and remove credentials from config.json), see [buildimg](../buildimg/buildimg.md).
+- static IP (192.168.178.210), mit **NetworkManager** (default on fst boot, nmtui/nmcli, wpa_supplicant service) **oder** 'systemd-networkd' **oder** '/etc/network/interfaces (dhcdcp.conf)'. 'rpibird' als hostname. IPv6 can be disabled for wlan0. In nmtui benannte ich meine statische IP configuration mit 'bird-static210' ('nmcli connection show'). Later reset to DHCP Hotspot, before you produce an OS image for distribution to others (and remove credentials from config.json), see [buildimg](../buildimg/buildimg.md).
 - prevent wlan0 sleeping mode: 'sudo nmcli connection modify static210 802-11-wireless.powersave 2' oder in '/etc/NetworkManager/conf.d/disable-powersave.conf', verifiziere mit 'iw wlan0 get power_save'
 - I also disable bluetooth by blacklisting its modules from loading.
 - mDNS (avahi, bonjour): 'ping rpibird' statt 'ping 192.168.178.210' zeigt den Erfolg. 'rpibird' eintragen in /etc/hosts und /etc/hostname.
@@ -36,7 +36,8 @@
 	- innerhalb des birdvenv installiere alle Module mit 'pip' (venv beinhaltet pip) und update sie später dort mit 'pip install --upgrade'.
 	- 'pip freeze > requirements.txt' listet dorthin alle im birdvenv installierten Module. Kann verwendet werden mit 'pip install -r requirements.txt' (anders als 'pip list > requirements.txt').
 	- (birdvenv) 'pip3 install flask, markdown, matplotlib' und 'apt install python3-picamera2' (aktueller als mit pip3), dann 'pip3 uninstall numpy' wegen Inkompat. des "pip numpy" zu "apt picamera2".
-
+	- um birdvenv nicht ständig zu überschreiben, wird es außerhalb station3 in /home/pi unter root betrieben, ebenso wie seine Begleiter ''/4venv' und 'activate_venv.sh'. Letzteres aus der Kommandozeile sourcen ('.' oder 'source activate_venv.sh'), damit es nicht in einer Subshell ausgeführt und sofort wieder beendet wird. 'birdvenv activ' bedeutet 'echo $VIRTUAL_ENV' zeigt 'birdvenv' an.
+	
 - GPIO
 	Für den GPIO Zugriff im Raspberry ist bei zeitkritischen Sensoren (bit banging) wie Hx711 oder Dht22 eine C-Schicht erforderlich, die mit Python (lgpio, pigpio) dann gesteuert wird. lgpio und pigpio können wiederum mit gpiozero abstrahiert werden, aber nur für einfache Geräte (LED, Motoren), nicht für Hx711 oder DHT.
 - **[pigpio](https://abyz.me.uk/rpi/pigpio/examples.html)**:

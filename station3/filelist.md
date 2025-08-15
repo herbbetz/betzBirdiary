@@ -19,14 +19,24 @@ Trage Deine persönlichen Schlüssel dort ein, wo Du in den Dateien einen Ausdru
 
 ### Hochfahren, Überwachung und Runterfahren
 
-- startup.sh und seine Varianten (startup1stage.sh, startup2stage.sh): startet die Pythonskripte sowie auch Bashskripte für Monitoring. Gib ein 'less startup.sh' oder 'ps aux' zum Betrachten der geladenen Skripte. startup.sh wird beim Hochfahren gestartet von '/etc/birdconfig/bird-startup.service'. Siehe 'systemctl status bird-startup.service'.
+- startup.sh und seine Varianten (startup1stage.sh, startup2stage.sh): startet die Pythonskripte sowie auch Bashskripte für Monitoring. Gib ein 'less startup.sh' oder 'ps aux' zum Betrachten der geladenen Skripte. startup.sh wird beim Hochfahren gestartet von '/etc/birdconfig/bird-startup.service'. Siehe 'systemctl status bird-startup.service'. 
+
+  startup.sh ist ein Softlink, der zum Debuggen auf startupNoInet.sh gesetzt wird. startup1stage.sh führt startupNoInet.sh und anschließend startup2stage.sh (Internet und Programme) aus. startup1stage.sh wird also nach dem Debugging über startup.sh verlinkt.
+
 - die crontab von User 'pi' startet solche Skripte ebenfalls. Gib ein das Kommando 'crontab -l' (für -list).
+
 - test_crontab.sh testet die Funktionsfähigkeit der Kommandos in crontab (Vorsicht: auch Kommandos zum Herunterfahren)
+
 - diskAlert.sh testet anfangs auf volle SD-Karte.
+
 - internetTest2.sh fährt herunter, wenn die Internetverbindung ausfällt.
+
 - sysMon.sh überträgt Systemdaten an das Webinterface.
+
 - sunset2.py fährt herunter bei Sonnenuntergang. Pythonmodul 'ephem' muss dazu installiert sein und die eigenen Ortskoordinaten gehören in das Skript eingetragen: 'sudo apt-get install python3-ephem'.
+
 - pip Python Manager wird vermieden, zeigt apt-get installierte Module nicht immer an und erneuert Python Module nicht über 'apt-get update'.
+
 - [tasmotaDown.sh](docs/tasmota/tasmota.md) schickt eine REST-Botschaft (Browseradresse mit Parametern) an einen der Vogelstation vorgeschalteten Smart-Netzstecker mit Tasmota Firmware und schaltet ihn damit nach dem Shutdown des Raspberry aus. Die richtige lokale IP des Smartsteckers muss dazu in config.sh eingetragen sein.
 
 ### Wiegevorgang über Dehnmesstreifen, Umweltdaten hochladen
