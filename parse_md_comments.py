@@ -48,7 +48,7 @@ def build_keyword_map(md_files):
             keyword_map[kw].add(filepath)
     return keyword_map
 
-def write_contents_md(keyword_map, outfile='contents.md'):
+def write_contents_md(keyword_map, outfile='station3/contents.md'):
     """Write out the contents.md file."""
     with open(outfile, "w", encoding="utf-8") as f:
         # f.write("## Verzeichnis\n\n")

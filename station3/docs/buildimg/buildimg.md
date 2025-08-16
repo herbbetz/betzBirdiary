@@ -33,5 +33,10 @@ Zur Konfiguration der Station siehe [config.json](../../configjson.md).
 
 *'./pishrink.sh -s bird.img' verhindert Autoexpansion auf der SD-Karte und reduziert deren Abnutzung durch mehr Kartenplatz für den SD-Karten-Controller. Bei Platzbedarf auf der SD-Karte kann die Expansion dort nachgeholt werden durch 'raspi-config' oder parted.*
 
+- ein Image, das zuvor nicht expandiert war ('raspi-config --expand-rootfs'), kann manchmal mit pishrink.sh nicht weiter verkleinert werden, wobei das Skript dann auch den abschließenden 'unallocated space' belässt. 'gparted betzBirdXXX.img' zeigt den 'unallocated space' und 'fdisk -l betzBirdXXX.img' zeigt sowas wie 'units sectors: 512, disklabel type: dos, betzBirdXXX.img2 end: 776544'. Bei dos (MBR) den 'unallocated space' entfernen nach der Formel `(end + 1) * sectorunits`, im Beispiel `truncate -s $((776545 * 512)) betzBirdXXX.img`.
+
+  Bei 'disklabel type: gpt' bräuchte man zusätzlich noch `sgdisk -e betzBirdXXX.img # relocate the backup GPT table to the new end`.
+
 - optional für Weitergabe Komprimieren von Image und Anweisungen z.B. mit 7-Zip und Hochladen in die Cloud.
+
 - Restaurieren der SD-Karte, siehe obige 'Installation des Image' ab dem zweiten Punkt.
