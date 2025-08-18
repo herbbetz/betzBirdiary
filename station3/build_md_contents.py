@@ -135,6 +135,8 @@ def write_contents_md(keyword_map, outfile):
             links = []
             for fp in files:
                 rel_link = os.path.relpath(os.path.abspath(fp), outdir)
+                # Force forward slashes for GitHub compatibility
+                rel_link = rel_link.replace(os.sep, "/")
                 links.append(f'[{prettify_label(fp)}]({rel_link})')
             f.write(f"- **{kw}**: {', '.join(links)}\n")
 
@@ -168,6 +170,8 @@ if __name__ == "__main__":
                 rel_fp = os.path.relpath(abs_fp, parentdir_real)
             except ValueError:
                 rel_fp = abs_fp
+            # Normalize to forward slashes
+            rel_fp = rel_fp.replace(os.sep, "/")
             print(f"  {rel_fp}")
     else:
         print("No parentdir symlink; no files marked via parentdir.")
@@ -176,4 +180,5 @@ if __name__ == "__main__":
     if negative_dirs:
         print("Directories excluded by negative list:")
         for nd in negative_dirs:
-            print(f"  {nd}")
+            # Normalize to forward slashes
+            print(f"  {nd.replace(os.sep, '/')}")
