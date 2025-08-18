@@ -5,7 +5,7 @@ date: 2025-08-09
 permalink: /posts/2025-08-09-2bookworm/
 ---
 <!--keywords[blog,Bookworm,davidplowman,Installation,Luxmessung,picamera2]-->
-<img src="webIFrec8-25.jpg" alt="webGUI" style="zoom: 67%;" /><img src="mainFoBird.svg" alt="mainFoBird" style="zoom: 67%;" />
+<img src='{{ "webIFrec8-25.jpg" | relative_url }}' alt="webGUI" style="zoom: 67%;" /><img src='{{ "mainFoBird.svg" | relative_url }}' alt="mainFoBird" style="zoom: 67%;" />
 
 Mein Klon *betzBirdiary* der Uni Münster Software vom März 2023 hat diese in mehrere Pythonskripte mit speziellen Funktionen aufgeteilt: ein Skript für den Dehnmesstreifen und seinen hx711-Analog-Digital-Konverter teilt dem *main* Picamera2 Skript mit, wenn ein Vogel es über die Sitzstange getriggert hat. Das main Skript macht dann das Video und lädt es hoch in die Birdiary Internet Plattform. Ein Temperatursensor lädt unabhängig davon alle 15 Minuten seine DHT22-Daten über ein weiteres Skript hoch. Als Eigentümer der Station habe ich über ein Webinterface eine Sichtmöglichkeit durch die Kamera. Das Webinterface besteht aus einem Flask Server. Programmiert ist das meiste in Python3, manches in bash Shell Skripten. Die Kommunikation zwischen den Skripten findet auf der *Ramdisk* statt, um die SD-Karte zu schonen. Sie erfolgt dort über eine Unix *FIFO* und eine zentrale *JSON* Datei.
 

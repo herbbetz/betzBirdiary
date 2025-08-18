@@ -2,7 +2,7 @@
 layout: home
 title: "Welcome"
 ---
-[About](about.md)
+[About]({{ "about.md" | relative_url }})
 
 Willkommen im *betzBirdiary* Blog.
 Ich versuche es hier etwas lesbarer zu gestalten als nur trockene Gebrauchsanweisungen.
