@@ -1,4 +1,4 @@
-<!--keywords[Bash,Bookworm,crontab,FFMPEG,GPIO,lgpio,logrotate,Markdown,mDNS,Network,Ramdisk,Startup,service,venv,WLAN]-->
+<!--keywords[Bash,Bookworm,crontab,FFMPEG,GPIO,lgpio,logrotate,Markdown,mDNS,Network,Ramdisk,Startup,service,Systembuild,venv,WLAN]-->
 
 ### Installation von betzBirdiary auf Bookworm
 

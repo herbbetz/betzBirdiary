@@ -17,7 +17,8 @@ from configBird3 import birdpath
 #   linecnt, linetxt: for logging output
 #   envirEvt, sysmonEvt: new data available as value increased
 #   confirm and upmode are only, if several mainVideo scripts can be exchanged
-message = {"imgid": 0, "lastvid": "", "vidcnt": 0, "linecnt": 0, "linetxt": "", "envirEvt": 0, "sysmonEvt": 0, "upmode": 0, "confirm": 0, "standby": 0, "clientactive": 0, "lux": 0, "luxraw": 0} # define dictionary
+message = {"imgid": 0, "lastvid": "", "vidcnt": 0, "linecnt": 0, "linetxt": "", "envirEvt": 0, "sysmonEvt": 0,
+           "upmode": 0, "confirm": 0, "standby": 0, "clientactive": 0, "lux": 0, "luxraw": 0} # define dictionary
 
 filename = f"{birdpath['ramdisk']}/vidmsg.json" #serialized msg
 
@@ -171,7 +172,9 @@ def getUpmode():
 
 def getStandby():
     m = readmsg()
-    return m['standby']
+    anystdby = 0
+    if m['standby'] or m['lux'] > 4: anystdby = 1 # manual standby activated or bad illumination
+    return anystdby # 1 blocks weight fifo in readBalance(bQ) of mainFoBird.py
 
 def chStandby():
     m = readmsg()

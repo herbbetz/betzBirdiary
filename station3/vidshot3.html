@@ -86,7 +86,8 @@
 
         const icons = {
             vidcam: "vidcam.svg",
-            crossedcam: "crossedcam.svg",
+            redcrossedcam: "redcrossedcam.svg",
+            greencrossedcam: "greencrossedcam.svg",
             sun: "sun.svg",
             cloudy: "cloudy.svg",
             cloud: "cloud.svg",
@@ -246,7 +247,11 @@
 
                 // if (data['standby'] == 0) {setText(dom.stdbymsg, "🎥");} else {setText(dom.stdbymsg, "STANDBY");}
                 // or setHTMLSafe(dom.stdbymsg, '&#127909;');
-                if (data['standby'] == 0) {dom.stdbyimg.src = "icons/" + icons['vidcam'];} else {dom.stdbyimg.src = "icons/" + icons['crossedcam'];}
+                if (data['standby'] == 1) {dom.stdbyimg.src = "icons/" + icons['redcrossedcam'];}
+                else {
+                    if (data['lux'] > 4) {dom.stdbyimg.src = "icons/" + icons['greencrossedcam'];} // bad light exposure
+                    else {dom.stdbyimg.src = "icons/" + icons['vidcam'];}
+                }
 
                 if (data['lux'] == 6) {
                     dom.luximg.src = "icons/" + icons['overexpo'];

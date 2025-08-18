@@ -1,0 +1,1 @@
+The dir 'station3/parentdir' should be a symlink 'ln -s .. parentdir' inside /station3, which the script 'build-md-contents.py' uses in hard code, to find .md files in the parentdir of station3 and the parentdir's subdirs, but except 'station3' to avoid recursion loops.

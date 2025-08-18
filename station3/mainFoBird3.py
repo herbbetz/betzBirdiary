@@ -40,7 +40,7 @@ def capture_img(picam, dest):
     os.replace(tmp_dest, dest)
     if testmode: ms.log(f"Captured still to {dest}")
 
-def get_brightness(picam, camsetting, now):
+def get_brightness(picam, now):
     # frame = picam.capture_array(name="main")
     # if testmode: ms.log(f"frame shape in brightness calc: {frame.shape}")
     # avg_brightness = round(np.mean(frame[:, :, 0]))
@@ -65,16 +65,18 @@ def get_brightness(picam, camsetting, now):
     else:
         luxcategory = 4 # bright
     # check for over-/under-expo:
-    # luxLimit = [1000,7000] in config.json
+    # luxLimit = [500,10000] in config.json
     expoScore = gain * exposure
     if expoScore < luxLimit[0]:
         luxcategory = 6 # too dark
     elif expoScore > luxLimit[1]:
         luxcategory = 5 # too bright
 
+    # luxlabel = ["undef", "dark", "dim", "normal", "bright", "too bright", "too dark"]
+
     luxdata["luxcategory"] = luxcategory
     # if light_level != set_brightness.last_light_level:
-    ms.setLux(luxcategory)
+    ms.setLux(luxcategory) # this also sets "autostdby" for bad light conditions
     ms.setLuxRaw(f'{metalux} at {luxdata["timestamp"]}, gain {gain}/ expo {exposure}')
     
     if now.minute % 15 == 0 or get_brightness.last_logged_minute == -1: # log every 15 minutes or at first call
@@ -82,7 +84,7 @@ def get_brightness(picam, camsetting, now):
             get_brightness.last_logged_minute = now.minute
             luxProtocol(luxdata)
             if luxcategory > 4:
-                ms.log(f"resetting camera due to extreme exposure score {expoScore} at {now}")
+                ms.log(f"stdby /resetting camera due to extreme exposure score {expoScore} at {now}")
                 picam.set_controls({'ExposureTime': 0, 'AnalogueGain': 1.5}) # 0 means "AeEnable resets exposure according to preselected gain", see https://github.com/raspberrypi/picamera2/issues/1305
                 time.sleep(0.5)
 
@@ -163,8 +165,9 @@ def send_movement(circ_output, wght, trigger_ns): # first parameter is either ci
     '''
 
     record_latency_ms = (start_ns - trigger_ns) // 1_000_000
-    ms.log(f"Trigger latency: {record_latency_ms} ms till video {movementStartStr}")
-    ms.setVidDateStr(movementStartStr)
+    movementStart = movementStartStr.split('.')[0] # remove terminal msecs part
+    ms.log(f"Trigger latency: {record_latency_ms} ms till video {movementStart}")
+    ms.setVidDateStr(f"video#{send_movement.vid_cnt} of {upmaxcnt} at {movementStart}")
 
     if testmode:
         ms.log("Test mode: skipping upload")
@@ -297,7 +300,7 @@ def main():
         }
         picam.set_controls(camsetting)
         now = datetime.now()
-        get_brightness(picam, camsetting, now) # Set initial brightness
+        get_brightness(picam, now) # Set initial brightness
 
         # for circular output:
         encoder = H264Encoder() # for no circ_output this is moved into send_movement() and the following 3 lines are omitted
@@ -313,7 +316,7 @@ def main():
 
         try:
             while True:
-                if not bQueue.empty():
+                if not bQueue.empty(): # child1 process 'readBalance()' fills bQueue after filtering for ms.getStandby()
                     trigger_ns = time.time_ns() # check for nanosecs till recording
                     weight = bQueue.get()
                     # picam.set_controls(camsetting)
@@ -323,7 +326,7 @@ def main():
                     metadata = picam.capture_metadata() # read back from picam, after reset_camera()
                     ms.log(f"sent video with ExposureTime {metadata.get('ExposureTime')} and AnalogueGain {metadata.get('AnalogueGain')}")
 
-                elif ms.getClientActive() == 1:
+                elif ms.getClientActive() == 1: # set by flaskBird.py
                     if testmode: ms.log("shooting a still")
                     timestamp = round(time.time() * 1000)
                     imgName = f"{dirName}/{timestamp}.jpg"
@@ -338,7 +341,7 @@ def main():
                     now = datetime.now()
                     if testmode: ms.log("brightness check instead of still possible")
                     # if now.minute % 15 == 0 and now.minute != last_logged_minute: last_logged_minute = now.minute
-                    get_brightness(picam, camsetting, now)
+                    get_brightness(picam, now)
 
                 time.sleep(sleepTime)
 

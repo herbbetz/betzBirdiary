@@ -11,11 +11,12 @@ from sharedBird import roundFlt # shared functions in shareBird.py
 import msgBird as ms
 from configBird3 import birdpath, serverUrl, boxId, dhtPin
 
-def write_env_webserv(environment_data):
+def write_env_webserv(env_data):
     # for local webserver:
     filename = f"{birdpath['ramdisk']}/env.json"
+    env_data["date"] = env_data["date"].split('.')[0] # remove terminal msecs part
     with open(filename, 'w') as wfile:
-        json.dump(environment_data, wfile)
+        json.dump(env_data, wfile)
 
 def send_realtime_environment(envData):
     if (envData['humidity'] == 0):

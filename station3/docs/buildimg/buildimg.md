@@ -1,4 +1,5 @@
-<!--keywords[balenaEtcher,Flashen,pishrink,Raspbian_Image,WLAN-Konfig]-->
+<!--keywords[balenaEtcher,card_image_build,Flashen,Installation,pishrink,Raspbian_Image,WLAN-Konfig]-->
+
 ## Installation des Image
 
 Das Image der Vogelhaussoftware enthält das ganze Raspbian OS mit allen Softwarekomponenten. 
@@ -22,7 +23,7 @@ Man kann mit 'nmtui' oder 'dhcpcd.conf' die statische IP '192.168.178.210' konfi
 
 Zur Konfiguration der Station siehe [config.json](../../configjson.md).
 
-## Bau des Image aus der Vogelhaussoftware
+## Bau des Disc Image zur Weitergabe
 
 - mache ein 'sudo apt update && sudo apt upgrade', reboote und teste, ob Deine Station noch funktioniert.
 - Anonymisierung für Weitergabe des Image: bei laufender Station die eigenen Schlüssel überschreiben ('XXXXXXXX') in 'config.json' .
