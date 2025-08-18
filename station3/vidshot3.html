@@ -25,7 +25,7 @@
     <h2>Umwelt</h2>
     <div class="indented">
         <div id="envir"></div>
-        <div id="vidmsg">video <span id="vidcnt"></span> at <span id="lastvid"></span></div>
+        <div id="vidmsg"></div>
         <div id="imgcontainer">
             <img id="jpeg_feed" src="" alt="PiCamera feed" width="320" height="240" crossorigin="anonymous">
         </div>
@@ -75,8 +75,6 @@
             envir: document.getElementById('envir'),
             actity: document.getElementById('actity'),
             sysmon: document.getElementById('sysmon'),
-            vidcnt: document.getElementById('vidcnt'),
-            lastvid: document.getElementById('lastvid'),
             vidmsg: document.getElementById('vidmsg'),
             rawmsg: document.getElementById('msgdata'),
             calcmsg: document.getElementById('calcdata'),
@@ -293,13 +291,14 @@
                     dom.icon.href = "favicon.svg";
                     dom.tabcolor.setAttribute("content", "#ffffff");
                 } else {
-                    dom.vidmsg.style.visibility = "visible";
                     const vidcnt = data['vidcnt'];
-                    setText(dom.vidcnt, vidcnt > 0 ? `#${vidcnt}` : "");
-                    setText(dom.lastvid, msg);
-                    document.title = "NEW video";
-                    dom.icon.href = "faviconRed.svg";
-                    dom.tabcolor.setAttribute("content", "#ff5733");
+                    if (vidcnt>0){
+                        dom.vidmsg.style.visibility = "visible";
+                        setText(dom.vidmsg, msg);
+                        document.title = `NEW video ${vidcnt}`;
+                        dom.icon.href = "faviconRed.svg";
+                        dom.tabcolor.setAttribute("content", "#ff5733");
+                    }
                 }
 
                 // Logger lines

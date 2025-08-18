@@ -164,11 +164,6 @@ def send_movement(circ_output, wght, trigger_ns): # first parameter is either ci
     full_video = posttrigger.read()
     '''
 
-    record_latency_ms = (start_ns - trigger_ns) // 1_000_000
-    movementStart = movementStartStr.split('.')[0] # remove terminal msecs part
-    ms.log(f"Trigger latency: {record_latency_ms} ms till video {movementStart}")
-    ms.setVidDateStr(f"video#{send_movement.vid_cnt} of {upmaxcnt} at {movementStart}")
-
     if testmode:
         ms.log("Test mode: skipping upload")
         ms.log(f"full_video size: {len(full_video)} bytes")
@@ -195,14 +190,20 @@ def send_movement(circ_output, wght, trigger_ns): # first parameter is either ci
         "videoKey": (video_filename, full_video)
     }
 
+    record_latency_ms = (start_ns - trigger_ns) // 1_000_000
+    movementStart = movementStartStr.split('.')[0] # remove terminal msecs part
+    ms.log(f"Trigger latency: {record_latency_ms} ms till video {movementStart}")
+    send_movement.vid_cnt += 1
+    ms.setVidCnt(send_movement.vid_cnt)
+
     upfail = send_realtime_movement(files)
     if upfail:
         write_gallery(movementData)
         write_binVideo(movementData["start_date"], full_video)
+        ms.setVidDateStr(f"video#{send_movement.vid_cnt} at {movementStart} kept local")
         subprocess.call(f"bash {birdpath['appdir']}/mdroid.sh VideoUpfail_keepdir", shell=True)
     else:
-        send_movement.vid_cnt += 1
-        ms.setVidCnt(send_movement.vid_cnt)
+        ms.setVidDateStr(f"video#{send_movement.vid_cnt} of {upmaxcnt} at {movementStart}")
         subprocess.call(f"bash {birdpath['appdir']}/mdroid.sh newVideo{send_movement.vid_cnt}", shell=True)
 
 send_movement.vid_cnt = 0

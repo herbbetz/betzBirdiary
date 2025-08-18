@@ -54,3 +54,4 @@ for feat in features:
 ~~~
 - Beachte das [Manual](https://datasheets.raspberrypi.com/camera/picamera2-manual.pdf) von picamera2 und noch ausführlicher andere Datasheets auf datasheets.raspberrypi.com wie den [camera tuning guide](https://datasheets.raspberrypi.com/camera/raspberry-pi-camera-guide.pdf).
 - Die Belichtung (exposure, gain) der PiCamera2 wird besser sich selbst überlassen, wie diskutiert mit Entwickler [davidplowman](https://github.com/raspberrypi/picamera2/issues/1305).
+- Verwende `picam.stop_encoder()` zum Beenden der Videoaufzeichnung ! `picam.stop_recording()` contains a `picam.stop()` and therefore will hang following `picam.capture_file()` or `picam.capture_metadata()`.
