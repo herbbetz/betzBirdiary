@@ -59,7 +59,7 @@ Trage Deine persönlichen Schlüssel dort ein, wo Du in den Dateien einen Ausdru
 - flaskBird.py sorgt durch das Modul 'markdown' auch dafür, dass die Markdown Dokumentation als HTML im Webinterface sichtbar ist (rpibird.local:8080/README.md).
 - content.md wird  erstellt mit 'build_md_contents.py', wenn entsprechende 'keywords[]' innerhalb HTML Kommentaren in die .md Dateien eingetragen wurden.
 - Alternative für Inhaltsverzeichnis (nicht getestet): [Mkdocs](https://www.mkdocs.org/)
-- Blog: index.md, about.md, _config.yml und /assets und /posts bilden einen Blog für Github auf Jekyll Basis.
+- /blog: index.md, about.md, _config.yml und /assets und /posts bilden einen Blog für Github auf Jekyll Basis.
 
 ### debugging, update and other tools
 - test_crontab.sh: only tests for timed commands (after '* * * * *')
