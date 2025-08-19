@@ -1,0 +1,391 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="200mm"
+   height="200mm"
+   viewBox="0 0 200 200"
+   version="1.1"
+   id="svg1"
+   inkscape:version="1.4.2 (f4327f4, 2025-05-13)"
+   sodipodi:docname="mainFoBird.svg"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#666666"
+     borderopacity="1.0"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="mm"
+     inkscape:zoom="0.73139029"
+     inkscape:cx="396.50513"
+     inkscape:cy="558.52533"
+     inkscape:window-width="1920"
+     inkscape:window-height="1009"
+     inkscape:window-x="-8"
+     inkscape:window-y="-8"
+     inkscape:window-maximized="1"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs1">
+    <inkscape:path-effect
+       effect="bspline"
+       id="path-effect32"
+       is_visible="true"
+       lpeversion="1.3"
+       weight="33.333333"
+       steps="2"
+       helper_size="0"
+       apply_no_weight="true"
+       apply_with_weight="true"
+       only_selected="false"
+       uniform="false" />
+    <inkscape:path-effect
+       effect="bspline"
+       id="path-effect29"
+       is_visible="true"
+       lpeversion="1.3"
+       weight="33.333333"
+       steps="2"
+       helper_size="0"
+       apply_no_weight="true"
+       apply_with_weight="true"
+       only_selected="false"
+       uniform="false" />
+    <inkscape:path-effect
+       effect="bspline"
+       id="path-effect25"
+       is_visible="true"
+       lpeversion="1.3"
+       weight="33.333333"
+       steps="2"
+       helper_size="0"
+       apply_no_weight="true"
+       apply_with_weight="true"
+       only_selected="false"
+       uniform="false" />
+    <inkscape:path-effect
+       effect="bspline"
+       id="path-effect24"
+       is_visible="true"
+       lpeversion="1.3"
+       weight="33.333333"
+       steps="2"
+       helper_size="0"
+       apply_no_weight="true"
+       apply_with_weight="true"
+       only_selected="false"
+       uniform="false" />
+  </defs>
+  <g
+     inkscape:label="Ebene 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <g
+       id="g16"
+       transform="translate(-66.200976,-38.345919)">
+      <rect
+         style="opacity:0.501613;fill:#6c6753;fill-opacity:1;stroke:#001fff;stroke-width:1.04455;stroke-linecap:round;stroke-linejoin:bevel;stroke-dasharray:none;paint-order:stroke fill markers"
+         id="rect12-0-9"
+         width="52.962746"
+         height="25.107695"
+         x="138.54829"
+         y="77.76194" />
+      <g
+         id="g9"
+         transform="translate(111.78197,8.6820953)">
+        <rect
+           style="opacity:0.501613;fill:#008000;fill-opacity:1;stroke:#001fff;stroke-width:0.802356;stroke-linecap:round;stroke-linejoin:bevel;paint-order:stroke fill markers"
+           id="rect7-02"
+           width="38.905315"
+           height="11.412016"
+           x="34.616631"
+           y="74.306557" />
+        <text
+           xml:space="preserve"
+           style="font-size:4.23333px;line-height:7.05556px;font-family:'Roboto Mono';-inkscape-font-specification:'Roboto Mono, Normal';font-variant-ligatures:none;stroke-width:0.264583"
+           x="36.537148"
+           y="81.394646"
+           id="text4"><tspan
+             sodipodi:role="line"
+             id="tspan4"
+             style="stroke-width:0.264583"
+             x="36.537148"
+             y="81.394646">BalanceTrigger</tspan></text>
+      </g>
+      <text
+         xml:space="preserve"
+         style="font-size:4.23333px;line-height:7.05556px;font-family:'Roboto Mono';-inkscape-font-specification:'Roboto Mono, Normal';stroke-width:0.264583"
+         x="140.33557"
+         y="74.338509"
+         id="text22-6"><tspan
+           sodipodi:role="line"
+           id="tspan22-0"
+           style="fill:#0000ff;stroke-width:0.264583"
+           x="140.33557"
+           y="74.338509">hxFiBird.py</tspan></text>
+    </g>
+    <g
+       id="g18"
+       transform="translate(38.707674,-1.4470158)">
+      <rect
+         style="opacity:0.501613;fill:#6c6753;fill-opacity:1;stroke:#001fff;stroke-width:1.21259;stroke-linecap:round;stroke-linejoin:bevel;stroke-dasharray:none;paint-order:stroke fill markers"
+         id="rect12-0"
+         width="53.879963"
+         height="33.259987"
+         x="35.853306"
+         y="103.33958" />
+      <rect
+         style="opacity:0.501613;fill:#d4aa00;fill-opacity:1;stroke:#001fff;stroke-width:0.735056;stroke-linecap:round;stroke-linejoin:bevel;paint-order:stroke fill markers"
+         id="rect7"
+         width="32.461044"
+         height="11.479315"
+         x="45.81028"
+         y="106.22319" />
+      <text
+         xml:space="preserve"
+         style="font-size:4.23333px;line-height:7.05556px;font-family:'Roboto Mono';-inkscape-font-specification:'Roboto Mono, Normal';font-variant-ligatures:none;stroke-width:0.264583"
+         x="47.751522"
+         y="113.59074"
+         id="text1"><tspan
+           sodipodi:role="line"
+           id="tspan1"
+           style="stroke-width:0.264583"
+           x="47.751522"
+           y="113.59074">CameraVideo</tspan></text>
+      <text
+         xml:space="preserve"
+         style="font-size:4.23333px;line-height:7.05556px;font-family:'Roboto Mono';-inkscape-font-specification:'Roboto Mono, Normal';stroke-width:0.264583"
+         x="38.116062"
+         y="99.403679"
+         id="text22-9"><tspan
+           sodipodi:role="line"
+           id="tspan22-05"
+           style="fill:#0000ff;stroke-width:0.264583"
+           x="38.116062"
+           y="99.403679">mainFoBird.py</tspan></text>
+      <g
+         id="g14-4"
+         transform="translate(24.785346,-30.702235)">
+        <rect
+           style="opacity:0.501613;fill:#00ffff;fill-opacity:1;stroke:#001fff;stroke-width:0.809457;stroke-linecap:round;stroke-linejoin:bevel;paint-order:stroke fill markers"
+           id="rect7-6-0"
+           width="39.621723"
+           height="11.404914"
+           x="18.114138"
+           y="151.92908" />
+        <text
+           xml:space="preserve"
+           style="font-size:4.23333px;line-height:7.05556px;font-family:'Roboto Mono';-inkscape-font-specification:'Roboto Mono, Normal';font-variant-ligatures:none;stroke-width:0.264583"
+           x="19.896458"
+           y="158.81"
+           id="text6-6"><tspan
+             sodipodi:role="line"
+             id="tspan6-2"
+             style="stroke-width:0.264583"
+             x="19.896458"
+             y="158.81">UploadBirdiary</tspan></text>
+      </g>
+    </g>
+    <g
+       id="g20"
+       transform="translate(-0.36175396,-6.5115713)">
+      <rect
+         style="opacity:0.501613;fill:#ff5555;fill-opacity:0.7;stroke:#001fff;stroke-width:0.238411"
+         id="rect22-0"
+         width="41.266121"
+         height="7.261251"
+         x="148.57837"
+         y="87.992508" />
+      <text
+         xml:space="preserve"
+         style="font-size:4.23333px;line-height:7.05556px;font-family:'Roboto Mono';-inkscape-font-specification:'Roboto Mono, Normal';stroke-width:0.264583"
+         x="157.60992"
+         y="93.218826"
+         id="text16-9-0"><tspan
+           sodipodi:role="line"
+           id="tspan16-0-5"
+           style="stroke-width:0.264583"
+           x="157.60992"
+           y="93.218826">FIFO File</tspan></text>
+      <text
+         xml:space="preserve"
+         style="font-size:4.23333px;line-height:7.05556px;font-family:'Roboto Mono';-inkscape-font-specification:'Roboto Mono, Normal';stroke-width:0.264583"
+         x="148.58453"
+         y="86.217552"
+         id="text22-1"><tspan
+           sodipodi:role="line"
+           id="tspan22-1"
+           style="fill:#0000ff;stroke-width:0.264583"
+           x="148.58453"
+           y="86.217552">ramdisk/birdfifo</tspan></text>
+    </g>
+    <g
+       id="g21"
+       transform="translate(-2.5322777,-2.1705238)">
+      <text
+         xml:space="preserve"
+         style="font-size:4.23333px;line-height:7.05556px;font-family:'Roboto Mono';-inkscape-font-specification:'Roboto Mono, Normal';stroke-width:0.264583"
+         x="22.414459"
+         y="153.73232"
+         id="text22"><tspan
+           sodipodi:role="line"
+           id="tspan22"
+           style="fill:#0000ff;stroke-width:0.264583"
+           x="22.414459"
+           y="153.73232">flaskBird.py</tspan></text>
+      <rect
+         style="opacity:0.501613;fill:#0000ff;fill-opacity:0.431373;stroke:#001fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:bevel;stroke-dasharray:none;paint-order:stroke fill markers"
+         id="rect23"
+         width="30.025578"
+         height="9.4056034"
+         x="30.327675"
+         y="177.83867" />
+      <rect
+         style="opacity:0.501613;fill:#ff5555;fill-opacity:0.7;stroke:#001fff;stroke-width:0.277784"
+         id="rect21"
+         width="45.92955"
+         height="8.3071394"
+         x="22.013931"
+         y="156.14005" />
+      <text
+         xml:space="preserve"
+         style="font-size:4.23333px;line-height:7.05556px;font-family:'Roboto Mono';-inkscape-font-specification:'Roboto Mono, Normal';stroke-width:0.264583"
+         x="33.221706"
+         y="161.92151"
+         id="text15"><tspan
+           sodipodi:role="line"
+           id="tspan15"
+           style="stroke-width:0.264583"
+           x="33.221706"
+           y="161.92151">Webserver</tspan></text>
+      <text
+         xml:space="preserve"
+         style="font-size:4.23333px;line-height:7.05556px;font-family:'Roboto Mono';-inkscape-font-specification:'Roboto Mono, Normal';font-variant-ligatures:none;stroke-width:0.264583"
+         x="35.753979"
+         y="183.98849"
+         id="text23"><tspan
+           sodipodi:role="line"
+           id="tspan23"
+           style="stroke-width:0.264583"
+           x="35.753979"
+           y="183.98849">Browser</tspan></text>
+      <path
+         style="opacity:0.501613;fill:#0000ff;fill-opacity:0.431373;stroke:#001fff;stroke-width:1;stroke-linecap:round;stroke-linejoin:bevel;stroke-dasharray:none;paint-order:stroke fill markers"
+         d="m 44.436074,164.09202 0.36176,13.3849"
+         id="path23" />
+      <rect
+         style="opacity:0.501613;fill:#ff5555;fill-opacity:0.7;stroke:#001fff;stroke-width:0.254262"
+         id="rect22-0-7"
+         width="47.038334"
+         height="7.2454004"
+         x="21.600552"
+         y="129.7101" />
+      <text
+         xml:space="preserve"
+         style="font-size:4.23333px;line-height:7.05556px;font-family:'Roboto Mono';-inkscape-font-specification:'Roboto Mono, Normal';stroke-width:0.264583"
+         x="30.985935"
+         y="134.9285"
+         id="text16-9-0-9"><tspan
+           sodipodi:role="line"
+           id="tspan16-0-5-2"
+           style="stroke-width:0.264583"
+           x="30.985935"
+           y="134.9285">JSON Files</tspan></text>
+      <text
+         xml:space="preserve"
+         style="font-size:4.23333px;line-height:7.05556px;font-family:'Roboto Mono';-inkscape-font-specification:'Roboto Mono, Normal';stroke-width:0.264583"
+         x="25.21633"
+         y="127.56547"
+         id="text22-1-7"><tspan
+           sodipodi:role="line"
+           id="tspan22-1-1"
+           style="fill:#0000ff;stroke-width:0.264583"
+           x="25.21633"
+           y="127.56547">ramdisk/*.json</tspan></text>
+      <path
+         style="opacity:0.501613;fill:#0000ff;fill-opacity:0.431373;stroke:#001fff;stroke-width:0.955807;stroke-linecap:round;stroke-linejoin:bevel;stroke-dasharray:none;paint-order:stroke fill markers"
+         d="m 44.198554,137.36708 0.405954,10.89682"
+         id="path23-2" />
+    </g>
+    <g
+       id="g28"
+       transform="translate(-15.55542,5.0645554)">
+      <path
+         style="opacity:0.501613;fill:none;stroke:#001fff;stroke-width:3;stroke-linecap:round;stroke-linejoin:bevel;paint-order:stroke fill markers"
+         d="m 144.33982,47.028014 c 27.13155,4.341048 38.34592,21.343485 38.34592,21.343485"
+         id="path21" />
+      <path
+         style="opacity:0.501613;fill:none;stroke:#001fff;stroke-width:3;stroke-linecap:round;stroke-linejoin:bevel;paint-order:stroke fill markers"
+         d="m 183.77101,62.583434 -0.72351,5.788065"
+         id="path25"
+         inkscape:transform-center-x="3.2557856"
+         inkscape:transform-center-y="1.0852619" />
+      <path
+         style="opacity:0.501613;fill:none;stroke:#001fff;stroke-width:3;stroke-linecap:round;stroke-linejoin:bevel;paint-order:stroke fill markers"
+         d="m 176.53593,67.286235 6.51157,2.170526"
+         id="path26" />
+    </g>
+    <g
+       id="g29"
+       transform="translate(-21.705238,-15.193666)">
+      <path
+         style="opacity:0.501613;fill:none;stroke:#001fff;stroke-width:3;stroke-linecap:round;stroke-linejoin:bevel;paint-order:stroke fill markers"
+         d="m 165.68331,91.885504 c -3.49695,4.341047 -6.99391,8.682096 -12.90264,11.636436 -5.90873,2.95434 -14.22891,4.52191 -22.54925,6.08951"
+         id="path24"
+         inkscape:path-effect="#path-effect25"
+         inkscape:original-d="m 165.68331,91.885504 c -3.49695,4.341048 -6.99391,8.682096 -10.49086,13.023146 -8.32051,1.56763 -16.64069,3.1352 -24.96103,4.7028"
+         transform="translate(23.514007,15.193666)" />
+      <path
+         style="opacity:0.501613;fill:none;stroke:#001fff;stroke-width:3;stroke-linecap:round;stroke-linejoin:bevel;paint-order:stroke fill markers"
+         d="m 155.5542,119.01705 -2.53228,5.06456"
+         id="path27" />
+      <path
+         style="opacity:0.501613;fill:none;stroke:#001fff;stroke-width:3;stroke-linecap:round;stroke-linejoin:bevel;paint-order:stroke fill markers"
+         d="m 158.44824,129.14616 -5.42632,-3.97929"
+         id="path28" />
+    </g>
+    <g
+       id="g31"
+       transform="translate(1.447016)">
+      <path
+         style="opacity:0.501613;fill:none;stroke:#001fff;stroke-width:3;stroke-linecap:round;stroke-linejoin:bevel;paint-order:stroke fill markers"
+         d="M 68.009743,51.730817 C 61.498172,57.036541 54.986601,62.342264 50.705825,73.496515 46.425049,84.650767 44.375152,101.65286 42.325213,118.6553"
+         id="path29"
+         inkscape:path-effect="#path-effect29"
+         inkscape:original-d="M 68.009743,51.730817 C 61.498172,57.036541 54.986602,62.342265 48.475029,67.647988 46.42505,84.650767 44.375151,101.65286 42.325213,118.6553" />
+      <path
+         style="opacity:0.501613;fill:none;stroke:#001fff;stroke-width:3;stroke-linecap:round;stroke-linejoin:bevel;paint-order:stroke fill markers"
+         d="m 46.666261,114.676 -3.979294,3.9793"
+         id="path30" />
+      <path
+         style="opacity:0.501613;fill:none;stroke:#001fff;stroke-width:3;stroke-linecap:round;stroke-linejoin:bevel;paint-order:stroke fill markers"
+         d="m 38.345919,113.95249 3.61754,5.06456"
+         id="path31" />
+    </g>
+    <g
+       id="g34"
+       transform="translate(-0.72350792,0.36175396)">
+      <path
+         style="opacity:0.501613;fill:none;stroke:#001fff;stroke-width:3;stroke-linecap:round;stroke-linejoin:bevel;paint-order:stroke fill markers"
+         d="m 71.265528,106.35566 c -4.461632,0.96468 -8.923263,1.92936 -11.576133,4.09992 -2.65287,2.17055 -3.496947,5.54686 -4.341039,8.92323"
+         id="path32"
+         inkscape:path-effect="#path-effect32"
+         inkscape:original-d="m 71.265528,106.35566 c -4.461632,0.96468 -8.923263,1.92936 -13.384895,2.89404 -0.844111,3.37643 -1.688185,6.75274 -2.532277,10.12911" />
+      <path
+         style="opacity:0.501613;fill:none;stroke:#001fff;stroke-width:3;stroke-linecap:round;stroke-linejoin:bevel;paint-order:stroke fill markers"
+         d="m 52.454323,114.31425 2.532279,5.42631"
+         id="path33" />
+      <path
+         style="opacity:0.501613;fill:none;stroke:#001fff;stroke-width:3;stroke-linecap:round;stroke-linejoin:bevel;paint-order:stroke fill markers"
+         d="m 60.051155,116.12302 -3.979293,3.61754"
+         id="path34" />
+    </g>
+  </g>
+</svg>

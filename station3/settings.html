@@ -10,6 +10,10 @@
     font-size: 16px;
     margin: 20px;
   }
+  img {
+    width: 32px;
+    height: 32px;
+  }
   table {
     border-collapse: collapse;
     width: 50%;
@@ -28,20 +32,24 @@
 <body>
 
 <h2>Settings</h2>
-These are the current settings loaded from <code>config.json</code>.<br>
-To change a setting, log in to the station and edit <code>config.json</code>.
-<table id="configTable">
-  <thead>
-    <tr>
-      <th></th>
-      <th>setting</th>
-    </tr>
-  </thead>
-  <tbody>
-    <!-- rows will be inserted here by JavaScript -->
-  </tbody>
-</table>
-
+<p>
+  <img src="icons/redcrossedcam.svg" alt="redcrossicon"> no recording during feeding tray refill (click <img src="icons/vidcam.svg" alt="vidcam"> on main page)<br>
+  <img src="icons/greencrossedcam.svg" alt="greencrossicon"> no recording during bad illumination
+<p>
+  Following are the current settings loaded from <code>config.json</code>.<br>
+  To change a setting, log in to the station and edit <code>config.json</code>.
+  <table id="configTable">
+    <thead>
+      <tr>
+        <th></th>
+        <th>setting</th>
+      </tr>
+    </thead>
+    <tbody>
+      <!-- rows will be inserted here by JavaScript -->
+    </tbody>
+  </table>
+</p>
 <script>
   // Load config.json and display keys and values in the table
   fetch('config.json')
