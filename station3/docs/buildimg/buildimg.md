@@ -1,4 +1,4 @@
-<!--keywords[balenaEtcher,card_image_build,Flashen,Installation,pishrink,Raspbian_Image,WLAN-Konfig]-->
+<!--keywords[balenaEtcher,card_image_build,Flashen,Installation,pishrink,Raspbian_Image,WLAN-Konfig,WSL2]-->
 
 ## Installation des Image
 
@@ -26,18 +26,38 @@ Zur Konfiguration der Station siehe [config.json](../../configjson.md).
 ## Bau des Disc Image zur Weitergabe
 
 - mache ein 'sudo apt update && sudo apt upgrade', reboote und teste, ob Deine Station noch funktioniert.
+- in 'birdvenv': `pip install --upgrade flask markdown matplotlib` (getrennt mit spaces)
 - Anonymisierung für Weitergabe des Image: bei laufender Station die eigenen Schlüssel überschreiben ('XXXXXXXX') in 'config.json' .
 - Umstellung von statischer IP auf AP-Hotspot in nmtui. 
 - Shutdown des Raspbian der Vogelstation und Entnehmen der SD-Karte.
-- Einlesen der SD-Karte in ein Image 'birdDatum.img' auf dem PC mit Win32DiskImager (Windows 10/11) oder z.B. 'dd bs=4M if=/dev/sde of=birdDatum.img status=progress && sync' (Linux). Einlesen, Kopieren und Schrumpfen der 32GB-Kartendaten und testweises Flashen dauert leicht eine Stunde.
+- Einlesen der SD-Karte in ein Image 'birdDatum.img' auf dem PC mit Win32DiskImager (Windows 10/11, dauert lange) oder kürzer unter Linux:
+- `lsblk -o NAME,SIZE,TYPE,FSTYPE,MOUNTPOINT`
+`sudo fdisk -l /dev/sdX`
+`sudo dd if=/dev/sdX of=raw.img bs=512 count=$((END_rootfs+1)) status=progress
+&&sync`(nicht `count=$(((END+1)*512))`, weil bereits `bs=512`)
+`sudo ./pishrink.sh -s 512 raw.img` Shrinks rootfs to its minimum + 512 MiB headroom. Bei -s wird nicht expandiert außer später mit `raspi-config --expand-rootfs`.
+`fdisk -l raw.img`
+`truncate -s $(( (END_rootfs+1) * 512 )) raw.img`
+
 - Schrumpfen des Image mit dem Linuxskript '[pishrink.sh](pishrink.md)', unter Windows ausführen auf WSL oder über Docker Desktop mit 'borgesnotes/pishrink:latest' . 
 
 *'./pishrink.sh -s bird.img' verhindert Autoexpansion auf der SD-Karte und reduziert deren Abnutzung durch mehr Kartenplatz für den SD-Karten-Controller. Bei Platzbedarf auf der SD-Karte kann die Expansion dort nachgeholt werden durch 'raspi-config' oder parted.*
 
-- ein Image, das zuvor nicht expandiert war ('raspi-config --expand-rootfs'), kann manchmal mit pishrink.sh nicht weiter verkleinert werden, wobei das Skript dann auch den abschließenden 'unallocated space' belässt. 'gparted betzBirdXXX.img' zeigt den 'unallocated space' und 'fdisk -l betzBirdXXX.img' zeigt sowas wie 'units sectors: 512, disklabel type: dos, betzBirdXXX.img2 end: 776544'. Bei dos (MBR) den 'unallocated space' entfernen nach der Formel `(end + 1) * sectorunits`, im Beispiel `truncate -s $((776545 * 512)) betzBirdXXX.img`.
+- ein Image, das zuvor nicht expandiert war ('raspi-config --expand-rootfs'), kann manchmal mit pishrink.sh nicht weiter verkleinert werden, wobei das Skript dann auch den abschließenden 'unallocated space' belässt. 'gparted betzBirdXXX.img' zeigt den 'unallocated space' und `fdisk -l betzBirdXXX.img` zeigt sowas wie 'units sectors: 512, disklabel type: dos, betzBirdXXX.img2 end: 776544'. Bei dos (MBR) den 'unallocated space' entfernen nach der Formel `(end + 1) * sectorunits`, im Beispiel `truncate -s $((776545 * 512)) betzBirdXXX.img` oder von vornherein nur:
 
-  Bei 'disklabel type: gpt' bräuchte man zusätzlich noch `sgdisk -e betzBirdXXX.img # relocate the backup GPT table to the new end`.
+- `dd if=myraw.img of=final.img bs=512 count=$((END+1)) status=progress` (nicht `count=$(((END+1)*512))`, weil bereits `bs=512`).
+
+- Bei 'disklabel type: gpt' bräuchte man zusätzlich noch `sgdisk -e betzBirdXXX.img # relocate the backup GPT table to the new end`.
 
 - optional für Weitergabe Komprimieren von Image und Anweisungen z.B. mit 7-Zip und Hochladen in die Cloud.
 
 - Restaurieren der SD-Karte, siehe obige 'Installation des Image' ab dem zweiten Punkt.
+
+- Mounten einer SDcard als block device in Win11 WSL2 System **nur mit Powershell 5** (admin):
+
+​	`Get-Disk` zeigt die disknumber der SD card, z.B. '4'
+ 	unmount von win drive 'H:' in Win Explorer oder `offline disk` in diskpart funktionieren nicht. Das geht wohl nur mit `Dismount-Volume`, was nur in 	**Powershell 5/Windows Pro**  verfügbar ist: `Get-Volume -DiskNumber 4 | Dismount-Volume -Force`
+  	`mount \\.\PHYSICALDRIVE4 --bare` macht device mount ins wsl
+​	Jetzt seien obige Befehle möglich in WSL Linux wie `fdisk -l`
+​	`wsl --unmount \\.\PHYSICALDRIVE4` später nach abgeschlossener Arbeit in WSL.
+
