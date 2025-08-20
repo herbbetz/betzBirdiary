@@ -181,6 +181,9 @@ def chStandby():
     if m['standby'] == 0: setmsgprop('standby', 1)
     else: setmsgprop('standby', 0)
 
+def clearStandby(): # mainFoBird clears forgotten standby after 300 secs of webGUI inactivity
+    setmsgprop('standby', 0)
+    
 def log(txt):
     def change(data):
         data['linecnt'] += 1

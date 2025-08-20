@@ -313,7 +313,7 @@ def main():
         dirName = birdpath['ramdisk']
         oldimg = []
         maxOldImg = 3
-        # last_logged_minute = -1
+        inactive_counter = 0
 
         try:
             while True:
@@ -329,6 +329,7 @@ def main():
 
                 elif ms.getClientActive() == 1: # set by flaskBird.py
                     if testmode: ms.log("shooting a still")
+                    inactive_counter = 0
                     timestamp = round(time.time() * 1000)
                     imgName = f"{dirName}/{timestamp}.jpg"
                     capture_img(picam, imgName)
@@ -341,7 +342,9 @@ def main():
                 else:
                     now = datetime.now()
                     if testmode: ms.log("brightness check instead of still possible")
-                    # if now.minute % 15 == 0 and now.minute != last_logged_minute: last_logged_minute = now.minute
+                    # clear forgotten standby after 300 secs of webGUI inactivity:
+                    inactive_counter += 1 if inactive_counter < 32767 else 0
+                    if inactive_counter == 300: ms.clearStandby()
                     get_brightness(picam, now)
 
                 time.sleep(sleepTime)
