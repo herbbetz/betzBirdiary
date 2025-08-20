@@ -56,8 +56,8 @@ Zur Konfiguration der Station siehe [config.json](../../configjson.md).
 - Mounten einer SDcard als block device in Win11 WSL2 System **nur mit Powershell 5** (admin):
 
 ​	`Get-Disk` zeigt die disknumber der SD card, z.B. '4'
- 	unmount von win drive 'H:' in Win Explorer oder `offline disk` in diskpart funktionieren nicht. Das geht wohl nur mit `Dismount-Volume`, was nur in 	**Powershell 5/Windows Pro**  verfügbar ist: `Get-Volume -DiskNumber 4 | Dismount-Volume -Force`
-  	`mount \\.\PHYSICALDRIVE4 --bare` macht device mount ins wsl
-​	Jetzt seien obige Befehle möglich in WSL Linux wie `fdisk -l`
+ 	unmount von win drive 'H:' in Win Explorer oder `offline disk` in diskpart funktionieren nicht. Das geht wohl nur mit `Dismount-Volume`, was nur in 	**Powershell 5/Windows Pro**  verfügbar ist: `Get-Volume -DiskNumber 4 | Dismount-Volume -Force`.
+  	`mount \\.\PHYSICALDRIVE4 --bare` macht device mount ins WSL.
+​	Jetzt seien obige Befehle möglich in WSL Linux wie `fdisk -l`.
 ​	`wsl --unmount \\.\PHYSICALDRIVE4` später nach abgeschlossener Arbeit in WSL.
 
