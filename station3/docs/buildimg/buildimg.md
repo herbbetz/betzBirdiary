@@ -3,7 +3,7 @@
 ## Installation des Image
 
 Das Image der Vogelhaussoftware enthält das ganze Raspbian OS mit allen Softwarekomponenten. 
-- Das Raspbian Image 'birdDatum.img' wird z.B. mit '[balenaEtcher](https://etcher.balena.io/)' auf eine SD-Karte geflasht. 
+- Das Raspbian Image 'birdDatum.img' wird z.B. mit '[balenaEtcher](https://etcher.balena.io/)' auf eine SD-Karte geflasht. Unter Linux mit `lsblk` das Blockdevice `/dev/sdX` der gemounteten SD Card ermitteln, dann `dd if=betzBirdXXX.img of=/dev/sdX bs=4M status=progress && sync`, dann eject.
 
 - Dort kann die Bootpartition aufgrund ihres fat32-Formates unter allen Betriebssystemen gelesen werden. Unter Linux ist  nicht nur das bootfs, sondern auch das rootfs editierbar (vom User 'root'). Früher unter Raspian 'bullseye' wurde in bootfs 'ssh' (leere Datei) und 'wpa_supplicant' mit den eigenen WLAN-Schlüsseln eingetragen. Das neue Raspbian 'bookworm' arbeitet jedoch mit 'NetworkManager' und wird anders ins Heim-WLAN gebracht.
 
@@ -25,16 +25,23 @@ Zur Konfiguration der Station siehe [config.json](../../configjson.md).
 
 ## Bau des Disc Image zur Weitergabe
 
-- mache ein 'sudo apt update && sudo apt upgrade', reboote und teste, ob Deine Station noch funktioniert.
-- in 'birdvenv': `pip install --upgrade flask markdown matplotlib` (getrennt mit spaces)
+- mache ein `sudo apt update && sudo apt upgrade`.
+- in 'birdvenv': `pip3 install --upgrade flask markdown matplotlib` (getrennt mit spaces) und `pip3 uninstall numpy` (Inkompat. zu `apt install python3-picamera2` ).
+- reboote und teste, ob Deine Station noch funktioniert.
 - Anonymisierung für Weitergabe des Image: bei laufender Station die eigenen Schlüssel überschreiben ('XXXXXXXX') in 'config.json' .
-- Umstellung von statischer IP auf AP-Hotspot in nmtui. 
+`sudo ./wlan-yaml.sh wlan.yml` (noch ohne reboot) und `./config-yaml.sh config.yml`.
+- pi crontab deaktivieren (abendliche Shutdown Skripts): `crontab crontab4test.txt` und `crontab -l`.
+- Umstellung von statischer IP auf AP-Hotspot mit nmcli.
+`sudo nmcli connection modify "bird-static210" connection.autoconnect-priority -100`,
+`sudo cat "/etc/NetworkManager/system-connections/bird-static210.nmconnection"`,
+teste nach reboot.
+Bei ungültigen WLAN-Daten in "bird-static210" sollte AP-Hotspot "bird-ap-dhcp" sich auch automatisch aktivieren.
 - Shutdown des Raspbian der Vogelstation und Entnehmen der SD-Karte.
-- Einlesen der SD-Karte in ein Image 'birdDatum.img' auf dem PC mit Win32DiskImager (Windows 10/11, dauert lange) oder kürzer unter Linux:
+- Einlesen der SD-Karte in ein Image 'birdDatum.img' auf dem PC mit Win32DiskImager (Windows 10/11, dauert lange) oder unter 5 min. in Linux:
 - `lsblk -o NAME,SIZE,TYPE,FSTYPE,MOUNTPOINT`
 `sudo fdisk -l /dev/sdX`
 `sudo dd if=/dev/sdX of=raw.img bs=512 count=$((END_rootfs+1)) status=progress
-&&sync`(nicht `count=$(((END+1)*512))`, weil bereits `bs=512`)
+&& sync`(nicht `count=$(((END+1)*512))`, weil bereits `bs=512`). Betrachte mit `gparted raw.img`.
 `sudo ./pishrink.sh -s 512 raw.img` Shrinks rootfs to its minimum + 512 MiB headroom. Bei -s wird nicht expandiert außer später mit `raspi-config --expand-rootfs`.
 `fdisk -l raw.img`
 `truncate -s $(( (END_rootfs+1) * 512 )) raw.img`

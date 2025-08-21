@@ -343,7 +343,7 @@ def main():
                     now = datetime.now()
                     if testmode: ms.log("brightness check instead of still possible")
                     # clear forgotten standby after 300 secs of webGUI inactivity:
-                    inactive_counter += 1 if inactive_counter < 32767 else 0
+                    inactive_counter += 1 if inactive_counter < 32760 else 0
                     if inactive_counter == 300: ms.clearStandby()
                     get_brightness(picam, now)
 
