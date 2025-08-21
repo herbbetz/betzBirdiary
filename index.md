@@ -32,5 +32,5 @@ Besides the manuals this is intended for more easy reading about this project.
 
 
 
-{% include station3/easy_install.md %}
+{% include easy_install.md %}
 
