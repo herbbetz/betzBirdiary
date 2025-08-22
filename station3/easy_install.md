@@ -11,3 +11,5 @@
 - Nach den Mustern `wlan.yml` und `config.yml` eigene Dateien erstellen und mit `config-yaml.sh my-config.yml` und `sudo ./wlan-yaml.sh my-wlan.yml` der `station3` beibringen und rebooten.
 
 - Mit `crontab crontab.txt` die `pi crontab` aktivieren. Wie `crontab -l` zeigt, sind dann auch Skripte aktiviert, die die Station abends und bei 'sunset' herunterfahren.
+
+- Zuletzt noch ein ca. 100 g schweres Hängegewicht für die Sitzstange vorbereiten und `python3 calibrateHx711v2.py` aufrufen.
