@@ -26,18 +26,26 @@ Zur Konfiguration der Station siehe [config.json](../../configjson.md).
 ## Bau des Disc Image zur Weitergabe
 
 - mache ein `sudo apt update && sudo apt upgrade`.
+
 - in 'birdvenv': `pip3 install --upgrade flask markdown matplotlib` (getrennt mit spaces) und `pip3 uninstall numpy` (Inkompat. zu `apt install python3-picamera2` ).
+
 - reboote und teste, ob Deine Station noch funktioniert.
+
 - Anonymisierung für Weitergabe des Image: bei laufender Station die eigenen Schlüssel überschreiben ('XXXXXXXX') in 'config.json' .
-`sudo ./wlan-yaml.sh wlan.yml` (noch ohne reboot) und `./config-yaml.sh config.yml`.
+  `sudo ./wlan-yaml.sh wlan.yml` (noch ohne reboot) und `./config-yaml.sh config.yml`.
+
 - pi crontab deaktivieren (abendliche Shutdown Skripts): `crontab crontab4test.txt` und `crontab -l`.
+
 - Umstellung von statischer IP auf AP-Hotspot mit nmcli.
-`sudo nmcli connection modify "bird-static210" connection.autoconnect-priority -100`,
-`sudo cat "/etc/NetworkManager/system-connections/bird-static210.nmconnection"`,
-teste nach reboot.
-Bei ungültigen WLAN-Daten in "bird-static210" sollte AP-Hotspot "bird-ap-dhcp" sich auch automatisch aktivieren.
+  `sudo nmcli connection modify "bird-static210" connection.autoconnect-priority -100`,
+  `sudo cat "/etc/NetworkManager/system-connections/bird-static210.nmconnection"`,
+  teste nach reboot.
+  Bei ungültigen WLAN-Daten in "bird-static210" sollte AP-Hotspot "bird-ap-dhcp" sich auch automatisch aktivieren.
+
 - Shutdown des Raspbian der Vogelstation und Entnehmen der SD-Karte.
+
 - Einlesen der SD-Karte in ein Image 'birdDatum.img' auf dem PC mit Win32DiskImager (Windows 10/11, dauert lange) oder unter 5 min. in Linux:
+
 - `lsblk -o NAME,SIZE,TYPE,FSTYPE,MOUNTPOINT`
 `sudo fdisk -l /dev/sdX`
 `sudo dd if=/dev/sdX of=raw.img bs=512 count=$((END_rootfs+1)) status=progress
@@ -45,6 +53,20 @@ Bei ungültigen WLAN-Daten in "bird-static210" sollte AP-Hotspot "bird-ap-dhcp" 
 `sudo ./pishrink.sh -s 512 raw.img` Shrinks rootfs to its minimum + 512 MiB headroom. Bei -s wird nicht expandiert außer später mit `raspi-config --expand-rootfs`.
 `fdisk -l raw.img`
 `truncate -s $(( (END_rootfs+1) * 512 )) raw.img`
+
+- verifizieren des img unter Linux:
+
+  `sudo losetup -fP raw.img` 	`-f` = find the next free loop device. `-P` = automatically scan and map the partitions inside the image.
+
+  `lsblk` shows loop devices.
+
+  `sudo fsck.ext4 -f /dev/loop0p2` checks and fixes rootfs.
+
+  `sudo fsck.vfat -a /dev/loop0p1` same with bootfs.
+
+  `sudo losetup -d /dev/loop0` detaches img.
+
+  `xz -z9 raw.img` xz Kompression kann von balena etcher unter Win/Ubuntu direkt geflasht werden.
 
 - Schrumpfen des Image mit dem Linuxskript '[pishrink.sh](pishrink.md)', unter Windows ausführen auf WSL oder über Docker Desktop mit 'borgesnotes/pishrink:latest' . 
 

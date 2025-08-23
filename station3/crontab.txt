@@ -16,7 +16,7 @@ PYTHON=/home/pi/birdvenv/bin/python3
 # upload environment data every 15 min:
 */15 * * * * $PYTHON $APPDIR/dhtBird3.py >> $APPDIR/logs/dht_sun.log 2>&1
 # shut down on sunset:
-*/16 * * * * $PYTHON $APPDIR/sunset2.py >> $APPDIR/logs/dht_sun.log 2>&1
+*/16 17-22 * * * $PYTHON $APPDIR/sunset2.py >> $APPDIR/logs/dht_sun.log 2>&1
 # shut down station at 18:54 daily before disconnecting mains at 19:00 :
 54 21 * * * bash $APPDIR/tasmotaDown.sh eveningDown >> $APPDIR/logs/down.log 2>&1
 # ----
