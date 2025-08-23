@@ -24,15 +24,10 @@ for i in {1..30}; do
     log "Waiting for DNS ($i)"
     sleep 2
 done
-# CON_NAME="bird-static210"
-# OLD_CON="bird-ap-dhcp"
 if [ "$dns_ok" = false ]; then
     log "DNS lookup failed after 30 tries — hope continuing as hotspot" # hotspot activated by NetworkManagers system-connection priority
-    # sudo nmcli connection modify "$CON_NAME" connection.autoconnect no
-    # sudo nmcli connection modify "$OLD_CON" connection.autoconnect yes
-    # sudo nmcli connection reload
-    ## setsid or nohup ->also workes after ssh session dropped, connection up involves previous_conn down:
-    # setsid bash -c "sleep 5 && sudo nmcli connection up '$OLD_CON'" > /dev/null 2>&1 &
+else
+    setsid bash internetTest2.sh >> logs/internet.log 2>&1 & # not in hotspot without internet! will drop ssh connection after 3 min
 fi
 # from now on start programs
 setsid bash "$APPDIR/mdroid.sh" stationLoaded & # mdroid.sh writes to curl.log
@@ -53,8 +48,6 @@ setsid $PYTHON mainFoBird3.py >> logs/main.log 2>&1 & # could be used instead fo
 sleep 8 # the child process takes time to establish
 # looping shutdown scripts, when system more stable:
 setsid bash sysMon.sh >> logs/sysmon.log 2>&1 # once at boot in foreground, then every 15 min via pi's crontab -l
-setsid bash internetTest2.sh >> logs/internet.log 2>&1 &
-# bash birdActivTest.sh >> logs/actity.log 2>&1
 sleep 2
 # upload environment at start
 setsid $PYTHON dhtBird3.py >> logs/envDHT.log 2>&1 &

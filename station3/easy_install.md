@@ -6,7 +6,7 @@
 
   *Tipp: Teste die SD Karte erst in einem Raspi 4 indoors bezüglich Raspi LEDs und Aufbau eines WLAN Hotspots namens 'bird-ap210'.*
 
-- Nach dem Booten sich mit dem Bird-WLAN-Hotspot verbinden (WLAN PW: bird24root) und mit `ssh pi@192.168.4.1` einloggen (Login PW: bird24, Root PW: bird24root).
+- Menü des eigenen Routers öffnen, Netzwerkkabel in den Raspi einstecken & booten, seine IP im Routernetzwerk suchen und mit `ssh pi@<IP>` einloggen (Login PW: bird24, Root PW: bird24root).
 
 - Nach den Mustern `wlan.yml` und `config.yml` eigene Dateien erstellen und mit `config-yaml.sh my-config.yml` und `sudo ./wlan-yaml.sh my-wlan.yml` der `station3` beibringen und rebooten.
 
