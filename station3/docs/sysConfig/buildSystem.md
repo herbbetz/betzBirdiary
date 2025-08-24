@@ -35,9 +35,9 @@
 	für libcamera nötig: /home/pi/station2/birdvenv/lib/python3.11/site-packages/libcamera_path.pth mit Inhalt "/usr/lib/python3/dist-packages"
 	- innerhalb des birdvenv installiere alle Module mit 'pip' (venv beinhaltet pip) und update sie später dort mit 'pip install --upgrade'.
 	- 'pip freeze > requirements.txt' listet dorthin alle im birdvenv installierten Module. Kann verwendet werden mit 'pip install -r requirements.txt' (anders als 'pip list > requirements.txt').
-	- (birdvenv) 'pip3 install flask, markdown, matplotlib' und 'apt install python3-picamera2' (aktueller als mit pip3), dann 'pip3 uninstall numpy' wegen Inkompat. des "pip numpy" zu "apt picamera2".
+	- (birdvenv) 'pip3 install ephem flask markdown matplotlib' und 'apt install python3-picamera2' (aktueller als mit pip3), dann 'pip3 uninstall numpy' wegen Inkompat. des "pip numpy" zu "apt picamera2".
 	- um birdvenv nicht ständig zu überschreiben, wird es außerhalb station3 in /home/pi unter root betrieben, ebenso wie seine Begleiter ''/4venv' und 'activate_venv.sh'. Letzteres aus der Kommandozeile sourcen ('.' oder 'source activate_venv.sh'), damit es nicht in einer Subshell ausgeführt und sofort wieder beendet wird. 'birdvenv activ' bedeutet 'echo $VIRTUAL_ENV' zeigt 'birdvenv' an.
-	- andere 'apt installs': python3-ephem (sunset2.py)
+	- andere 'apt installs': python3-ephem (sunset2.py), aber aktueller ist 'pip install ephem'
 - GPIO
 	Für den GPIO Zugriff im Raspberry ist bei zeitkritischen Sensoren (bit banging) wie Hx711 oder Dht22 eine C-Schicht erforderlich, die mit Python (lgpio, pigpio) dann gesteuert wird. lgpio und pigpio können wiederum mit gpiozero abstrahiert werden, aber nur für einfache Geräte (LED, Motoren), nicht für Hx711 oder DHT.
 - **[pigpio](https://abyz.me.uk/rpi/pigpio/examples.html)**:

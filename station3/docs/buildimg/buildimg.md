@@ -29,7 +29,7 @@ Zur Konfiguration der Station siehe [config.json](../../configjson.md).
 
 - mache ein `sudo apt update && sudo apt upgrade`.
 
-- in 'birdvenv': `pip3 install --upgrade flask markdown matplotlib` (getrennt mit spaces) und `pip3 uninstall numpy` (Inkompat. zu `apt install python3-picamera2` ).
+- in 'birdvenv': `pip3 install --upgrade ephem flask markdown matplotlib` (getrennt mit spaces) und `pip3 uninstall numpy` (Inkompat. zu `apt install python3-picamera2` ).
 
 - reboote und teste, ob Deine Station noch funktioniert.
 
