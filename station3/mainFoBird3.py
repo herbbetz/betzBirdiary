@@ -262,7 +262,7 @@ def main():
     ms.emptyVidDateStr()
     # ms.setUpmode(1) # direct upload
     ms.setLux(3) # set luxcategory to normal
-    ms.log("Set up balance as child process")
+    ms.log("Set up balance receive as child process")
     bQueue = multiprocessing.Queue()
     child1 = multiprocessing.Process(target=readBalance, args=(bQueue,))
     child1.start()

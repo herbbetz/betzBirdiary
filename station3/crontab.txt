@@ -12,7 +12,7 @@ PYTHON=/home/pi/birdvenv/bin/python3
 # run on even hours like 0:00, 2:00, 4:00
 0 */2 * * * bash $APPDIR/statist/getStats.sh >> $APPDIR/logs/statist.log 2>&1
 # read sys params every 15 min:
-*/14 * * * * bash $APPDIR/sysMon.sh >> $APPDIR/logs/sysmon.log 2>&1
+*/14 * * * * bash $APPDIR/sysmon2.sh >> $APPDIR/logs/sysmon.log 2>&1
 # upload environment data every 15 min:
 */15 * * * * $PYTHON $APPDIR/dhtBird3.py >> $APPDIR/logs/dht_sun.log 2>&1
 # shut down on sunset:

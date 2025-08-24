@@ -18,7 +18,7 @@ monitor["date"]="$(date)"
 
 # uptime
 uptime_secs=$(cut -d " " -f1 /proc/uptime | cut -d"." -f1)
-monitor["uptime"]="$(secs2hours "$uptime_secs")hrs"
+monitor["uptime"]="$(secs2hours "$uptime_secs")hrs ($uptime_secs secs)"
 
 # wlan0 IP (IPv4)
 IP4=$(ip -4 addr show wlan0 2>/dev/null | grep -oP '(?<=inet\s)\d+(\.\d+){3}' || echo "N/A")
@@ -58,5 +58,7 @@ jq -n \
 
 # --- update sysmonEvt counter in vidmsg.json with advisory lock ---
 msgfile="$RAMDISK/vidmsg.json"
-touch "$msgfile"
-flock "$msgfile" ./updateSysmonEvt.sh
+
+# flock the file and run the helper script
+flock "$msgfile" ./update_vidmsg.sh "$msgfile"
+# do not put the code of ./update_vidmsg.sh in here. This would lead to messy subshell quoting issues.

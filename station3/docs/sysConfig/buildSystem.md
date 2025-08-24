@@ -47,6 +47,7 @@
 - [**lgpio**](https://abyz.me.uk/lg/py_lgpio.html) >> wurde für station3 verwendet:
 	- 'python3-lgpio' bereits installiert in system-site-packages.
 	- ein 'lgpiod' ist unter bookworm nicht zu finden und auch nicht nötig.
+	- siehe [Testskripte](../../lgpioBird/lgpio.md) für Hardware
 	- hx711: station3/lgpioBird/HX711.py von ChatGPT abgeleitet (schnelles Timing!), alternativ: https://github.com/endail/hx711-rpi-py and https://pypi.org/project/hx711-rpi-py/
 	- DHT22: https://abyz.me.uk/lg/examples.html#Python%20lgpio
 - **gpiozero** als frontend to lgpio oder pigpio:
