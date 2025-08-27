@@ -30,8 +30,8 @@ mapfile -t kv_pairs < <( # put lines into array kv_pairs, -t removes trailing \n
     sed 's/[[:space:]]*:[[:space:]]*/=/'       # replace : with =
 )
 
-tmp_json=$(mktemp)
-cp "$JSON_FILE" "$tmp_json"
+# start with current JSON
+json_data="$(cat "$JSON_FILE")"
 
 for kv in "${kv_pairs[@]}"; do
     # %% vs #, remove part after vs before:
@@ -40,25 +40,24 @@ for kv in "${kv_pairs[@]}"; do
 
     if [[ -z "$key" ]]; then # check for ':value' in the yaml, whereas 'key:' should end up in the json as "key":""
         echo "Error: Empty key found in $YAML_FILE"
-        rm -f "$tmp_json"
         exit 1
     fi
 
-
     # jq -e 'has($k)' ensures the key exists at the top level of the JSON:
-    if ! jq -e --arg k "$key" 'has($k)' "$tmp_json" > /dev/null; then
+    if ! jq -e --arg k "$key" 'has($k)' <<< "$json_data" > /dev/null; then
         echo "Error: Key '$key' not found in $JSON_FILE"
-        rm -f "$tmp_json"
         exit 1
     fi
 
     # Update value using jq to set .[$k] to the YAML’s value (string by default):
-    tmp_json2=$(mktemp)
-    jq --arg k "$key" --arg v "$value" '.[$k] = $v' "$tmp_json" > "$tmp_json2"
-    mv "$tmp_json2" "$tmp_json"
+    json_data="$(jq --arg k "$key" --arg v "$value" '.[$k] = $v' <<< "$json_data")"
 done
 
-# Overwrite the JSON file
+# Create a temp file in the same directory as JSON_FILE (needed for atomic mv)
+json_dir="$(dirname "$JSON_FILE")"
+tmp_json="$(mktemp "${json_dir}/config.json.XXXXXX")"
+printf '%s\n' "$json_data" > "$tmp_json"
+
+# Overwrite the JSON file under lock using helper
 flock "$JSON_FILE" ./update_config.sh "$tmp_json"
-rm "$tmp_json"
 echo "$JSON_FILE updated from $YAML_FILE."
