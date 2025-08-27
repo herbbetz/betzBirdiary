@@ -1,5 +1,5 @@
 # shared functions
-import os, subprocess, re, json
+import os, subprocess, json
 
 PIDfile = ["mainPID.txt", "hxFiPID.txt"] # PIDfile ids for programms
 app_dir = '/home/pi/station3/' # path to main app directory
@@ -38,43 +38,6 @@ def clearPID(id):
     os.remove(PIDfile[id])
 
 '''
-def update_config_file(config_path, offset_val, scale_val):
-    """Update or insert hxOffset and hxScale in config file."""
-    updated = False
-
-    # Read the existing lines
-    if os.path.exists(config_path):
-        with open(config_path, 'r') as f:
-            lines = f.readlines()
-    else:
-        return
-
-    new_lines = []
-    for line in lines:
-        if re.match(r'^\s*hxOffset\s*=', line):
-            new_lines.append(f'hxOffset = {offset_val}\n')
-            updated = True
-        elif re.match(r'^\s*hxScale\s*=', line):
-            new_lines.append(f'hxScale = {scale_val}\n')
-            updated = True
-        else:
-            new_lines.append(line)
-
-    # Append new lines if not found
-    if not any(re.match(r'^\s*hxOffset\s*=', l) for l in new_lines):
-        new_lines.append(f'hxOffset = {offset_val}\n')
-    if not any(re.match(r'^\s*hxScale\s*=', l) for l in new_lines):
-        new_lines.append(f'hxScale = {scale_val}\n')
-
-    # Write back
-    with open(config_path, 'w') as f:
-        f.writelines(new_lines)
-
-    print(f"    Updated {config_path} with:")
-    print(f"    hxOffset = {offset_val}")
-    print(f"    hxScale  = {scale_val}")
-'''
-
 def update_config_json(config_path, offset_val, scale_val):
     #Update or insert hxOffset and hxScale in config.json.
     data = {}
@@ -96,7 +59,7 @@ def update_config_json(config_path, offset_val, scale_val):
     print(f"    Updated {config_path} with:")
     print(f"    hxOffset = {offset_val}")
     print(f"    hxScale  = {scale_val}")
-
+'''
 def chg_punct(oldstr):
     # change punctuation in string according to following dict:
     replacements = {' ': '_', ':': '-', '.': '-'} # https://www.geeksforgeeks.org/python-replace-multiple-characters-at-once/

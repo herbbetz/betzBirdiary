@@ -1,6 +1,6 @@
 # call from crontab
 from datetime import datetime
-import ephem # apt-get install python3-ephem
+import ephem # pip install ephem is more current than apt install python3-ephem
 import subprocess
 from configBird3 import birdpath
 

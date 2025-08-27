@@ -1,4 +1,5 @@
 #!/bin/bash
+# sysmon2.sh puts an flock on this script
 # helper script for sysmon2.sh to avoid messy subshell quoting inside it
 set -euo pipefail
 

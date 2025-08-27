@@ -14,8 +14,8 @@ import numpy as np
 import os
 import errno
 from lgpioBird.HX711 import HX711
-from sharedBird import roundFlt, fifoExists, writePID, clearPID, update_config_json # shared functions in shareBird.py
-from configBird3 import birdpath, hxDataPin, hxClckPin, hxOffset, hxScale, weightThreshold, weightlimit # import variables from ./configBird.py
+from sharedBird import roundFlt, fifoExists, writePID, clearPID  # shared functions in shareBird.py
+from configBird3 import birdpath, hxDataPin, hxClckPin, hxOffset, hxScale, weightThreshold, weightlimit, update_config_json # import variables from ./configBird.py
 import msgBird as ms
 
 def get_mean(sensor, num_vals, hOffset, sleeptime):
@@ -142,7 +142,7 @@ try:
 except (KeyboardInterrupt, SystemExit):
     ms.log("balance going down")
 finally:
-    update_config_json(config_path, hxOffset, hxScale)
+    update_config_json({"hxOffset": hxOffset, "hxScale": hxScale})
     hx.close()
     clearPID(1)
     ms.log(f"End hxFiBird3 {datetime.now()}")

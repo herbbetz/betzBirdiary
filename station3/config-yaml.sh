@@ -59,6 +59,6 @@ for kv in "${kv_pairs[@]}"; do
 done
 
 # Overwrite the JSON file
-mv "$tmp_json" "$JSON_FILE"
-
+flock "$JSON_FILE" ./update_config.sh "$tmp_json"
+rm "$tmp_json"
 echo "$JSON_FILE updated from $YAML_FILE."
