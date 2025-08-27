@@ -3,5 +3,6 @@
 Please see the [new README here](./station3/README.md).
 
 
-
-[Kurzanleitung](station3/easy_install.md)
+###Kurzanleitungen###
+[Installation](station3/easy_install.md)
+[Softwarepflege](station3/easy_care.md)
