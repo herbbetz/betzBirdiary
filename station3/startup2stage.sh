@@ -47,7 +47,7 @@ sleep 4
 setsid $PYTHON mainFoBird3.py >> logs/main.log 2>&1 & # could be used instead for direct video upload without confirmation
 sleep 8 # the child process takes time to establish
 # looping shutdown scripts, when system more stable:
-setsid bash sysMon.sh >> logs/sysmon.log 2>&1 # once at boot in foreground, then every 15 min via pi's crontab -l
+setsid bash sysmon2.sh >> logs/sysmon.log 2>&1 # once at boot in foreground, then every 15 min via pi's crontab -l
 sleep 2
 # upload environment at start
 setsid $PYTHON dhtBird3.py >> logs/envDHT.log 2>&1 &

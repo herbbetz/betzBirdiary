@@ -75,6 +75,11 @@ h2{
     background-color: grey;
     overflow: auto;/*for scrolling*/
 }
+#envir:hover,
+#sysmon:hover {
+  background-color: #0f0f0f;
+  cursor: pointer;
+}
 #vidmsg, #confirmbtn{
     visibility: hidden; /*hidden*/
 }

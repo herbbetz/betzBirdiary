@@ -15,6 +15,7 @@ import matplotlib.pyplot as plt
 from collections import defaultdict
 import io
 
+PYTHON = "/home/pi/birdvenv/bin/python3"
 ### inactivity monitor for endpoint /msgjson
 lock = threading.Lock()
 timeout = 5  # seconds
@@ -90,12 +91,24 @@ def upload():
    # subprocess.call(cmd, shell=True)
    # see effect on shell using 'tail -f ramdisk/birdpipe' when no other reader active (like mainFoBird.py)
    # return cmStr # test this in browser incognito window without cache
-   return send_from_directory(app.static_folder, 'snapshot.html') # flask needs to return a response
+   return send_from_directory(app.static_folder, 'snapshot.html') # flask needs to return a response, but could also be a json like in /envupdate
 
 @app.route('/standby')
 def chstandby():
    ms.chStandby()
    return send_from_directory(app.static_folder, 'vidshot3.html')
+
+@app.route('/envupdate')
+def envupdate():
+   cmd = f"{PYTHON} {birdpath['appdir']}/dhtBird3.py"
+   subprocess.call(cmd, shell=True)
+   return jsonify(success=True)
+
+@app.route('/sysupdate')
+def sysupdate():
+   cmd = f"bash {birdpath['appdir']}/sysmon2.sh"
+   subprocess.call(cmd, shell=True)
+   return jsonify(success=True)
 
 @app.route('/msgjson', methods = ['GET'])
 def msgJSON():

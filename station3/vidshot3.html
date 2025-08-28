@@ -40,7 +40,7 @@
         <a href="https://www.wiediversistmeingarten.org/view" target="_blank" rel="noopener noreferrer">Birdiary Karte</a><br>
         <small>
             <a href="README.md" target="_blank" rel="noopener noreferrer">Gestaltung:</a> H. Betz, herber7be7z@gmail.com<br>
-            /upload will capture video (no bird on balance), press 'space' for debugging<br>
+            /upload will capture video, press 'space' for debugging, update fields by clicking them.<br>
             <a href="https://github.com/herbbetz/betzBirdiary" target="_blank" rel="noopener noreferrer">
                 <svg width="24" height="26" xmlns="http://www.w3.org/2000/svg">
                     <path fill-rule="evenodd" clip-rule="evenodd" 
@@ -99,7 +99,9 @@
             envir: "ramdisk/env.json",
             sysmon: "ramdisk/sysmon.json",
             vidmsg: "/msgjson",
-            stdby: "/standby"
+            stdby: "/standby",
+            envupdate: "/envupdate",
+            sysupdate: "/sysupdate"
         };
 
         // State for UI and freshness tracking
@@ -124,6 +126,33 @@
 
         dom.stdbyimg.addEventListener('click', function(e) {
             fetch(URLS.stdby, { method: 'GET' })
+        });
+
+        dom.envir.addEventListener('click', () => {
+            fetch(URLS.envupdate)
+                .then(response => {
+                    if (response.ok) {
+                        console.log('ENV update initiated successfully.');
+                    } else {
+                        console.error('Failed to initiate ENV update.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        });        
+
+        dom.sysmon.addEventListener('click', async () => {
+            try {
+                const response = await fetch(URLS.sysupdate);
+                if (response.ok) {
+                    console.log('System update initiated successfully.');
+                } else {
+                    console.error('Failed to initiate system update.');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
         });
 
         document.addEventListener('keydown', function(event) {

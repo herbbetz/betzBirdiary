@@ -60,5 +60,5 @@ jq -n \
 msgfile="$RAMDISK/vidmsg.json"
 
 # flock the file and run the helper script
-flock "$msgfile" ./update_vidmsg.sh "$msgfile"
+flock "$msgfile" ./update_vidmsg.sh "$msgfile" # lock file as long as child script runs in subshell
 # do not put the code of ./update_vidmsg.sh in here. This would lead to messy subshell quoting issues.
