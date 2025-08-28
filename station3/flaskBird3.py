@@ -9,7 +9,7 @@ import threading, time # for client inactivity monitoring
 from datetime import datetime
 import markdown
 import msgBird as ms
-from configBird3 import birdpath
+from configBird3 import birdpath, update_config_json
 # for camdata plotting:
 import matplotlib.pyplot as plt
 from collections import defaultdict
@@ -109,6 +109,26 @@ def sysupdate():
    cmd = f"bash {birdpath['appdir']}/sysmon2.sh"
    subprocess.call(cmd, shell=True)
    return jsonify(success=True)
+
+@app.route('/updatesettings', methods=['POST'])
+def update_settings():
+   """
+   Handles the JSON POST request from settings.html to update settings.
+   """
+   # Check if the request contains JSON data
+   if not request.is_json:
+      return jsonify(status='error', message='Request must be JSON'), 400
+
+   new_settings = request.json
+   # Check if new_settings is a valid dictionary
+   if not isinstance(new_settings, dict):
+      return jsonify(status='error', message='Invalid JSON format'), 400
+   try:
+      update_config_json(new_settings)
+      return jsonify(status='success', message='Settings updated successfully.')
+   except Exception as e:
+      # A catch-all for any unexpected errors during the process
+      return jsonify(status='error', message=f"An error occurred during update: {str(e)}"), 500
 
 @app.route('/msgjson', methods = ['GET'])
 def msgJSON():
