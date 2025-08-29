@@ -34,6 +34,15 @@ create_wlan_yml() {
 }
 ----
 
+connecting new wlan:
+nmcli dev wifi connect "SSID" password "PASSWORD"
+
+WPS-Router-Button (PBC = push button connect):
+Innerhalb 2 min nach Drücken der WPS-Taste:
+    nmcli dev wifi connect wps-pbc ODER BESSER nmcli dev wifi connect <SSID> wps-pbc
+Bei erfolgreicher Verbindung wird das neue Profil automatisch vom NetworkManager erzeugt und ist somit permanent!
+danach reboot ODER sudo systemctl restart NetworkManager
+
 new connection:
 nmcli connection add type wifi ifname wlan0 con-name test ssid MySSID
 

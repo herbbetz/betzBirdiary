@@ -14,6 +14,7 @@ if [ -d "$APPDIR" ]; then
     # echo "Changed to directory: $(pwd)" # Optional: confirm directory change
     chmod +x ./*.sh
     bash "$APPDIR/welcome.sh"
+    bash "$APPDIR/diskAlert.sh"
     mail
 fi
 source "$HOME/activate_birdvenv.sh"
