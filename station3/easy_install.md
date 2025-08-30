@@ -18,11 +18,13 @@
 
   - Deaktiviere MAC-Sperren im Router, die neue WLAN-Geräte nicht zulassen.
 
-- Ist die Station im Heimnetz-Router-WLAN angekommen, kann das WebGUI der Station unter `http://<wlan-ip>:8080` aufgerufen werden. Dort sind unter `action-settings-edit` Parameter wie die birdiary `boxId` der eigenen Vogelstation einzugeben. Diese landen dann in `config.json`.
+- Ist die Station im Heimnetz-Router-WLAN angekommen, kann das WebGUI der Station unter `http://<wlan-ip>:8080` aufgerufen werden. Dort sind unter `actions-settings-edit` Parameter wie die birdiary `boxId` der eigenen Vogelstation einzugeben. Diese landen dann in `config.json`. Die neuen Parameter werden erst nach einem `actions-reboot` bzw. `sudo reboot` wirksam.
 
 - Auf Kommandozeile mit `crontab crontab.txt` die `pi crontab` aktivieren. Wie `crontab -l` zeigt, sind dann auch Skripte aktiviert, die die Station abends und bei 'sunset' herunterfahren.
 
 - Zuletzt noch ein ca. 100 g schweres Hängegewicht für die Sitzstange vorbereiten und `python3 calibrateHx711v2.py` aufrufen.
+
+- Optional: `raspi-config --expand-rootfs` schafft Platz für eigene Anwendungen (Nachinstallation Docker oder Desktop etc.) .
 
 
 
