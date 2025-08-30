@@ -48,7 +48,9 @@ Zur Konfiguration der Station siehe [config.json](../../configjson.md).
 
 - Shutdown des Raspbian der Vogelstation und Entnehmen der SD-Karte.
 
-- Einlesen der SD-Karte in ein Image 'birdDatum.img' auf dem PC mit Win32DiskImager (Windows 10/11, dauert lange) oder unter 5 min. in Linux:
+- Einlesen der SD-Karte in ein Image 'birdDatum.img' auf dem PC mit Win32DiskImager (Windows 10/11, "read only allocated partitions"!) dauert 5 min. 
+
+  In Linux:
 
 - `lsblk -o NAME,SIZE,TYPE,FSTYPE,MOUNTPOINT`
 `sudo fdisk -l /dev/sdX`
@@ -64,13 +66,13 @@ Zur Konfiguration der Station siehe [config.json](../../configjson.md).
 
   `lsblk` shows loop devices.
 
-  `sudo fsck.ext4 -f /dev/loop0p2` checks and fixes rootfs.
+  `sudo fsck.ext4 -f /dev/loop0p2` checks and fixes rootfs. (Funktioniert, aber gparted gibt immer noch dieselbe 'no valid fs warning')
 
-  `sudo fsck.vfat -a /dev/loop0p1` same with bootfs.
+  `sudo fsck.vfat -a /dev/loop0p1` same with bootfs. (Funktioniert nicht)
 
   `sudo losetup -d /dev/loop0` detaches img.
 
-  `xz -z9 raw.img` xz Kompression kann von balena etcher unter Win/Ubuntu direkt geflasht werden.
+  `xz -z9 raw.img` , dauert 15 min auf altem 'Satellite C660 Toshiba Laptop'. xz Kompression kann von balena etcher unter Win/Ubuntu direkt geflasht werden in 10 min. (xz ohne progress bar, evtl. Pipeviewer: `pv raw.img | xz -z9 > raw.img.xz`)
 
 - Schrumpfen des Image mit dem Linuxskript '[pishrink.sh](pishrink.md)', unter Windows ausführen auf WSL oder über Docker Desktop mit 'borgesnotes/pishrink:latest' . 
 

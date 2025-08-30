@@ -10,11 +10,13 @@
 
 - Das Heimnetz-WLAN folgendermaßen aktivieren:
 
-  - `sudo nmcli dev wifi connect "SSID" password "PASSWORD"`. `SSID` ist der Name des eigenen WLAN.
+  - `sudo nmcli device wifi rescan`, dann `nmcli device wifi list`, dann `sudo nmcli dev wifi connect "SSID" password "PASSWORD"`. `SSID` ist der Name des eigenen WLAN.
 
   - oder innerhalb 2 min nach Drücken der WPS-Taste am Heimrouter: `sudo nmcli dev wifi connect "SSID" wps-pbc`
 
-  - Diese Verbindungen macht `NetworkManager` automatisch permanent. Danach reicht ein `sudo systemctl restart NetworkManager`. Da die Verbindung über Netzkabel besteht, bleibt die Konsolenverbindung erhalten. Lediglich sollte im Router jetzt die WLAN-Verbindung auftauchen. Danach ist das Netzkabel entbehrlich.
+  - Diese Verbindungen macht `NetworkManager` automatisch permanent. Danach reicht ein `sudo systemctl restart NetworkManager`. Da die SSH-Sitzung noch über das Netzkabel läuft, bleibt sie erhalten. In `ifconfig` und im Router taucht jetzt auch die WLAN-Verbindung auf. Danach ist das Netzkabel entbehrlich.
+
+  - Deaktiviere MAC-Sperren im Router, die neue WLAN-Geräte nicht zulassen.
 
 - Ist die Station im Heimnetz-Router-WLAN angekommen, kann das WebGUI der Station unter `http://<wlan-ip>:8080` aufgerufen werden. Dort sind unter `action-settings-edit` Parameter wie die birdiary `boxId` der eigenen Vogelstation einzugeben. Diese landen dann in `config.json`.
 
