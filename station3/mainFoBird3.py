@@ -40,6 +40,18 @@ def capture_img(picam, dest):
     os.replace(tmp_dest, dest)
     if testmode: ms.log(f"Captured still to {dest}")
 
+def whitebalance(picam):
+    # Enable AWB to get correct gains
+    picam.set_controls({"AwbEnable": True})
+    time.sleep(1.5)
+    gains = tuple(round(g, 2) for g in picam.capture_metadata()["ColourGains"])
+    camsetting = {
+        "AwbEnable": False,
+        "ColourGains": gains
+    }
+    picam.set_controls(camsetting)
+
+
 def get_brightness(picam, now):
     # frame = picam.capture_array(name="main")
     # if testmode: ms.log(f"frame shape in brightness calc: {frame.shape}")
@@ -82,6 +94,7 @@ def get_brightness(picam, now):
     if now.minute % 15 == 0 or get_brightness.last_logged_minute == -1: # log every 15 minutes or at first call
         if now.minute != get_brightness.last_logged_minute:
             get_brightness.last_logged_minute = now.minute
+            whitebalance(picam)
             luxProtocol(luxdata)
             if luxcategory > 4:
                 ms.log(f"stdby /resetting camera due to extreme exposure score {expoScore} at {now}")
@@ -290,18 +303,8 @@ def main():
         }
         picam.set_controls(camsetting)
         '''
-
-        # Enable AWB to get correct gains
-        picam.set_controls({"AwbEnable": True})
-        time.sleep(1.5)
-        gains = tuple(round(g, 2) for g in picam.capture_metadata()["ColourGains"])
-        camsetting = {
-            "AwbEnable": False,
-            "ColourGains": gains
-        }
-        picam.set_controls(camsetting)
         now = datetime.now()
-        get_brightness(picam, now) # Set initial brightness
+        get_brightness(picam, now) # Set initial brightness, also calls whitebalance(picam)
 
         # for circular output:
         encoder = H264Encoder() # for no circ_output this is moved into send_movement() and the following 3 lines are omitted

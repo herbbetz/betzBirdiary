@@ -24,7 +24,7 @@
 
 - Zuletzt noch ein ca. 100 g schweres Hängegewicht für die Sitzstange vorbereiten und `python3 calibrateHx711v2.py` aufrufen.
 
-- Optional: `raspi-config --expand-rootfs` schafft Platz für eigene Anwendungen (Nachinstallation Docker oder Desktop etc.) .
+- Optional: `sudo raspi-config --expand-rootfs` schafft Platz für eigene Anwendungen (Nachinstallation Docker oder Desktop etc.) .
 
 
 

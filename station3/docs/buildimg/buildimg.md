@@ -56,7 +56,7 @@ Zur Konfiguration der Station siehe [config.json](../../configjson.md).
 `sudo fdisk -l /dev/sdX`
 `sudo dd if=/dev/sdX of=raw.img bs=512 count=$((END_rootfs+1)) status=progress
 && sync`(nicht `count=$(((END+1)*512))`, weil bereits `bs=512`). Betrachte mit `gparted raw.img`.
-`sudo ./pishrink.sh -s 512 raw.img` Shrinks rootfs to its minimum + 512 MiB headroom. Bei -s wird nicht expandiert außer später mit `raspi-config --expand-rootfs`.
+`sudo ./pishrink.sh -s 512 raw.img` Shrinks rootfs to its minimum + 512 MiB headroom. Bei -s wird nicht expandiert außer später mit `sudo raspi-config --expand-rootfs`.
 `fdisk -l raw.img`
 `truncate -s $(( (END_rootfs+1) * 512 )) raw.img`
 
