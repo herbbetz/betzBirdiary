@@ -23,3 +23,9 @@
 - Auf Kommandozeile mit `crontab crontab.txt` die `pi crontab` aktivieren. Wie `crontab -l` zeigt, sind dann auch Skripte aktiviert, die die Station abends und bei 'sunset' herunterfahren.
 
 - Zuletzt noch ein ca. 100 g schweres Hängegewicht für die Sitzstange vorbereiten und `python3 calibrateHx711v2.py` aufrufen.
+
+
+
+
+
+Feedback an herber7be7z@gmail.com .
