@@ -66,13 +66,15 @@ Zur Konfiguration der Station siehe [config.json](../../configjson.md).
 
   `lsblk` shows loop devices.
 
-  `sudo fsck.ext4 -f /dev/loop0p2` checks and fixes rootfs. (Funktioniert, aber gparted gibt immer noch dieselbe 'no valid fs warning')
+  `sudo fsck.ext4 -f /dev/loop0p2` checks and fixes rootfs. 
 
-  `sudo fsck.vfat -a /dev/loop0p1` same with bootfs. (Funktioniert nicht)
+  (gparted macht eigenen 'check', aber nicht mit `gparted raw.img` sondern `gparted /dev/loopX`. Selbst dann scheitert es am bootfs, das es wohl versucht `to grow` , aber Raspbian eine fixierte und nicht ans filesystem angepasste partitionsize hat.)
+
+  `sudo fsck.vfat -a /dev/loop0p1` same with bootfs.
 
   `sudo losetup -d /dev/loop0` detaches img.
 
-  `xz -z9 raw.img` , dauert 15 min auf altem 'Satellite C660 Toshiba Laptop'. xz Kompression kann von balena etcher unter Win/Ubuntu direkt geflasht werden in 10 min. (xz ohne progress bar, evtl. Pipeviewer: `pv raw.img | xz -z9 > raw.img.xz`)
+  `xz -z9 raw.img` , dauert 15 min auf altem 'Satellite C660 Toshiba Laptop'. xz Kompression kann von balena etcher unter Win/Ubuntu direkt geflasht werden in 10 min. (xz ohne progress bar, evtl. Pipeviewer: `pv raw.img | xz -z9 > raw.img.xz`). Unpack: `xz -dk raw.img.xz`
 
 - Schrumpfen des Image mit dem Linuxskript '[pishrink.sh](pishrink.md)', unter Windows ausführen auf WSL oder über Docker Desktop mit 'borgesnotes/pishrink:latest' . 
 
