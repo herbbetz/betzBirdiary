@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Picam Settings</title>
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<style>
+body { font-size: 16px; font-family: sans-serif; background: #f5f5f5; margin: 0; padding: 0; }
+.tab-container { width: 90%; margin: 30px auto; background: white; border-radius: 8px; box-shadow: 0 2px 8px #aaa; }
+.tabs {
+  display: flex;
+  border-bottom: 2px solid #3498db;
+  background: #fafafa;
+  border-radius: 8px 8px 0 0;
+  overflow: hidden;
+}
+.tab {
+  padding: 14px 28px;
+  cursor: pointer;
+  border: none;
+  background: none;
+  outline: none;
+  font-size: 1.1em;
+  transition: background 0.2s;
+  color: #555;
+}
+.tab.active {
+  background: #3498db;
+  color: white;
+  font-weight: bold;
+}
+.tab-content {
+  display: none;
+  padding: 24px;
+  text-align: left;
+}
+.tab-content.active {
+  display: block;
+}
+img {
+  width: 32px;
+  height: 32px;
+}
+table {
+  border-collapse: collapse;
+  width: 100%;
+  max-width: 800px;
+}
+th, td {
+  border: 1px solid #ddd;
+  padding: 8px 12px;
+  text-align: left;
+}
+th {
+  background-color: #f4f4f4;
+}
+.form-row {
+  display: table-row;
+}
+.form-label, .form-input {
+  display: table-cell;
+  border: 1px solid #ddd;
+  padding: 8px 12px;
+  vertical-align: middle;
+}
+.form-input input {
+  width: 100%;
+  box-sizing: border-box;
+  border: none;
+  padding: 0;
+  margin: 0;
+}
+.form-input {
+  border-left: none;
+}
+</style>
+</head>
+<body>
+<div class="tab-container">
+  <div class="tabs">
+    <button class="tab active" onclick="showTab(0)">View</button>
+    <button class="tab" onclick="showTab(1)">Edit</button>
+  </div>
+  <div class="tab-content active" id="tab0">
+    <h2>Settings</h2>
+    <p>
+      <img src="icons/redcrossedcam.svg" alt="redcrossicon"> no recording during feeding tray refill (click <img src="icons/vidcam.svg" alt="vidcam"> on main page)<br>
+      <img src="icons/greencrossedcam.svg" alt="greencrossicon"> no recording during bad illumination
+    </p>
+    <p>
+      Following are the current settings loaded from <code>config.json</code>.<br>
+      You can log in to the station and edit <code>config.json</code>.
+      <table id="configTable">
+        <thead>
+          <tr>
+            <th>Key</th>
+            <th>Value</th>
+            <th>Comment</th>
+          </tr>
+        </thead>
+        <tbody>
+          </tbody>
+      </table>
+    </p>
+  </div>
+  <div class="tab-content" id="tab1">
+    <h2>Edit Settings</h2>
+    <p>Edit the settings below and click 'Save Changes' to update.<br>
+    New settings take effect only after reboot.</p>
+    <form id="settingsForm">
+      <table id="editConfigTable">
+        <thead>
+          <tr>
+            <th>Setting</th>
+            <th>Value</th>
+            <th>Comment</th>
+          </tr>
+        </thead>
+        <tbody>
+          </tbody>
+      </table>
+      <div style="margin-top: 20px;">
+        <button type="submit">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+<script>
+  // List of all configuration keys, including editable and non-editable
+  const allConfigKeys = [
+    'serverUrl', 'boxId', 'upmaxcnt', 'videodurate', 'hflip_val', 'vflip_val', 'vidsize', 'losize',
+    'luxThreshold', 'luxLimit', 'weightlimit', 'weightThreshold', 'hxScale', 'hxOffset', 'dhtPin',
+    'hxDataPin', 'hxClckPin', 'mdroid_key', 'wapp_key', 'wapp_phone', 'tasmota_ip', 'geoloc', 'sun'
+  ];
+
+  const editableKeys = ['boxId', 'upmaxcnt', 'videodurate', 'wapp_key', 'wapp_phone', 'tasmota_ip'];
+
+  const comments = {
+    "serverUrl": "birdiary API for uploads",
+    "boxId": "Your birdiary station Id",
+    "upmaxcnt": "Maximum video uploads per station runtime",
+    "videodurate": "Video duration in seconds",
+    "hflip_val": "Mirror the image horizontally (boolean)",
+    "vflip_val": "Mirror the image vertically (boolean)",
+    "vidsize": "Video capture resolution (width, height)",
+    "losize": "Low resolution image size",
+    "luxThreshold": "4 lux levels of brightness",
+    "luxLimit": "Lux boundaries for recording",
+    "weightlimit": "Weight above this prevents recording",
+    "weightThreshold": "Weight above this starts recording",
+    "hxScale": "Calibration factor for the weight sensor",
+    "hxOffset": "Zero offset for the weight sensor",
+    "dhtPin": "GPIO pin for the DHT temperature/humidity sensor",
+    "hxDataPin": "GPIO data pin for the HX711 weight sensor",
+    "hxClckPin": "GPIO clock pin for the HX711 weight sensor",
+    "mdroid_key": "macroDroid App API key",
+    "wapp_key": "WhatsApp API key",
+    "wapp_phone": "WhatsApp phone number for notifications",
+    "tasmota_ip": "IP address of the Tasmota smart plug",
+    "geoloc": "Geo location (latitude, longitude) for sunset calc",
+    "sun": "Sunlight times (sunrise, sunset)"
+  };
+
+  function showTab(idx) {
+    var tabs = document.querySelectorAll('.tab');
+    var contents = document.querySelectorAll('.tab-content');
+    tabs.forEach((tab, i) => {
+      tab.classList.toggle('active', i === idx);
+      contents[i].classList.toggle('active', i === idx);
+    });
+    if (idx === 1) {
+      loadEditForm();
+    }
+  }
+
+  function loadViewTable(data) {
+    const tbody = document.querySelector('#configTable tbody');
+    tbody.innerHTML = '';
+    for (const key of allConfigKeys) {
+      const value = data[key];
+      if (value !== undefined) {
+        const tr = document.createElement('tr');
+        const tdKey = document.createElement('td');
+        tdKey.textContent = key;
+        const tdValue = document.createElement('td');
+        tdValue.textContent = (typeof value === 'object') ? JSON.stringify(value, null, 2) : value;
+        const tdComment = document.createElement('td');
+        tdComment.textContent = comments[key] || '';
+        tr.appendChild(tdKey);
+        tr.appendChild(tdValue);
+        tr.appendChild(tdComment);
+        tbody.appendChild(tr);
+      }
+    }
+  }
+
+  function loadEditForm() {
+    fetch('config.json')
+      .then(response => response.json())
+      .then(data => {
+        const tbody = document.querySelector('#editConfigTable tbody');
+        tbody.innerHTML = '';
+        editableKeys.forEach(key => {
+          const value = data[key];
+          if (value !== undefined) {
+            const tr = document.createElement('tr');
+
+            const tdKey = document.createElement('td');
+            tdKey.textContent = key;
+            tr.appendChild(tdKey);
+
+            const tdValue = document.createElement('td');
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.name = key;
+            input.value = (typeof value === 'object') ? JSON.stringify(value) : value;
+            tdValue.appendChild(input);
+            tr.appendChild(tdValue);
+
+            const tdComment = document.createElement('td');
+            tdComment.textContent = comments[key] || '';
+            tr.appendChild(tdComment);
+
+            tbody.appendChild(tr);
+          }
+        });
+      })
+      .catch(err => {
+        const tbody = document.querySelector('#editConfigTable tbody');
+        tbody.innerHTML = `<tr><td colspan="3">Error loading config.json: ${err}</td></tr>`;
+      });
+  }
+
+  document.addEventListener('DOMContentLoaded', () => {
+    fetch('config.json')
+      .then(response => response.json())
+      .then(data => loadViewTable(data))
+      .catch(err => {
+        const tbody = document.querySelector('#configTable tbody');
+        tbody.innerHTML = `<tr><td colspan="3">Error loading config.json: ${err}</td></tr>`;
+      });
+  });
+
+  document.getElementById('settingsForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+    const formData = new FormData(this);
+    const jsonData = {};
+
+    formData.forEach((value, key) => {
+      try {
+        jsonData[key] = JSON.parse(value);
+      } catch (e) {
+        jsonData[key] = value;
+      }
+    });
+
+    fetch('/updatesettings', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(jsonData)
+    })
+    .then(response => response.json())
+    .then(data => {
+      if (data.status === 'success') {
+        alert('Settings updated successfully!');
+        fetch('config.json')
+          .then(res => res.json())
+          .then(updatedData => loadViewTable(updatedData))
+          .catch(e => console.error("Could not fetch updated config:", e));
+        showTab(0);
+      } else {
+        alert('Error updating settings: ' + data.message);
+      }
+    })
+    .catch(err => alert('Error sending data: ' + err));
+  });
+</script>
+</body>
+</html>

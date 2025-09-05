@@ -1,0 +1,55 @@
+<!doctype html>
+<html>
+<head>
+    <title>PiCamera Settings</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+    <meta http-equiv="Pragma" content="no-cache"/>
+    <meta http-equiv="Expires" content="0"/>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="bird.css">
+</head>
+<body>
+    <h2>Actions</h2>
+    <div class="indented">
+        <div class="rowed"><a href="/upload" class="button">snapshot</a> <a href="statist/showstats.html" class="button" target="_blank">API statistics</a></div>
+        <div class="rowed"><a href="keep/gallery.html" class="button">gallery</a> <a href="mybirds/mybirds.html" class="button">station's birds</a></div>
+        <div class="rowed"><a href="/reboot" class="button">reboot</a> <a href="/shutdown" class="button">shutdown</a></div>
+        <div class="rowed"><a href="/standby" class="button" id="stdby">standby</a> <a href="camdata/camdata.html" class="button" target="_blank">camera data</a></div>
+        <div class="rowed"><a href="vidshot3.html" class="button">back</a> <a href="settings.html" class="button" target="_blank">settings</a></div>
+    </div>
+</body>
+<script>
+    //@ts-check
+    'use strict';
+    const stdbyElem = document.getElementById('stdby');
+    const vidmsgJson = "/msgjson2"; //"ramdisk/vidmsg.json";
+    
+    function getVidmsg() {
+        fetch(vidmsgJson, {cache: 'reload', mode: 'no-cors'})
+        .then((response) => response.json())
+        .then((data) => {
+            let standby = data['standby']
+            if (standby == 1){
+                stdbyElem.textContent = "STDBY OFF"
+            }
+            else {
+                stdbyElem.textContent = "standby"
+            }
+
+        })
+    }
+
+    function updateStream() {
+        getVidmsg(); // fetches window.curImgNum
+        setTimeout(updateStream, 1000); // Update every 1000 milliseconds (adapt to capture scripts mainBirdX.py, event?)
+    }
+
+    // Call the updateStream function when the page loads
+    window.onload = function() {
+        updateStream(); //update loop
+    };
+
+</script>
+</html>

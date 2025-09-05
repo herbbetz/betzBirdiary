@@ -1,0 +1,5 @@
+# Ignore all .log files
+station3/logs/
+station3/debug/
+# credentials:
+station3/config.json

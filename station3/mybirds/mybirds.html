@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>station birds</title>
+    <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="../bird.css">
+</head>
+<body>
+    <h2>My Station's Birds</h2>
+    <div id="imginfo"></div>
+    <div id="videocontainer">
+        <img id="imgview" src="" width="400" alt="bird image" />
+    </div>
+    <div class="rowed">
+        <a href="#" id="prev" class="button">previous</a>
+        <a href="#" id="next" class="button">next</a>
+        <a href="../index.html" id="back" class="button">back</a>
+    </div>
+
+    <script src="species.js"></script>     
+    <script>
+    //@ts-check
+    'use strict';
+    const imginfo = document.getElementById('imginfo');
+    const imgview = document.getElementById('imgview');
+    const btns = document.getElementsByClassName('button');
+    const contentlist = [];
+    const infolist = [];
+    const englist = [];
+    var recslen = 0;
+    var currRec = 0;
+    const britBirdUrl = "https://www.british-birdsongs.uk/" // in 3rd column
+    
+    function loadRec(id){
+        if (contentlist.length == 0) return;
+        imgview.setAttribute("src", contentlist[id] + ".jpg"); //load img
+        if (englist[id] == "") {imginfo.innerHTML = infolist[id];}
+        else {imginfo.innerHTML = infolist[id] + " (" + englist[id] + ") " + '<a href="' + britBirdUrl + englist[id] + '/" target="_blank">Sound</a>';}
+    }
+
+    function handleBtn(e) {
+        switch (e.target.id){
+            case "prev":
+                if (currRec > 0) currRec -= 1;
+                loadRec(currRec);
+                break;
+            case "next":
+                if (currRec < recslen-1) currRec += 1;
+                else currRec = 0; //wrap around
+                loadRec(currRec);
+                break;
+            default:
+                console.log(e.target.id);
+        }
+    }
+
+    function read_records(){
+        contentlist.length = 0; //empty array
+        infolist.length = 0;
+        recslen = records.length; //.toString(); //gallery.js contains 'records = new Array(\n)'
+        if (recslen == 0) return 0;
+        records.forEach((gstr) => {
+            const strArr = gstr.split("|");
+            let img = strArr[0];
+            let info1 = strArr[1];
+            let english = strArr[2];
+            // let contentStr = '<a href="javascript:void(0)" onclick="loadVideo(' + video + ');">' + video + '</a> ' + strArr[1] + ' gram'; //onclick="loadVideo(' + video + ');">' not working
+            contentlist.push(img);
+            infolist.push(info1);
+            englist.push(english);
+        })
+        // setTimeout(update, 1000); //or update, when new video available (fetch from flask.py like vidshot.html)
+        return recslen;
+    }
+
+    window.onload = function() {
+        for(let i=0;i<btns.length;i++){
+            btns[i].addEventListener("click", handleBtn);
+        }
+        //btns.forEach((elem) => {elem.addEventListener('click', handleBtn)}); not working
+        let recscnt = read_records(); //update loop
+        if (recscnt > 0) {
+            loadRec(currRec); // 0 or URLquery param
+        }
+    };
+    </script>
+</body>
+</html>

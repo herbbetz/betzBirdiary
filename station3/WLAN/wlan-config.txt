@@ -1,0 +1,86 @@
+sudo nmcli connection modify bird-static210 connection.autoconnect yes      will remove autoconnect=true from bird-static210.connection, as this is default
+        bird-static210 is the id=bird-static210, not the files name
+sudo nmcli connection modify bird-ap-dhcp connection.autoconnect no         will insert autoconnect=false into bird-ap-dhcp.nmconnection
+
+BETTER for connection failover:
+sudo nmcli connection modify bird-static210 connection.autoconnect yes connection.autoconnect-priority 100
+sudo nmcli connection modify bird-ap-dhcp connection.autoconnect yes connection.autoconnect-priority -10 # will be used if bird-static210 fails
+
+Status:
+nmcli connection show
+nmcli connection show --active
+nmcli device wifi list
+nmcli device status
+
+---- bash example:
+# Function to create wlan.yml from current settings
+create_wlan_yml() {
+    local con_name="$1"
+    local old_con="$2"
+
+    echo "Creating '$WLAN_YML' from current nmcli settings..."
+    {
+        echo "con_name: $con_name"
+        echo "old_con: $old_con"
+        echo "ssid: $(nmcli -g 802-11-wireless.ssid connection show "$con_name" || echo "MyNetwork")"
+        echo "psk: $(nmcli -g 802-11-wireless-security.psk connection show "$con_name" || echo "changeme123")"
+        local ip=$(nmcli -g ipv4.addresses connection show "$con_name" | cut -d/ -f1)
+        echo "ipaddr: ${ip:-192.168.178.210}"
+        echo "gateway: $(nmcli -g ipv4.gateway connection show "$con_name" || echo "192.168.178.1")"
+    } > "$WLAN_YML"
+
+    echo "'$WLAN_YML' created."
+    exit 0
+}
+----
+
+connecting new wlan:
+nmcli dev wifi connect "SSID" password "PASSWORD"
+
+WPS-Router-Button (PBC = push button connect):
+Innerhalb 2 min nach Drücken der WPS-Taste:
+    nmcli dev wifi connect wps-pbc ODER BESSER nmcli dev wifi connect <SSID> wps-pbc
+Bei erfolgreicher Verbindung wird das neue Profil automatisch vom NetworkManager erzeugt und ist somit permanent!
+danach reboot ODER sudo systemctl restart NetworkManager
+
+new connection:
+nmcli connection add type wifi ifname wlan0 con-name test ssid MySSID
+
+remove connection:
+    die test.nmconnection zu löschen reicht nicht!
+    nmcli connection delete test
+
+clone connection:
+sudo nmcli connection clone bird-static210 test
+
+
+----
+sudo nmcli connection modify test 802-11-wireless.ssid "NewSSID"
+sudo nmcli connection modify test 802-11-wireless-security.psk "NewPassword123" funktioniert meist nicht, will PW Hash nicht ändert
+>> nmcli connection modify "MyHomeNetwork" 802-11-wireless-security.key-mgmt wpa-psk 802-11-wireless-security.psk "YourNewPassword"
+sudo nmcli connection modify test ipv4.method manual \
+    ipv4.addresses "192.168.1.50/24" \
+    ipv4.gateway "192.168.1.1"
+sudo nmcli connection modify test ipv4.dns "8.8.8.8 1.1.1.1"
+
+
+----all the above in one go
+sudo nmcli connection modify test \
+    802-11-wireless.ssid "NewSSID" \
+    802-11-wireless-security.key-mgmt wpa-psk \
+    802-11-wireless-security.psk "NewPassword123" \
+    ipv4.method manual \
+    ipv4.addresses "192.168.1.50/24" \
+    ipv4.gateway "192.168.1.1" \
+    ipv4.dns "8.8.8.8 1.1.1.1"
+
+
+----
+
+
+apply without reboot, but this will drop the ssh session!:
+sudo nmcli connection down test
+sudo nmcli connection up test
+OR sudo systemctl restart NetworkManager
+
+prevent wlan0 sleeping mode: 'sudo nmcli connection modify static210 802-11-wireless.powersave 2' oder in '/etc/NetworkManager/conf.d/disable-powersave.conf', verifiziere mit 'iw wlan0 get power_save'

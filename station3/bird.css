@@ -1,0 +1,99 @@
+body{
+    display: flex;
+    flex-direction: column;
+    margin-left: 10%;
+    column-gap: 2%;
+    font-size: 16px;
+}
+h2{
+    font-size: 18px;
+}
+.indented{
+    margin-left: 2%;
+}
+.rowed{
+    display: flex;
+    flex-direction: row;
+}
+.button {
+    display: block;
+    width: 80px;
+    margin: 10px;
+    padding: 10px 20px;
+    background-color: aqua;
+    color: grey;
+    text-decoration: none;
+    border-radius: 5px;
+    overflow: hidden;
+    /* transition: background-color 0.3s ease; */
+}
+.button:hover {
+    background-color: #0056b3;
+}
+.prebutton { /* box format of button */
+    width: 80px;
+    margin: 10px;
+    padding: 10px 20px;
+}
+#online, #latency, .emph{
+    color: red;
+}
+/* keep layout when img missing: */
+#imgcontainer{
+    margin: 10px;
+    width: 322px;
+    height: 242px;
+    position: relative;
+    float: left;
+}
+#videocontainer{
+    margin:10px;
+    width: 402px;
+    /*height: 302px;*/
+    position: relative;
+    float: left;
+}
+#envir, #actity, #sysmon, #msgdata, #calcdata{
+    margin-top: 5px; 
+    margin-bottom: 5px;
+    padding: 3px;
+    color:aqua;
+    background-color: grey;
+    width: 360px;
+    white-space: nowrap;
+}
+#envir{
+    height: 64px; /*4 times font-size for 3 lines*/
+    overflow: hidden; /* on mobile text too long */
+}
+#actity{
+    height: 96px; /*6 times font-size for 5 lines*/
+    overflow: hidden; /* on mobile text too long */
+}
+#sysmon, #msgdata, #calcdata{
+    height: 120px;
+    background-color: grey;
+    overflow: auto;/*for scrolling*/
+}
+#envir:hover,
+#sysmon:hover {
+  background-color: #0f0f0f;
+  cursor: pointer;
+}
+#vidmsg, #confirmbtn{
+    visibility: hidden; /*hidden*/
+}
+#footer{
+    margin-top: 5%;
+}
+.page {
+  display: none;
+}
+.page.active {
+  display: block;
+}
+.togglepage {
+  cursor: pointer;
+  color: black;
+  text-decoration: underline;
+}

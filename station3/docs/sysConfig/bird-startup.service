@@ -1,0 +1,31 @@
+[Unit]
+Description=Birds Startup Script
+After=network-online.target
+Wants=network-online.target avahi-daemon.service
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/station3
+
+# Keep subprocesses alive after main script ends
+KillMode=none
+
+# Delay start slightly to ensure network is ready
+ExecStartPre=/usr/bin/sleep 5
+
+# Activate birdvenv and run startup script, fail if venv missing
+ExecStart=/usr/bin/bash -c 'source /home/pi/activate_birdvenv.sh && exec /home/pi/station3/startup.sh'
+
+# Logs
+StandardOutput=append:/home/pi/station3/logs/startup.service.log
+StandardError=append:/home/pi/station3/logs/startup.service.err
+
+# Restart on failure
+Restart=on-failure
+RestartSec=5s
+TimeoutStartSec=180
+
+[Install]
+WantedBy=multi-user.target

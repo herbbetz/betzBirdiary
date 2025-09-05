@@ -1,0 +1,259 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="640px" viewBox="0 0 180 180">
+  <g
+     id="layer1">
+    <g
+       id="g14"
+       transform="translate(11.214373,6.5115713)">
+      <rect
+         style="opacity:0.501613;fill:#6c6753;fill-opacity:1;stroke:#001fff;stroke-width:2.39954;stroke-linecap:round;stroke-linejoin:bevel;stroke-dasharray:none;paint-order:stroke fill markers"
+         id="rect12"
+         width="58.842838"
+         height="119.25575"
+         x="14.893442"
+         y="28.640085" />
+      <g
+         id="g13"
+         transform="translate(-101.29111,19.17296)">
+        <g
+           id="g7"
+           transform="translate(100.5676,27.4933)">
+          <rect
+             style="opacity:0.501613;fill:#d4aa00;fill-opacity:1;stroke:#001fff;stroke-width:0.735056;stroke-linecap:round;stroke-linejoin:bevel;paint-order:stroke fill markers"
+             id="rect7"
+             width="32.461044"
+             height="11.479315"
+             x="29.893106"
+             y="24.82855" />
+          <text
+             xml:space="preserve"
+             style="font-size:4.23333px;line-height:7.05556px;font-family:'Roboto Mono';-inkscape-font-specification:'Roboto Mono, Normal';font-variant-ligatures:none;stroke-width:0.264583"
+             x="31.834349"
+             y="32.196102"
+             id="text1"><tspan
+               
+               id="tspan1"
+               style="stroke-width:0.264583"
+               x="31.834349"
+               y="32.196102">CameraVideo</tspan></text>
+        </g>
+        <g
+           id="g8"
+           transform="translate(96.950061,24.961022)">
+          <rect
+             style="opacity:0.501613;fill:#d38d5f;fill-opacity:1;stroke:#001fff;stroke-width:0.765764;stroke-linecap:round;stroke-linejoin:bevel;paint-order:stroke fill markers"
+             id="rect7-0"
+             width="35.324368"
+             height="11.448608"
+             x="31.429178"
+             y="44.79541" />
+          <text
+             xml:space="preserve"
+             style="font-size:4.23333px;line-height:7.05556px;font-family:'Roboto Mono';-inkscape-font-specification:'Roboto Mono, Normal';font-variant-ligatures:none;stroke-width:0.264583"
+             x="32.557858"
+             y="52.454323"
+             id="text2"><tspan
+               
+               style="stroke-width:0.264583"
+               x="32.557858"
+               y="52.454323"
+               id="tspan3">MicrofonAudio</tspan></text>
+        </g>
+        <g
+           id="g9"
+           transform="translate(89.714982,-58.965895)">
+          <rect
+             style="opacity:0.501613;fill:#008000;fill-opacity:1;stroke:#001fff;stroke-width:0.802356;stroke-linecap:round;stroke-linejoin:bevel;paint-order:stroke fill markers"
+             id="rect7-02"
+             width="38.905315"
+             height="11.412016"
+             x="34.616631"
+             y="74.306557" />
+          <text
+             xml:space="preserve"
+             style="font-size:4.23333px;line-height:7.05556px;font-family:'Roboto Mono';-inkscape-font-specification:'Roboto Mono, Normal';font-variant-ligatures:none;stroke-width:0.264583"
+             x="36.537148"
+             y="81.394646"
+             id="text4"><tspan
+               
+               id="tspan4"
+               style="stroke-width:0.264583"
+               x="36.537148"
+               y="81.394646">BalanceTrigger</tspan></text>
+        </g>
+        <g
+           id="g10"
+           transform="translate(105.63216,-66.562728)">
+          <rect
+             style="opacity:0.501613;fill:#800080;fill-opacity:1;stroke:#001fff;stroke-width:0.651416;stroke-linecap:round;stroke-linejoin:bevel;paint-order:stroke fill markers"
+             id="rect7-5"
+             width="25.309608"
+             height="11.562956"
+             x="31.922258"
+             y="101.6775" />
+          <text
+             xml:space="preserve"
+             style="font-size:4.23333px;line-height:7.05556px;font-family:'Roboto Mono';-inkscape-font-specification:'Roboto Mono, Normal';font-variant-ligatures:none;stroke-width:0.264583"
+             x="33.281361"
+             y="108.88794"
+             id="text5"><tspan
+               
+               id="tspan5"
+               style="stroke-width:0.264583"
+               x="33.281361"
+               y="108.88794">DHTsensor</tspan></text>
+        </g>
+        <g
+           id="g11"
+           transform="translate(92.247259,-27.855055)">
+          <rect
+             style="opacity:0.501613;fill:#00ffff;fill-opacity:1;stroke:#001fff;stroke-width:0.809457;stroke-linecap:round;stroke-linejoin:bevel;paint-order:stroke fill markers"
+             id="rect7-6"
+             width="39.621723"
+             height="11.404914"
+             x="32.584301"
+             y="136.01189" />
+          <text
+             xml:space="preserve"
+             style="font-size:4.23333px;line-height:7.05556px;font-family:'Roboto Mono';-inkscape-font-specification:'Roboto Mono, Normal';font-variant-ligatures:none;stroke-width:0.264583"
+             x="34.366623"
+             y="142.89281"
+             id="text6"><tspan
+               
+               id="tspan6"
+               style="stroke-width:0.264583"
+               x="34.366623"
+               y="142.89281">UploadBirdiary</tspan></text>
+        </g>
+        <g
+           id="g12"
+           transform="translate(88.267966,-71.26553)">
+          <rect
+             style="opacity:0.501613;fill:#833c3c;fill-opacity:1;stroke:#001fff;stroke-width:0.780625;stroke-linecap:round;stroke-linejoin:bevel;paint-order:stroke fill markers"
+             id="rect7-08"
+             width="36.756523"
+             height="11.433745"
+             x="39.065071"
+             y="159.34634" />
+          <text
+             xml:space="preserve"
+             style="font-size:4.23333px;line-height:7.05556px;font-family:'Roboto Mono';-inkscape-font-specification:'Roboto Mono, Normal';font-variant-ligatures:none;stroke-width:0.264583"
+             x="40.516441"
+             y="167.13033"
+             id="text7"><tspan
+               
+               id="tspan7"
+               style="stroke-width:0.264583"
+               x="40.516441"
+               y="167.13033">localFileSave</tspan></text>
+        </g>
+      </g>
+      <text
+         xml:space="preserve"
+         style="font-size:4.23333px;line-height:7.05556px;font-family:'Roboto Mono';-inkscape-font-specification:'Roboto Mono, Normal';stroke-width:0.264583"
+         x="15.902895"
+         y="24.94792"
+         id="text22"><tspan
+           
+           id="tspan22"
+           style="fill:#0000ff;stroke-width:0.264583"
+           x="15.902895"
+           y="24.94792">main.py 120423.img</tspan></text>
+    </g>
+    <text
+       xml:space="preserve"
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.93889px;line-height:7.05556px;font-family:'Roboto Mono';-inkscape-font-specification:'Roboto Mono, Normal';font-variant-ligatures:none;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:0.264583"
+       x="26.483002"
+       y="16.706221"
+       id="text19"><tspan
+         
+         id="tspan19"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:4.93889px;font-family:'Roboto Mono';-inkscape-font-specification:'Roboto Mono, Normal';font-variant-ligatures:none;font-variant-caps:normal;font-variant-numeric:normal;font-variant-east-asian:normal;stroke-width:0.264583"
+         x="26.483002"
+         y="16.706221">Bullseye with X-windows</tspan></text>
+    <g
+       id="g2"
+       transform="translate(-13.233968,-9.4163676)">
+      <rect
+         style="opacity:0.501613;fill:#0000ff;fill-opacity:0.431373;stroke:#001fff;stroke-width:2;stroke-linecap:round;stroke-linejoin:bevel;stroke-dasharray:none;paint-order:stroke fill markers"
+         id="rect23"
+         width="30.025578"
+         height="9.4056034"
+         x="121.54933"
+         y="78.138847" />
+      <rect
+         style="opacity:0.501613;fill:#ff5555;fill-opacity:0.7;stroke:#001fff;stroke-width:0.264583"
+         id="rect22"
+         width="51.007305"
+         height="7.2350788"
+         x="112.86723"
+         y="36.1754" />
+      <rect
+         style="opacity:0.501613;fill:#ff5555;fill-opacity:0.7;stroke:#001fff;stroke-width:0.277784"
+         id="rect21"
+         width="45.92955"
+         height="8.3071394"
+         x="113.23559"
+         y="56.44022" />
+      <text
+         xml:space="preserve"
+         style="font-size:4.23333px;line-height:7.05556px;font-family:'Roboto Mono';-inkscape-font-specification:'Roboto Mono, Normal';stroke-width:0.264583"
+         x="102.01462"
+         y="61.498173"
+         id="text15"><tspan
+           
+           id="tspan15"
+           style="stroke-width:0.264583"
+           x="102.01462"
+           y="61.498173">---&gt; X-DesktopTerminal</tspan></text>
+      <text
+         xml:space="preserve"
+         style="font-size:4.23333px;line-height:7.05556px;font-family:'Roboto Mono';-inkscape-font-specification:'Roboto Mono, Normal';stroke-width:0.264583"
+         x="102.01461"
+         y="41.239952"
+         id="text16"><tspan
+           
+           id="tspan16"
+           style="stroke-width:0.264583"
+           x="102.01461"
+           y="41.239952">---&gt; restartScriptOnFail</tspan></text>
+      <text
+         xml:space="preserve"
+         style="font-size:4.23333px;line-height:7.05556px;font-family:'Roboto Mono';-inkscape-font-specification:'Roboto Mono, Normal';font-variant-ligatures:none;stroke-width:0.264583"
+         x="124.0816"
+         y="83.926918"
+         id="text23"><tspan
+           
+           id="tspan23"
+           style="stroke-width:0.264583"
+           x="124.0816"
+           y="83.926918">VNC-Viewer</tspan></text>
+      <path
+         style="opacity:0.501613;fill:#0000ff;fill-opacity:0.431373;stroke:#001fff;stroke-width:1;stroke-linecap:round;stroke-linejoin:bevel;stroke-dasharray:none;paint-order:stroke fill markers"
+         d="m 135.65773,64.392203 0.36176,13.384898"
+         id="path23" />
+      <text
+         xml:space="preserve"
+         style="font-size:4.23333px;line-height:7.05556px;font-family:'Roboto Mono';-inkscape-font-specification:'Roboto Mono, Normal';stroke-width:0.264583"
+         x="138.98572"
+         y="47.255848"
+         id="text22-1"><tspan
+           
+           id="tspan22-1"
+           style="fill:#0000ff;stroke-width:0.264583"
+           x="138.98572"
+           y="47.255848">startup.sh</tspan></text>
+      <text
+         xml:space="preserve"
+         style="font-size:4.23333px;line-height:7.05556px;font-family:'Roboto Mono';-inkscape-font-specification:'Roboto Mono, Normal';stroke-width:0.264583"
+         x="138.55977"
+         y="51.684937"
+         id="text22-1-0"><tspan
+           
+           id="tspan22-1-8"
+           style="fill:#0000ff;stroke-width:0.264583"
+           x="138.55977"
+           y="51.684937">InternetTest.sh</tspan></text>
+    </g>
+  </g>
+</svg>

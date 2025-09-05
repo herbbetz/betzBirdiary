@@ -1,0 +1,38 @@
+[
+  {
+    "timestamp": "2025:07:28:06:12",
+    "brightness": 90,
+    "metaLux": 1400,
+    "luxcategory": 3
+  },
+  {
+    "timestamp": "2025:07:28:20:14",
+    "brightness": 150,
+    "metaLux": 1500,
+    "luxcategory": 3
+  },
+  {
+    "timestamp": "2025:07:29:10:12",
+    "brightness": 100,
+    "metaLux": 1480,
+    "luxcategory": 3
+  },
+  {
+    "timestamp": "2025:07:29:15:14",
+    "brightness": 140,
+    "metaLux": 1520,
+    "luxcategory": 3
+  },
+  {
+    "timestamp": "2025:07:30:08:12",
+    "brightness": 113,
+    "metaLux": 1580,
+    "luxcategory": 3
+  },
+  {
+    "timestamp": "2025:07:30:18:14",
+    "brightness": 112,
+    "metaLux": 1620,
+    "luxcategory": 3
+  }
+]

@@ -1,0 +1,369 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <title>PiCamera Stream</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#ffffff">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+    <meta http-equiv="Pragma" content="no-cache"/>
+    <meta http-equiv="Expires" content="0"/>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="bird.css">
+</head>
+<body>
+    <div class="indented">
+        <div class="rowed">
+            <div id="online"></div>&nbsp;&nbsp;<div id="latency"></div>&nbsp;&nbsp;
+                <img id="stdby" src="" alt="stdby" width="32" height="32" crossorigin="anonymous">&nbsp;&nbsp;
+                <img id="lux" src="" alt="lux" width="32" height="32" crossorigin="anonymous">
+        </div>
+        <div class="rowed">
+            <a href="config3.html" class="button">actions</a>
+        </div>
+    </div>
+    <h2>Umwelt</h2>
+    <div class="indented">
+        <div id="envir"></div>
+        <div id="vidmsg"></div>
+        <div id="imgcontainer">
+            <img id="jpeg_feed" src="" alt="PiCamera feed" width="320" height="240" crossorigin="anonymous">
+        </div>
+    </div>
+  <div id="page1" class="page active">
+    <h2><a class="togglepage" href="#">System</a></h2>
+    <div class="indented">
+        <div id="actity"></div>
+        <div id="sysmon"></div>
+    </div>
+    <div id="footer">
+        <a href="https://www.wiediversistmeingarten.org/view" target="_blank" rel="noopener noreferrer">Birdiary Karte</a><br>
+        <small>
+            <a href="README.md" target="_blank" rel="noopener noreferrer">Gestaltung:</a> H. Betz, herber7be7z@gmail.com<br>
+            /upload will capture video, press 'space' for debugging, update fields by clicking them.<br>
+            <a href="https://github.com/herbbetz/betzBirdiary" target="_blank" rel="noopener noreferrer">
+                <svg width="24" height="26" xmlns="http://www.w3.org/2000/svg">
+                    <path fill-rule="evenodd" clip-rule="evenodd" 
+                    d="M 12,0 
+                    C 5,0 0,6 0,13 0,19 3,23 8,25 9,25 9,25 9,24 9,24 9,23 9,22 6,23 5,20 5,20 4,19 4,18 4,18 3,17 4,17 4,17 
+                    c 1,0 2,1 2,1 1,2 3,1 3,1 0,-1 0,-1 1,-2 C 7,17 5,16 5,11 5,10 5,8 6,8 6,8 5,6 6,5 6,5 7,5 9,6 a 12,12 0 0 1 3,0 
+                    c 1,0 2,0 3,0 2,-2 3,-1 3,-1 1,2 0,3 0,3 1,1 1,2 1,3 0,5 -3,6 -5,6 0,0 1,1 1,2 0,2 0,3 0,3 0,0 0,1 1,1 5,0 8,-5 8,-10 
+                    C 24,6 19,0 12,0 Z" fill="#24292f"/>
+                </svg>Github
+            </a>
+        </small>
+    </div>
+  </div>
+  <div id="page2" class="page">
+    <h2><a class="togglepage" href="#">Rohdaten</a></h2>
+    <div id="msgdata"></div>
+    <div id="calcdata"></div>
+  </div> 
+    <script>
+        'use strict';
+        // refactored by github copilot on 30.5.25, old version see vidshot0.html
+        // DOM references
+        const dom = {
+            page1: document.getElementById('page1'),
+            page2: document.getElementById('page2'),
+            img: document.getElementById('jpeg_feed'),
+            online: document.getElementById('online'),
+            jsmsg: document.getElementById('latency'),
+            stdbyimg: document.getElementById('stdby'),
+            luximg: document.getElementById('lux'),
+            // stdbymsg: document.getElementById('stdby'),
+            envir: document.getElementById('envir'),
+            actity: document.getElementById('actity'),
+            sysmon: document.getElementById('sysmon'),
+            vidmsg: document.getElementById('vidmsg'),
+            rawmsg: document.getElementById('msgdata'),
+            calcmsg: document.getElementById('calcdata'),
+            tabcolor: document.querySelector("meta[name=theme-color]"),
+            icon: document.querySelector("link[rel~='icon']")
+        };
+
+        const icons = {
+            vidcam: "vidcam.svg",
+            redcrossedcam: "redcrossedcam.svg",
+            greencrossedcam: "greencrossedcam.svg",
+            sun: "sun.svg",
+            cloudy: "cloudy.svg",
+            cloud: "cloud.svg",
+            moon: "moon.svg",
+            underexpo: "eye-closed.svg",
+            overexpo: "x-eyes.svg"
+        };
+
+        // Constants for data sources
+        const URLS = {
+            envir: "ramdisk/env.json",
+            sysmon: "ramdisk/sysmon.json",
+            vidmsg: "/msgjson",
+            stdby: "/standby",
+            envupdate: "/envupdate",
+            sysupdate: "/sysupdate"
+        };
+
+        // State for UI and freshness tracking
+        const state = {
+            envir: [" ", " ", " "],
+            lines: new Array(5).fill(''), 
+            sysmon: [],
+            saved: { ImgNum: 0, linecnt: 0, envirEvt: 0, sysmonEvt: 0 },
+            fetchPromises: [],
+            recordingsecs: 0
+        };
+
+        function togglePage() {
+            const isPage1Visible = dom.page1.classList.contains('active');
+            if (isPage1Visible) {
+                dom.page1.classList.remove('active');
+                dom.page2.classList.add('active');
+            } else {
+                dom.page1.classList.add('active');
+                dom.page2.classList.remove('active');
+            }
+        }
+
+        dom.stdbyimg.addEventListener('click', function(e) {
+            fetch(URLS.stdby, { method: 'GET' })
+        });
+
+        dom.envir.addEventListener('click', () => {
+            fetch(URLS.envupdate)
+                .then(response => {
+                    if (response.ok) {
+                        console.log('ENV update initiated successfully.');
+                    } else {
+                        console.error('Failed to initiate ENV update.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                });
+        });        
+
+        dom.sysmon.addEventListener('click', async () => {
+            try {
+                const response = await fetch(URLS.sysupdate);
+                if (response.ok) {
+                    console.log('System update initiated successfully.');
+                } else {
+                    console.error('Failed to initiate system update.');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        });
+
+        document.addEventListener('keydown', function(event) {
+            if (event.code === 'Space') {
+                togglePage();
+                // Prevent default if needed (e.g., scrolling)
+                event.preventDefault();
+            }
+        });
+
+        document.querySelectorAll('.togglepage').forEach(link => {
+            link.addEventListener('click', function(event) {
+                // console.log('A link was clicked:', this.href);
+                togglePage();
+                event.preventDefault();
+            });
+        });
+
+        // Utility function to safely set HTML/text
+        function setHTMLSafe(elem, html) {
+            // For trusted, generated HTML (like <br>-joined simple strings), this is OK
+            elem.innerHTML = html;
+        }
+        function setText(elem, text) {
+            elem.textContent = text;
+        }
+
+        function showMsgdata(jsondata) {
+            // analog to getSysmon()
+            const msgdata = [];
+            // console.log(data);
+            // data already IS the JS object:
+            const keyValuePairs = Object.entries(jsondata);
+            let keyValStr = "";
+            keyValuePairs.forEach(([key, value]) => {
+                keyValStr = key + ": " + value;
+                msgdata.push(keyValStr);
+            });
+            // show data:
+            setHTMLSafe(dom.rawmsg, msgdata.join('<br>'));
+        }
+
+        // Fetch and update environment
+        async function fetchEnvir() {
+            try {
+                const response = await fetch(URLS.envir, {cache: 'reload'});
+                const data = await response.json();
+                state.envir[0] = data['date'] ?? '';
+                state.envir[1] = (data['temperature'] ?? '') + " °C";
+                state.envir[2] = (data['humidity'] ?? '') + " rel.%";
+                setHTMLSafe(dom.envir, state.envir.join('<br>'));
+            } catch (e) {
+                setText(dom.envir, "Error loading environment data");
+            }
+        }
+
+        // Fetch and update system monitor
+        async function fetchSysmon() {
+            try {
+                const response = await fetch(URLS.sysmon, {cache: 'reload'});
+                const data = await response.json();
+                state.sysmon.length = 0;
+                Object.entries(data).forEach(([key, value]) => {
+                    state.sysmon.push(`${key}: ${value}`);
+                });
+                setHTMLSafe(dom.sysmon, state.sysmon.join('<br>'));
+            } catch (e) {
+                setText(dom.sysmon, "Error loading system data");
+            }
+        }
+
+        async function fetchImg(imgNum) {
+            if (imgNum > 0) {
+                const imgname = `ramdisk/${imgNum}.jpg`;
+                try {
+                    const starttime = performance.now();
+                    const response = await fetch(imgname, { cache: 'reload' });
+
+                    if (!response.ok) {
+                        // Handle HTTP error (404, 500, etc.)
+                        dom.img.src = "";
+                        const error = `HTTP error ${response.status}: ${response.statusText}`;
+                        setHTMLSafe(dom.calcmsg, error);
+                        throw new Error(error);
+                    }
+                    else{
+                        dom.img.src = imgname;
+                        const endtime = performance.now();
+                        const diffTime = Math.round(endtime - starttime);
+                        setText(dom.jsmsg, `${diffTime} ms`);
+                        setHTMLSafe(dom.calcmsg, `img ${imgNum} received after ${diffTime} ms`);
+                    }
+
+                } catch (e) {
+                    // Handle network or HTTP error
+                    console.error('Image load error:', e);
+                    setText(dom.online, e.message || "imgload?");
+                }
+            }
+        }
+
+        // Handle video message update, including all relevant UI state
+        async function fetchVidmsg() {
+            try {
+                const response = await fetch(URLS.vidmsg, {cache: 'reload'});
+                if (!response.ok) throw new Error(`HTTP error ${response.status}: ${response.statusText}`);
+                const data = await response.json();
+                // console.log("data:", data);
+                showMsgdata(data);
+                setText(dom.online, "online");
+                const curImgNum = data['imgid'];
+                const isRecording = data['recording'];
+                // fetchImg(curImgNum); // Fetch the image immediately
+                if (curImgNum !== state.saved.ImgNum) {
+                    state.fetchPromises.push(fetchImg(curImgNum));
+                    state.saved.ImgNum = curImgNum;
+                    state.recordingsecs = 0;
+                }
+                else if (isRecording == 1) { //video recording in progress
+                    state.recordingsecs += 1;
+                    setText(dom.jsmsg, String(state.recordingsecs)+"▷");
+                }
+                else {
+                    setText(dom.jsmsg, "OLD_img");
+                }
+
+                // if (data['standby'] == 0) {setText(dom.stdbymsg, "🎥");} else {setText(dom.stdbymsg, "STANDBY");}
+                // or setHTMLSafe(dom.stdbymsg, '&#127909;');
+                if (data['standby'] == 1) {dom.stdbyimg.src = "icons/" + icons['redcrossedcam'];}
+                else {
+                    if (data['lux'] > 4) {dom.stdbyimg.src = "icons/" + icons['greencrossedcam'];} // bad light exposure
+                    else {dom.stdbyimg.src = "icons/" + icons['vidcam'];}
+                }
+
+                if (data['lux'] == 6) {
+                    dom.luximg.src = "icons/" + icons['overexpo'];
+                } else if (data['lux'] == 5) {
+                    dom.luximg.src = "icons/" + icons['underexpo'];
+                } else if (data['lux'] == 4) {
+                    dom.luximg.src = "icons/" + icons['sun'];
+                } else if (data['lux'] == 3) {
+                    dom.luximg.src = "icons/" + icons['cloudy'];
+                } else if (data['lux'] == 2) {
+                    dom.luximg.src = "icons/" + icons['cloud'];
+                } else if (data['lux'] == 1) {
+                    dom.luximg.src = "icons/" + icons['moon'];
+                } else {
+                    dom.luximg.src = "favicon.svg"; // Default icon if no lux data
+                }
+
+                // Environment event
+                if (data['envirEvt'] !== state.saved.envirEvt) {
+                    state.fetchPromises.push(fetchEnvir());
+                    state.saved.envirEvt = data['envirEvt'];
+                }
+
+                // System monitor event
+                if (data['sysmonEvt'] !== state.saved.sysmonEvt) {
+                    state.fetchPromises.push(fetchSysmon());
+                    state.saved.sysmonEvt = data['sysmonEvt'];
+                }
+
+                // Wait for all async updates to finish and clear the array
+                await Promise.allSettled(state.fetchPromises);
+                state.fetchPromises.length = 0;
+
+                // Video message display
+                const msg = data['lastvid'] ?? "";
+                if (msg.trim().length === 0) {
+                    dom.vidmsg.style.visibility = "hidden";
+                    document.title = "Picamera Stream";
+                    dom.icon.href = "favicon.svg";
+                    dom.tabcolor.setAttribute("content", "#ffffff");
+                } else {
+                    const vidcnt = data['vidcnt'];
+                    if (vidcnt>0){
+                        dom.vidmsg.style.visibility = "visible";
+                        setText(dom.vidmsg, msg);
+                        document.title = `NEW video ${vidcnt}`;
+                        dom.icon.href = "faviconRed.svg";
+                        dom.tabcolor.setAttribute("content", "#ff5733");
+                    }
+                }
+
+                // Logger lines
+                updateLogLines(data['linecnt'], data['linetxt']);
+            } catch (error) {
+                setText(dom.online, "Offline or error: " + (error?.message ?? error));
+            }
+        }
+
+        // Update activity log lines
+        function updateLogLines(linecnt, txt) {
+            if (linecnt !== state.saved.linecnt && txt.trim().length > 0) {
+                state.lines.shift();
+                state.lines.push(txt);
+                state.saved.linecnt = linecnt;
+                setHTMLSafe(dom.actity, state.lines.join('<br>'));
+            }
+        }
+        // Polling loop for the stream
+        function startStreamPolling() {
+            fetchVidmsg().finally(() => {
+                setTimeout(() => requestAnimationFrame(startStreamPolling), 1000);
+            });
+        }
+        // On page load
+        window.onload = function() {
+            startStreamPolling();
+        };
+    </script>
+</body>
+</html>

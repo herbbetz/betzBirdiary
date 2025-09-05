@@ -1,0 +1,8 @@
+proc            /proc           proc    defaults          0       0
+PARTUUID=fb5893be-01  /boot/firmware  vfat    defaults          0       2
+PARTUUID=fb5893be-02  /               ext4    defaults,noatime  0       1
+# a swapfile is not a swap partition, no line here
+#   use  dphys-swapfile swap[on|off]  for that
+#
+# 50 MB ramdisk for /home/pi/station3/ramdisk:
+tmpfs /home/pi/station3/ramdisk tmpfs defaults,size=50M,noatime,uid=1000,gid=1000,mode=0700 0 0

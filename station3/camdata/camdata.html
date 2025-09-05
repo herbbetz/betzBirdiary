@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>cam data</title>
+  <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+  <style>
+    body { font-family: sans-serif; background: #f5f5f5; margin: 0; padding: 0; }
+    .tab-container { width: 90%; margin: 30px auto; background: white; border-radius: 8px; box-shadow: 0 2px 8px #aaa; }
+    .tabs {
+      display: flex;
+      border-bottom: 2px solid #3498db;
+      background: #fafafa;
+      border-radius: 8px 8px 0 0;
+      overflow: hidden;
+    }
+    .tab {
+      padding: 14px 28px;
+      cursor: pointer;
+      border: none;
+      background: none;
+      outline: none;
+      font-size: 1.1em;
+      transition: background 0.2s;
+      color: #555;
+    }
+    .tab.active {
+      background: #3498db;
+      color: white;
+      font-weight: bold;
+    }
+    .tab-content {
+      display: none;
+      padding: 24px;
+      text-align: center;
+    }
+    .tab-content.active {
+      display: block;
+    }
+    .tab-content img {
+      width: 100%;
+      height: auto;
+      max-width: 900px;
+      display: block;
+      margin: 0 auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="tab-container">
+    <div class="tabs">
+      <button class="tab active" onclick="showTab(0)">metaLux</button>
+      <button class="tab" onclick="showTab(1)">exposure</button>
+      <button class="tab" onclick="showTab(2)">gain</button>
+    </div>
+    <div class="tab-content active" id="tab0">
+      <img src="/camdata?target=metaLux" alt="metaLux">
+    </div>
+    <div class="tab-content" id="tab1">
+      <img src="/camdata?target=exposure" alt="exposure">
+    </div>
+    <div class="tab-content" id="tab2">
+      <img src="/camdata?target=gain" alt="gain">
+    </div>
+  </div>
+  <script>
+    function showTab(idx) {
+      var tabs = document.querySelectorAll('.tab');
+      var contents = document.querySelectorAll('.tab-content');
+      tabs.forEach((tab, i) => {
+        tab.classList.toggle('active', i === idx);
+        contents[i].classList.toggle('active', i === idx);
+      });
+    }
+  </script>
+</body>
+</html>

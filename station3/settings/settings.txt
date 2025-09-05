@@ -1,0 +1,48 @@
+----config.json:
+{
+  "host": "localhost",
+  "port": 8080,
+  "debug": true
+}
+
+----config.py:
+import json
+import msgBird as ms
+
+# Load config.json
+try:
+    with open(CONFIG_PATH) as f:
+        _config = json.load(f)
+except FileNotFoundError:
+    raise RuntimeError(f"Config file not found: {CONFIG_PATH}")
+except json.JSONDecodeError as e:
+    ms.log("invalid config.json")
+    raise RuntimeError(f"Invalid config.json: {e}")
+
+# Use key=value format
+host = _config['host']
+port = _config['port']
+debug = _config['debug']
+
+# Now you can use them
+# print(f"Connecting to {host}:{port} with debug={debug}")
+
+----main.py:
+from config import host, port # this not only reads, but runs config.py at import!
+print(f"Connecting to {host}:{port}")
+
+> replace all  update_config_file(config_path, offset_val, scale_val) with update_config_json(config_path, offset_val, scale_val)
+    calibrateHx711v2.py, hxFiBird3.py, sharedBird.py
+
+----config.sh:
+#!/bin/bash
+
+# Read and parse config.json
+config_file="config.json"
+
+host=$(jq -r '.host' "$config_file")
+port=$(jq -r '.port' "$config_file")
+debug=$(jq -r '.debug' "$config_file")
+
+# Use the variables
+echo "Connecting to $host:$port with debug=$debug"

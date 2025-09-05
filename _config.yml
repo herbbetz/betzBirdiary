@@ -1,0 +1,15 @@
+title: "betzBirdiary Blog"
+description: "project for https://www.wiediversistmeingarten.org/"
+theme: minima
+domain: herbbetz.github.io
+baseurl: "/betzBirdiary" # Set to "/repository-name" if using project site (not user/organization site), watch capital 'B' (webaddress path is case-sensitive, only domain is not)
+url: "https://herbbetz.github.io" # Set to your GitHub Pages URL if you want absolute URLs
+show_downloads: [true]
+plugins:
+  - jekyll-feed
+
+# Optional: Social links (uncomment and edit)
+#twitter_username: your_twitter
+github_username:  herbbetz
+
+markdown: kramdown

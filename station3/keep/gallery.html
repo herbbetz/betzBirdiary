@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PiCamera Gallery</title>
+    <link rel="icon" href="../favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="../bird.css">
+</head>
+<body>
+    <h2>Your local bird videos</h2>
+    <div class="emph">Watch better in PC than on mobile.</div>
+    <div id="videoinfo"></div>
+    <div id="videocontainer">
+        <video id="videoview" src="" controls width="400" alt="PiCam Video" type="video/mp4">
+        </video>
+    </div>
+    <div class="rowed">
+        <a href="#" id="prev" class="button">previous</a>
+        <a href="#" id="next" class="button">next</a>
+    </div>
+    <div class="rowed">
+        <a href="#" id="del" class="button">delete</a>
+        <a href="../vidshot.html" id="back" class="button">back</a>
+    </div>
+
+    <script src="gallery.js"></script>     
+    <script>
+    //@ts-check
+    'use strict';
+    const vidinfo = document.getElementById('videoinfo');
+    const vidview = document.getElementById('videoview');
+    const btns = document.getElementsByClassName('button');
+    const contentlist = [];
+    const infolist = [];
+    var recslen = 0;
+    var currRec = 0;
+
+    function loadRec(id){
+        if (contentlist.length == 0) return;
+        vidview.setAttribute("src", contentlist[id] + ".mp4"); //load video
+        let vidmsg = (id + 1).toString() + "/" + recslen.toString() + "**" + contentlist[id];
+        if (infolist[id] != 0){
+            vidmsg += "**" + infolist[id] + "grams";    
+        }
+        vidinfo.textContent = vidmsg;
+    }
+
+    function handleBtn(e) {
+        switch (e.target.id){
+            case "prev":
+                if (currRec > 0) currRec -= 1;
+                loadRec(currRec);
+                break;
+            case "next":
+                if (currRec < recslen-1) currRec += 1;
+                else currRec = 0; //wrap around
+                loadRec(currRec);
+                break;
+            case "del":
+                sendDelRec(currRec);
+                break;
+            default:
+                console.log(e.target.id);
+        }
+    }
+
+    function sendDelRec(recId) {
+        if (contentlist.length == 0) return;
+        let bname = contentlist[recId];
+        fetch('/delrecord',
+            { //requestOptions:
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({ data: {rec: recId, content: bname} })
+            })
+        .then(response => response.json())
+        .then(data => {
+            console.log('Success:', data);
+            // reload on success after 500 msecs, because gallery.js has changed:
+            setTimeout(() => {
+                let urlStr = "gallery.html?rec=" + (recId + 1).toString();
+                window.location.replace(urlStr);
+            }, 500);
+        })
+        .catch((error) => {
+            console.error('Error:', error);
+        });
+    }
+
+    function read_records(){
+        contentlist.length = 0; //empty array
+        infolist.length = 0;
+        recslen = records.length; //.toString(); //gallery.js contains 'records = new Array(\n)'
+        if (recslen == 0) return 0;
+        records.forEach((gstr) => {
+            const strArr = gstr.split("|");
+            let video = strArr[0];
+            let info1 = strArr[1];
+            // let contentStr = '<a href="javascript:void(0)" onclick="loadVideo(' + video + ');">' + video + '</a> ' + strArr[1] + ' gram'; //onclick="loadVideo(' + video + ');">' not working
+            contentlist.push(video);
+            infolist.push(info1);
+        })
+        // setTimeout(update, 1000); //or update, when new video available (fetch from flask.py like vidshot.html)
+        return recslen;
+    }
+
+	function getUrlParams(){
+	// https://www.sitepoint.com/get-url-parameters-with-javascript/
+		const queryString = window.location.search;
+		const urlParams = new URLSearchParams(queryString);
+        const urlRecStr = urlParams.get('rec');
+        let rec = Number(urlRecStr);
+        if (!Number.isNaN(rec)){
+		    if (rec > 0 && rec <= recslen) currRec = rec - 1;
+        }
+	}
+
+    window.onload = function() {
+        for(let i=0;i<btns.length;i++){
+            btns[i].addEventListener("click", handleBtn);
+        }
+        //btns.forEach((elem) => {elem.addEventListener('click', handleBtn)}); not working
+        let recscnt = read_records(); //update loop
+        if (recscnt > 0) {
+            getUrlParams(); //needs recslen
+            loadRec(currRec); // 0 or URLquery param
+        }
+    };
+    </script>
+</body>
+</html>

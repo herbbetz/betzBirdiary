@@ -1,0 +1,29 @@
+<!doctype html>
+<html>
+<head>
+    <title>PiCamera Videocheck</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate"/>
+    <meta http-equiv="Pragma" content="no-cache"/>
+    <meta http-equiv="Expires" content="0"/>
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="bird.css">
+</head>
+<body>
+    <h2>Do with the video:</h2>
+    <div class="indented">
+        <!-- div id="online"></div -->
+        <a href="/upmovement" class="button">Upload</a>
+        <a href="/keeplocal" class="button">Keep local</a>
+        <a href="/delmovement" class="button">Delete</a>
+        <a href="vidshot.html" class="button">Back</a>
+    </div>
+
+    <div id="videocontainer">
+        <video controls width="400">
+            <source id="videoview" src="movements/lastvideo.mp4" alt="last PiCam Video" type="video/mp4" />
+        </video>
+    </div>
+</body>
+</html>
