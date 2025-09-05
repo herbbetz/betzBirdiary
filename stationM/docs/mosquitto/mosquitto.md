@@ -11,6 +11,9 @@
 - `mosquitto_sub -h localhost -t test`
 - `mosquitto_pub -h localhost -t test -m "Hello from terminal 2"`
 
+**Viewer**
+- `mosquitto_sub -t "#" -h localhost -v`
+
 **Python**
 
 - `pip install paho-mqtt`
