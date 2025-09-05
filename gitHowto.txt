@@ -27,3 +27,4 @@ locally on a cloned repo with tags/releases removed from remote github.com :
     git branch -m main (the branch 'last' that we are in, is renamed main)
     git branch -m main (push forcefully to remote github)
     git gc --aggressive --prune=all (gc for 'garbage collection')
+    git push --set-upstream origin main
