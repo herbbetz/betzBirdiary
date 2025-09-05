@@ -42,7 +42,8 @@ else:
 sensor_data = {
     "device_id": "sensor_01",
     "timestamp": int(time.time()),
-    "temperature_c": 24.5
+    "temperature_c": 24.5,
+    "humidity_percent": 60
 }
 json_payload = json.dumps(sensor_data)
 client.publish("sensors/data", json_payload)
