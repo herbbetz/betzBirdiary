@@ -18,6 +18,12 @@ Sync a local repo clone (nach Laptop-Wechsel):
 git pull origin main  (OR: git fetch origin && git merge origin/main)
 
 Remove repo history:
+https://www.youtube.com/watch?v=2yeM0v4tYpw
 locally on a cloned repo with tags/releases removed from remote github.com :
     git checkout --orphan last (last is arbitrary for newest files)
     git add -A (copy all to this new branch)
+    git commit -am "fresh init 2025-09-05-15-42"
+    git branch -D main (delete branch main)
+    git branch -m main (the branch 'last' that we are in, is renamed main)
+    git branch -m main (push forcefully to remote github)
+    git gc --aggressive --prune=all (gc for 'garbage collection')
