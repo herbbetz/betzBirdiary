@@ -1,0 +1,32 @@
+# Final stage, bullseye-slim being an even smaller docker hub img
+FROM debian:bullseye-slim
+
+COPY --from=dockerpig:0 /pigpio-master/libpigpio.so.1 /usr/local/lib/
+COPY --from=dockerpig:0 /pigpio-master/libpigpiod_if.so.1 /usr/local/lib/
+COPY --from=dockerpig:0 /pigpio-master/libpigpiod_if2.so.1 /usr/local/lib/
+COPY --from=dockerpig:0 /pigpio-master/pigpiod /usr/local/bin/
+COPY --from=dockerpig:0 /pigpio-master/pigs /usr/local/bin/
+COPY --from=dockerpig:0 /pigpio-master/pig2vcd /usr/local/bin/
+
+RUN apt-get update && \
+apt-get install -y gnupg curl procps cron && \
+echo "deb http://archive.raspberrypi.org/debian/ bullseye main" > /etc/apt/sources.list.d/raspi.list && \
+curl -fsSL https://archive.raspberrypi.org/debian/raspberrypi.gpg.key | gpg --dearmor -o /usr/share/keyrings/raspberrypi-archive-keyring.gpg && \
+echo "deb [signed-by=/usr/share/keyrings/raspberrypi-archive-keyring.gpg] http://archive.raspberrypi.org/debian/ bullseye main" > /etc/apt/sources.list.d/raspi.list && \
+apt-get update && \
+apt-get upgrade -y && \
+apt-get install -y python3 python3-pigpio && \
+apt-get clean && \
+rm -rf /var/lib/apt/lists/* && \
+groupadd -g 997 gpio
+# group 'video' in docker-compose is mostly '44' in container and host, but group 'gpio' is not as standardized and must be adapted, if this is '997' on the host.
+
+# Set up environment
+ENV PYTHONUNBUFFERED=1
+ENV LD_LIBRARY_PATH=/usr/local/lib
+
+WORKDIR /app
+
+COPY app/start.sh .
+
+CMD ["/bin/bash", "start.sh"]

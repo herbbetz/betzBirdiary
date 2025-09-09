@@ -1,0 +1,19 @@
+services:
+  camera:
+    image: dockerpigfin:0
+    container_name: pigcon
+    privileged: true
+    devices:
+      - "/dev/video0:/dev/video0"
+      - "/dev/gpiomem:/dev/gpiomem"
+    group_add:
+      - video
+      - gpio
+      # - "997" # if 997 is group gpio on the host
+    volumes:
+      - "/run/udev:/run/udev:ro"
+      # - "/sys:/sys"
+      - "/sys/class/gpio:/sys/class/gpio"
+      - "/dev/mem:/dev/mem" # pigpio needs this
+      - /home/pi/dockercam/app:/app
+    restart: none  # or unless-stopped

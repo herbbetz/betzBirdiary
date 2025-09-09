@@ -1,0 +1,46 @@
+https://dockerlabs.collabnix.com/docker/cheatsheet/
+https://dockerlabs.collabnix.com/intermediate/docker-compose/compose-cheatsheet.html
+
+docker build -t dockercam:0 --no-cache .            build image from Dockerfile
+    or: docker build -f Dockerfile.final dockercam:0 --no-cache .
+
+docker run -it --name camcon dockercam:0            container runs till the main app has finished (or ctrl-c in loop)
+or:
+docker run -d --name camcon dockercam:0             run container in background -d
+docker exec -it camcon /bin/bash                    get into containers console, quit by 'exit'
+
+docker ps - docker stop <id> - docker rm <id>       remove container camcon
+
+Docker remove all containers: docker rm -f $(docker ps -a -q)
+
+docker compose up -d
+    or: docker compose -f my-custom-compose.yml up -d
+docker compose down
+docker compose restart      does not read a changed docker-compose.yaml
+
+If a container is loaded after reboot, depends on "restart: ... " in docker-compose.yaml (and the ressources for containers). Of course, docker itself must be started (systemctl is-enabled docker).
+
+v4l2-ctl --list-devices                             shows detected cameras on the host showing interface /dev/video0, but v4l2-ctl need not be installed inside the container.
+ls /run/udev                                        inside container shows proper volume mounts
+
+
+GPIO access of container:
+    auf dem host braucht pi das "sudo bash gpio.sh write 6 1", jedoch im Container reicht "bash gpio.sh write 6 1"
+    dabei wird in docker-compose.yaml group_add: -"997" erkannt, aber nicht -gpio, obwohl 'getent group gpio' zeigt 'gpio:x:997:pi'.
+
+
+Multistage build:
+    dockerfile.build builds the executables into an image, e.g. named dockerpig:0
+    this can be inspected running as container and accessing its console
+        find all executables using 'find . -type f -perm /a+x'
+    then dockerfile.final can copy those binaries with commands like
+        COPY --from=dockerpig:0 /pigpio-master/libpigpio.so.1 /usr/local/lib/
+    and producing a smaller image (maybe named dockerpigfin:0) without the compile tools in dockerpig:0
+    This new image can again be tested as a container in its console.
+
+Pigpio:
+https://github.com/joan2937/pigpio
+https://github.com/joan2937/pigpio/archive/master.zip
+
+
+https://github.com/irimitenkan/picam2ctrl   mqtt bridge between picamera2 on host and home assistant container
