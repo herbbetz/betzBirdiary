@@ -37,29 +37,6 @@ def writePID(id):
 def clearPID(id):
     os.remove(PIDfile[id])
 
-'''
-def update_config_json(config_path, offset_val, scale_val):
-    #Update or insert hxOffset and hxScale in config.json.
-    data = {}
-    if os.path.exists(config_path):
-        with open(config_path, 'r') as jfile:
-            try:
-                data = json.load(jfile) # read
-            except json.JSONDecodeError:
-                print(f"{config_path} is invalid JSON.")
-    else:
-        return
-
-    data['hxOffset'] = offset_val
-    data['hxScale'] = scale_val
-
-    with open(config_path, 'w') as jfile:
-        json.dump(data, jfile, indent=4)
-
-    print(f"    Updated {config_path} with:")
-    print(f"    hxOffset = {offset_val}")
-    print(f"    hxScale  = {scale_val}")
-'''
 def chg_punct(oldstr):
     # change punctuation in string according to following dict:
     replacements = {' ': '_', ':': '-', '.': '-'} # https://www.geeksforgeeks.org/python-replace-multiple-characters-at-once/

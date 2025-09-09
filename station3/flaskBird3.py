@@ -10,6 +10,7 @@ from datetime import datetime
 import markdown
 import msgBird as ms
 from configBird3 import birdpath, update_config_json
+from sharedBird import delFromGallery
 # for camdata plotting:
 import matplotlib.pyplot as plt
 from collections import defaultdict
@@ -204,6 +205,19 @@ def camdata_svg():
       buf.close()
 
       return Response(svg, mimetype="image/svg+xml")
+
+# remove mp4 and record from gallery.js, 'del' button in gallery3.html handled by it's sendDelRec(recId)
+@app.route('/delrecord', methods=['POST'])
+def delrecord():
+   data = request.json['data']
+   print(f"Received data: {data}")
+   rec2del = data.get('rec') + 1
+   mp4del = "keep/" + str(data.get('content')) + ".mp4"
+   # print(rec2del)
+   # print(mp4del)
+   delFromGallery(rec2del) # see sharedBird.py
+   os.remove(mp4del)
+   return jsonify({"received": data})
 
 # this is needed for the files on ramdisk and movements:
 @app.route('/<path:filename>')
