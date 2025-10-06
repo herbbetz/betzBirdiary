@@ -6,6 +6,7 @@ Allerlei Kleintiere wie Spechte und Eichhörnchen unterziehen das Vogelhaus imme
 <img src="vogelhaus2vornS.jpg" alt="vorn" style="zoom: 50%;" /><img src="vhs2etronikS.jpg" alt="seitlich" style="zoom:50%;" /><img src="author7-2025.jpg" alt="Autor" style="zoom:50%;" />
 
 Schräg im Futtersilo steht ein leicht nach vorn unten gekrümmtes Rutschblech aus Edelstahl, um das Vogelfutter zum Auslass zu lenken.
+Für kleine Vögel ist der Futtertrog etwas groß, so dass sie dort wie in einer Badewanne sitzen, ohne auf die Stange zu müssen.
 
 Ich danke Andreas Mischko für den engagierten Aufbau und auch die Restaurierung des Vogelhauses.
 
