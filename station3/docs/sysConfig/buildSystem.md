@@ -1,9 +1,10 @@
-<!--keywords[Bash,Bookworm,crontab,FFMPEG,GPIO,lgpio,logrotate,Markdown,mDNS,Network,Ramdisk,Startup,service,Systembuild,venv,WLAN]-->
+<!--keywords[Bash,Bookworm,crontab,FFMPEG,GPIO,lgpio,logrotate,Markdown,mDNS,Network,Ramdisk,Startup,service,Systembuild,Trixie,venv,WLAN]-->
 
 ### Installation von betzBirdiary auf Bookworm
 
-- Raspian OS "Bookworm" (Debian 12) verspricht die aktuellste Unterstützung von Pythonmodul "picamera2". Version siehe 'apt show python3-picamera2', oder 'pip show picamera2'.
+- Raspian OS "Bookworm" (Debian 12) bzw. "Trixie" (Debian 13) verspricht die aktuellste Unterstützung von Pythonmodul "picamera2". Version siehe 'apt show python3-picamera2', oder 'pip show picamera2'.
 - Installation von "bookworm light 64bit" mit "Raspberry Pi Imager" (*pi/bird24* Passwort, Fat32 Bootpartition mit ssh und wpa_supplicant.conf versehen), hochfahren und im Heimnetz suchen (DHCP). Sollte zumindest im LAN konnektieren.
+- Login von `public-key` auf Passwort umstellen in `etc/ssh/sshd.conf` und `rm .ssh/autorized_keys`. (Trixie)
 - putty/ssh bzw. WinSCP/Filezilla, 'sudo passwd root' ("*bird24root*""), 'sudo apt update && sudo apt full-upgrade' 🕦= *takes time*
 - static IP (192.168.178.210), mit **NetworkManager** (default on fst boot, nmtui/nmcli, wpa_supplicant service) **oder** 'systemd-networkd' **oder** '/etc/network/interfaces (dhcdcp.conf)'. 'rpibird' als hostname. IPv6 can be disabled for wlan0. In nmtui benannte ich meine statische IP configuration mit 'bird-static210' ('nmcli connection show'). Later reset to DHCP Hotspot, before you produce an OS image for distribution to others (and remove credentials from config.json), see [buildimg](../buildimg/buildimg.md).
 - prevent wlan0 sleeping mode: 'sudo nmcli connection modify static210 802-11-wireless.powersave 2' oder in '/etc/NetworkManager/conf.d/disable-powersave.conf', verifiziere mit 'iw wlan0 get power_save'

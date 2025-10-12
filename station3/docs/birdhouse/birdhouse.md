@@ -6,9 +6,11 @@ Allerlei Kleintiere wie Spechte und Eichhörnchen unterziehen das Vogelhaus imme
 <img src="vogelhaus2vornS.jpg" alt="vorn" style="zoom: 50%;" /><img src="vhs2etronikS.jpg" alt="seitlich" style="zoom:50%;" /><img src="author7-2025.jpg" alt="Autor" style="zoom:50%;" />
 
 Schräg im Futtersilo steht ein leicht nach vorn unten gekrümmtes Rutschblech aus Edelstahl, um das Vogelfutter zum Auslass zu lenken.
-Für kleine Vögel ist der Futtertrog etwas groß, so dass sie dort wie in einer Badewanne sitzen, ohne auf die Stange zu müssen.
+Für kleine Vögel ist der Futtertrog etwas groß, so dass sie dort wie in einer Badewanne sitzen, ohne auf die Stange zu müssen. Der Futtertrog wurde deshalb nachträglich um 2 cm reduziert.
 
-Ich danke Andreas Mischko für den engagierten Aufbau und auch die Restaurierung des Vogelhauses.
+<img src="bathtub.jpg" alt="Badewanne" style="zoom: 50%;" /><img src="troughreduceS.jpg" alt="kleinTrog" style="zoom: 66%;" />
+
+Ich danke Andreas Mischko für den engagierten Aufbau, die Ideen und auch die Restaurierung des Vogelhauses.
 
 Die originale Bauanleitung der Uni Münster findet sich [hier] (https://herbbetz.github.io/betzBirdiary/station3/docs/birdhouse/Anleitung_Eigenbau_v3.html).
 
