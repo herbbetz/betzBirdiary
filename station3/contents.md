@@ -53,6 +53,7 @@
 - **Tasmota**: [tasmota](docs/tasmota/tasmota.md), [filelist](filelist.md)
 - **Testdatei_Sensor**: [lgpio](lgpioBird/lgpio.md)
 - **Treiber**: [lgpio](lgpioBird/lgpio.md)
+- **Trixie**: [buildSystem](docs/sysConfig/buildSystem.md)
 - **Update**: [README](README.md)
 - **Versionen**: [ForkMakingof](docs/makingOf/ForkMakingof.md)
 - **Video_nachbearbeiten**: [videoHowto](docs/video/videoHowto.md)

@@ -24,7 +24,8 @@ monitor["uptime"]="$(secs2hours "$uptime_secs")hrs ($uptime_secs secs)"
 
 # wlan0 IP (IPv4)
 IP4=$(ip -4 addr show wlan0 2>/dev/null | grep -oP '(?<=inet\s)\d+(\.\d+){3}' || echo "N/A")
-monitor["wlan0"]="$IP4"
+HOSTNAME=$(hostname)
+monitor["wlan0"]="$IP4 $HOSTNAME"
 
 # CPU voltage & temp (only works on Raspberry Pi)
 if command -v vcgencmd &>/dev/null; then

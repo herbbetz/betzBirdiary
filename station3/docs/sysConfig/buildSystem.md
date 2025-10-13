@@ -8,18 +8,21 @@
 - putty/ssh bzw. WinSCP/Filezilla, 'sudo passwd root' ("*bird24root*""), 'sudo apt update && sudo apt full-upgrade' 🕦= *takes time*
 - static IP (192.168.178.210), mit **NetworkManager** (default on fst boot, nmtui/nmcli, wpa_supplicant service) **oder** 'systemd-networkd' **oder** '/etc/network/interfaces (dhcdcp.conf)'. 'rpibird' als hostname. IPv6 can be disabled for wlan0. In nmtui benannte ich meine statische IP configuration mit 'bird-static210' ('nmcli connection show'). Later reset to DHCP Hotspot, before you produce an OS image for distribution to others (and remove credentials from config.json), see [buildimg](../buildimg/buildimg.md).
 - prevent wlan0 sleeping mode: 'sudo nmcli connection modify static210 802-11-wireless.powersave 2' oder in '/etc/NetworkManager/conf.d/disable-powersave.conf', verifiziere mit 'iw wlan0 get power_save'
-- I also disable bluetooth by blacklisting its modules from loading.
+- I also disable bluetooth by blacklisting its modules from loading. Or `systemctl disable bluetooth`.
 - mDNS (avahi, bonjour): 'ping rpibird' statt 'ping 192.168.178.210' zeigt den Erfolg. 'rpibird' eintragen in /etc/hosts und /etc/hostname.
 - für user 'pi':
 	- mail for 'local only'(rpibird.local): 'sudo apt install mailutils -y', 'sudo dpkg-reconfigure exim4-config', 'sudo usermod -a -G mail pi' ('groups pi' then includes group 'mail')
 	- crontab: 'crontab yourcrontab.txt' . Siehe auch 'test_crontab.sh'.
 	- ramdisk: in /etc/fstab "tmpfs /home/pi/station3/ramdisk tmpfs defaults,size=50M,noatime,uid=1000,gid=1000,mode=0700 0 0", see 'df -h /home/pi/station3/ramdisk'
-	- [logrotate](https://linuxconfig.org/logrotate): mit /etc/logrotate.d/birdlogrotate werden von cron.daily /home/pi/station3/logs/\*.log die angefallenen Logfiles aufgeräumt ('logrotate -d /etc/logrotate.conf'). '/var/log/syslog' wurde in bookworm ersetzt durch journalctl (systemd-journald). 'journalctl' wird konfiguriert in '/etc/systemd/journald.conf' und ist unabhängig von logrotate.
+	- [logrotate](https://linuxconfig.org/logrotate): mit /etc/logrotate.d/birdlogrotate werden von cron.daily /home/pi/station3/logs/\*.log die angefallenen Logfiles aufgeräumt ('logrotate -d /etc/logrotate.conf'). Dazu wird in `/etc/logrotate.d` die Datei `birdlogrotate` abgelegt. Kein Eintrag in `pi crontab`, da Link in  `/etc/systemd/system/multi-user.target.wants` das aktiviert, siehe `systemctl status cron`.
+
+'/var/log/syslog' wurde in bookworm ersetzt durch journalctl (systemd-journald). 'journalctl' wird konfiguriert in '/etc/systemd/journald.conf' und ist unabhängig von logrotate.
+
 	- 'sudo apt install ffmpeg' für 'ffmpeg -i input_video.mjpeg -c:v copy output_video.avi'
 	- 'sudo apt install dnsutils' for diagnostics of delay issues on booting.
 - Markdown Doku:
-	- [Mkdocs](https://www.mkdocs.org/) (birdvenv) 'pip install mkdocs' , um die Markdown Doku durchsuchbar zu machen.
-	- Alternativ kann man keywords innerhalb Markdown in HTML comments verstecken. 
+	- Hier praktiziert:  keywords innerhalb Markdown in HTML comments verstecken.
+	- Alternative: [Mkdocs](https://www.mkdocs.org/) (birdvenv) 'pip install mkdocs' , um die Markdown Doku durchsuchbar zu machen.
 - Bash Shell:
 	- .bashrc und bashrc.sh zur Konfiguration der Login Shell (ssh login 'pi/bird24').
 	- 'config.sh' mit zentralen Variablen für die bash Skripte.
@@ -28,15 +31,17 @@
 	- das Systemmonitoring mit Anbindung an WebInterface: sysMon.sh, cpu5sec.sh, updateSysmonEvt.sh .
 - C-Module:
 	- 'sudo apt install libcamera-apps libcamera-apps-lite libcamera-dev python3-libcamera python3-kms++'
-	- teste libcamera: 'libcamera-still --list-cameras', 'rpicam-still -o test_image.jpg -t 2000 --shutter 10000 --gain 4.0 --awbgains 1.5,1.2'
+	- teste libcamera: `rpicam-still --list-cameras`, `rpicam-still -o test_image.jpg -t 2000 --shutter 10000 --gain 4.0 --awbgains 1.5,1.2`
 - python:
 	- 'sudo apt install libcap-dev python3-dev' nötig zur pip-Installation von Pythonmodulen mit C-Komponenten. Diese Buildtools können später wieder weg: 'sudo apt remove libcap-dev python3-dev' und 'sudo apt autoremove'.
+	- `sudo apt install python3-picamera2`.
 	- auch mit nur einer Python3 Version sollte 'venv' verwendet werden, u.a. wegen der requirements.txt
 	- aus /station3 gib ein 'python3 -m venv birdvenv --system-site-packages' (bzw. 'deactivate'). '--system-site-packages' notwendig, weil mit  apt-get installierte Pakete (dpkg -l | grep python3-) gebraucht werden (libcamera, pykms).
-	für libcamera nötig: /home/pi/station2/birdvenv/lib/python3.11/site-packages/libcamera_path.pth mit Inhalt "/usr/lib/python3/dist-packages"
+	für libcamera nötig: /home/pi/station3/birdvenv/lib/python3.11/site-packages/libcamera_path.pth mit Inhalt "/usr/lib/python3/dist-packages", in Trixie nicht länger nötig.
+	- aktiviere mit `source birdvenv/bin/activate` (`. birdvenv/bin/activate`).
 	- innerhalb des birdvenv installiere alle Module mit 'pip' (venv beinhaltet pip) und update sie später dort mit 'pip install --upgrade'.
 	- 'pip freeze > requirements.txt' listet dorthin alle im birdvenv installierten Module. Kann verwendet werden mit 'pip install -r requirements.txt' (anders als 'pip list > requirements.txt').
-	- (birdvenv) 'pip3 install ephem flask markdown matplotlib' und 'apt install python3-picamera2' (aktueller als mit pip3), dann 'pip3 uninstall numpy' wegen Inkompat. des "pip numpy" zu "apt picamera2".
+	- (birdvenv) 'pip3 install ephem flask markdown matplotlib' und 'apt install python3-picamera2' (aktueller als mit pip3), dann in bookworm 'pip3 uninstall numpy' wegen Inkompat. des "pip numpy" zu "apt picamera2". In Trixie: `pip uninstall types-flask-migrate types-seaborn`, "pip numpy" bleibt in Trixie.
 	- um birdvenv nicht ständig zu überschreiben, wird es außerhalb station3 in /home/pi unter root betrieben, ebenso wie seine Begleiter ''/4venv' und 'activate_venv.sh'. Letzteres aus der Kommandozeile sourcen ('.' oder 'source activate_venv.sh'), damit es nicht in einer Subshell ausgeführt und sofort wieder beendet wird. 'birdvenv activ' bedeutet 'echo $VIRTUAL_ENV' zeigt 'birdvenv' an.
 	- andere 'apt installs': python3-ephem (sunset2.py), aber aktueller ist 'pip install ephem'
 - GPIO
