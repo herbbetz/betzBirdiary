@@ -18,8 +18,9 @@
 
 '/var/log/syslog' wurde in bookworm ersetzt durch journalctl (systemd-journald). 'journalctl' wird konfiguriert in '/etc/systemd/journald.conf' und ist unabhängig von logrotate.
 
-	- 'sudo apt install ffmpeg' für 'ffmpeg -i input_video.mjpeg -c:v copy output_video.avi'
-	- 'sudo apt install dnsutils' for diagnostics of delay issues on booting.
+- 'sudo apt install ffmpeg' für 'ffmpeg -i input_video.mjpeg -c:v copy output_video.avi'
+- 'sudo apt install dnsutils' for diagnostics of delay issues on booting.
+
 - Markdown Doku:
 	- Hier praktiziert:  keywords innerhalb Markdown in HTML comments verstecken.
 	- Alternative: [Mkdocs](https://www.mkdocs.org/) (birdvenv) 'pip install mkdocs' , um die Markdown Doku durchsuchbar zu machen.

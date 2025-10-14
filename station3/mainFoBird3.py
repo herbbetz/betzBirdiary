@@ -36,7 +36,7 @@ testmode = False # define outside any block ('if __name__ == "__main__":' also i
 
 def capture_img(picam, dest):
     tmp_dest = dest + ".tmp"
-    picam.capture_file(tmp_dest, name="main", format="jpeg") # lores YUV420 and jpeg are not compatible (error: Buffer has wrong number of dimensions (expected 2, got 3))
+    picam.capture_file(tmp_dest, name="lores", format="jpeg") # lores YUV420 and jpeg were not compatible (error: Buffer has wrong number of dimensions (expected 2, got 3))
     os.replace(tmp_dest, dest)
     if testmode: ms.log(f"Captured still to {dest}")
 
