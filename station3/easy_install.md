@@ -2,7 +2,7 @@
 
 ## Installation Kurzfassung
 
-- [Download](https://drive.google.com/drive/folders/11WduKyMzzzmW61bC7l0BlDjjx6e_ImHC?usp=sharing) des Disk Image 'betzBirdXXX.7z' oder 'betzBirdXXX.xz'. Ersteres entpacken mit [7-zip](https://www.7-zip.org/) und flashen auf SD-Card mit z.B. [balena etcher](https://etcher.balena.io/). `xz`-komprimierte Images kann der `balena etcher` ohne Entpacken flashen.
+- [Download](https://drive.google.com/drive/folders/11WduKyMzzzmW61bC7l0BlDjjx6e_ImHC?usp=sharing) des Disk Image 'betzBirdXXX.7z' oder 'betzBirdXXX.xz'. Ersteres entpacken mit [7-zip](https://www.7-zip.org/) und flashen auf SD-Card mit z.B. [balena etcher](https://etcher.balena.io/). `xz`-komprimierte Images kann der `balena etcher` ohne Entpacken flashen. Wird der `Raspberry Pi Imager` verwendet, können die eigenen WLAN-Daten dort bereits vorkonfiguriert werden (CTRL-Shift-X) und das WLAN kann bereits nach dem ersten Hochfahren vorhanden und im Router (Fritzbox) zu sehen sein.
 
   *Tipp: Teste die SD Karte erst in einem Raspi 4 indoors bezüglich Raspi LEDs und Integration ins Heim-WLAN. Meide WLAN-Passwörter mit Leerzeichen oder `\`.*
 

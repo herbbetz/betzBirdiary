@@ -5,6 +5,8 @@
 Das Image der Vogelhaussoftware enthält das ganze Raspbian OS mit allen Softwarekomponenten. 
 - Das Raspbian Image 'birdDatum.img' wird z.B. mit '[balenaEtcher](https://etcher.balena.io/)' auf eine SD-Karte geflasht. Unter Linux mit `lsblk` das Blockdevice `/dev/sdX` der gemounteten SD Card ermitteln, dann `dd if=betzBirdXXX.img of=/dev/sdX bs=4M status=progress && sync`, dann eject.
 
+- Verwendet man den 'Raspberry Pi Imager', dann legt 'trixie' ein `/etc/NetworkManager/system-connections/preconfigured.nmconnection` aus den im Imager vorkonfigurierten WLAN-Daten an. Über Ethernetkabel ist 'trixie' immer erreichbar.
+
 - Dort kann die Bootpartition aufgrund ihres fat32-Formates unter allen Betriebssystemen gelesen werden. Unter Linux ist  nicht nur das bootfs, sondern auch das rootfs editierbar (vom User 'root'). Früher unter Raspian 'bullseye' wurde in bootfs 'ssh' (leere Datei) und 'wpa_supplicant' mit den eigenen WLAN-Schlüsseln eingetragen. Das neue Raspbian 'bookworm' arbeitet jedoch mit 'NetworkManager' und wird anders ins Heim-WLAN gebracht.
 
 - In 'bookworm' ist das betzBirdiary als WLAN Hotspot (access point) konfiguriert mit IP '192.168.4.1' und dem Passwort 'bird24root'. Der Zugang entsteht nach WLAN-Verbindung mit 'bird-ap-dhcp'. 'ping 192.168.4.1' zeigt den Erfolg. Einloggen mit 'ssh pi@192.168.4.1'.

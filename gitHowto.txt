@@ -28,3 +28,33 @@ locally on a cloned repo with tags/releases removed from remote github.com :
     git push -f origin main (push forcefully to remote github)
     git gc --aggressive --prune=all (gc for 'garbage collection')
     git push --set-upstream origin main
+
+Only pull a subdirectory like '/station3' recursively:
+    for pull of public repo into trixie, there is no password or github login needed
+    cd /home/pi
+    git clone --no-checkout https://github.com/herbbetz/betzBirdiary githubRepo
+    cd githubRepo
+  initiales Setup:
+    git sparse-checkout init --cone # cone means recursively, like cutting a pyramid from a dir tree
+    git sparse-checkout set station3
+    git sparse-checkout list
+    git checkout main
+  später:
+    cd /home/pi/githubRepo
+    git pull
+
+Dann mit /home/pi/station3 synchronisieren:
+    rsync -av --exclude-from=/home/pi/.rsync-exclude githubRepo/station3/ /home/pi/station3/
+----/home/pi/update-fromGit.sh:
+#!/bin/bash
+cd /home/pi/githubRepo
+git pull
+rsync -av --exclude='/home/pi/githubRepo/.git' --exclude-from=/home/pi/githubRepo/.rsync-exclude station3/ /home/pi/stationtest/
+# rsync -av --delete githubRepo/station3/ /home/pi/stationtest/ # would also delete files removed on Github
+----/home/pi/githubRepo/.rsync-exclude:
+environments
+logs
+movements
+parentdir
+ramdisk
+----
