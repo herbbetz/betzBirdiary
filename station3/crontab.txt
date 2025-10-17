@@ -7,7 +7,7 @@ PYTHON=/home/pi/birdvenv/bin/python3
 # use /etc/systemd/system/bird-startup.service with systemctl instead
 # @reboot bash $APPDIR/startup.sh >> /home/pi/station3/logs/cron_startup.log 2>&1
 #
-# min hour dayOfMonth month dayOfWeek(0=sunday)   command
+### min hour dayOfMonth month dayOfWeek(0=sunday)   command ###
 # Calling with bash does not need file permissions like 'chmod +x *.sh'
 # run on even hours like 0:00, 2:00, 4:00
 0 */2 * * * bash $APPDIR/statist/getStats.sh >> $APPDIR/logs/statist.log 2>&1
@@ -19,4 +19,8 @@ PYTHON=/home/pi/birdvenv/bin/python3
 */16 17-22 * * * $PYTHON $APPDIR/sunset3.py >> $APPDIR/logs/dht_sun.log 2>&1
 # shut down station at 18:54 daily before disconnecting mains at 19:00 :
 54 21 * * * bash $APPDIR/tasmotaDown.sh eveningDown >> $APPDIR/logs/down.log 2>&1
+# run system update on the first of each month around noon:
+1 12 1 * * /home/pi/update-system.sh >> $APPDIR/logs/update.log 2>&1
+# run update from github on the 15th of each month around noon:
+1 12 15 * * /home/pi/update-fromGit.sh >> $APPDIR/logs/update.log 2>&1
 # ----
