@@ -6,7 +6,9 @@
 
   *Tipp: Teste die SD Karte erst in einem Raspi 4 indoors bezüglich Raspi LEDs und Integration ins Heim-WLAN. Meide WLAN-Passwörter mit Leerzeichen oder `\`.*
 
-- Menü des eigenen Routers öffnen, Netzwerkkabel in den Raspi einstecken & booten, seine IP im Routernetzwerk suchen und mit `ssh pi@<IP>` einloggen (Login PW: bird24, Root PW: bird24root). `ping <IP>` sollte erfolgreich sein.
+- Menü des eigenen Routers öffnen, Netzwerkkabel in den Raspi einstecken & booten, seine IP im Routernetzwerk suchen und mit `ssh pi@<IP>` einloggen (Login PW: bird24, Root PW: bird24root). `ping <IP>` sollte erfolgreich sein. **Achtung:** das LAN-Kabel schon vor dem Booten des Raspberry einstecken.
+
+- Sollte weder der `RPi Imager` noch das `LAN Kabel` noch ein im Smartphone auffindbarer `WiFi Access Point namens bird-ap210 (PW: bird24root)` einen SSH-Zugang liefern, kann man die SD-Karte mittels Kartenleser auch an einen Ubuntu Laptop anschließen und vor dem Hochfahren in `/media/<user>/rootfs/etc/NetworkManager/system-connections/` eine eigene `wifi.nmconnections` kopieren. Und wenn alle Stricke reißen, hat man ja auch noch Zugang über USB-Keyboard und HDMI-Monitor.
 
 - Das Heimnetz-WLAN folgendermaßen aktivieren:
 
