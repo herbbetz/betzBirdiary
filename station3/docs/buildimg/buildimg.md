@@ -82,6 +82,8 @@ Zur Konfiguration der Station siehe [config.json](../../configjson.md).
 
 *'./pishrink.sh -s bird.img' verhindert Autoexpansion auf der SD-Karte und reduziert deren Abnutzung durch mehr Kartenplatz für den SD-Karten-Controller. Bei Platzbedarf auf der SD-Karte kann die Expansion dort nachgeholt werden durch 'raspi-config --expand-rootfs' oder besser dosiert durch parted/resize2fs.*
 
+Ein Filesystemcheck vor pishrink.sh kann im hochgefahrenen Raspbian erreicht werden mit `sudo touch /forcefsck && sudo reboot`.
+
 - `parted /dev/mmcblk0 resizepart 2` und anschließend `resize2fs /dev/mmcblk0p2` erweitern das rootfs dosiert. `fstab` muss nicht beachtet werden, da die `UUID` nicht verändert wird. Zuvor kann noch ein `lsblk` oder `parted /dev/mmcblk0 print free` die Übersicht herstellen und mit `df -h` das Vergrößern verifiziert werden.
 
 - ein Image, das zuvor nicht expandiert war ('raspi-config --expand-rootfs'), kann manchmal mit pishrink.sh nicht weiter verkleinert werden, wobei das Skript dann auch den abschließenden 'unallocated space' belässt. 'gparted betzBirdXXX.img' zeigt den 'unallocated space' und `fdisk -l betzBirdXXX.img` zeigt sowas wie 'units sectors: 512, disklabel type: dos, betzBirdXXX.img2 end: 776544'. Bei dos (MBR) den 'unallocated space' entfernen nach der Formel `(end + 1) * sectorunits`, im Beispiel `truncate -s $((776545 * 512)) betzBirdXXX.img` oder von vornherein nur:
