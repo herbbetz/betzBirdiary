@@ -16,7 +16,7 @@ Trixie hat hier wieder eine Besonderheit: es verwendet sowohl `netplan` wie `Net
 
 - siehe `/etc/netplan/90-NM-2aff47d5-2705-3876-926e-79651215340b.yaml`
 
-- Will man statt der LAN-Plugin-Lösung von `netplan` in `run/...` das eigene `/etc/NetworkManager/system-connections/LAN1.nmconnections` haben, geht das mit folgendem Workflow: `nmcli -f NAME,FILENAME connection show`, `nmcli connection reload`, `nmcli connection up LAN1`, `nmcli connection delete "Wired connection 1"`.
+- Will man statt der LAN-Plugin-Lösung von `netplan` in `run/...` das eigene `/etc/NetworkManager/system-connections/LAN1.nmconnections (root.root, permission 600)` haben, geht das mit folgendem Workflow: `nmcli -f NAME,FILENAME connection show`, `nmcli connection reload`, `nmcli connection up LAN1`, `nmcli connection delete "Wired connection 1"`.
 
 - die LAN-Verbindung kann erfolgreich sein während `boot`, aber nicht bei `hotplugging`.
 
