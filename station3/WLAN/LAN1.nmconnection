@@ -2,9 +2,10 @@
 id=LAN1
 uuid=c7e2c055-97df-336a-b03f-7c9c9567260b
 type=ethernet
-autoconnect-priority=-999
+autoconnect=yes
+autoconnect-priority=100
+autoconnect-retries=0
 interface-name=eth0
-timestamp=1750677979
 
 [ethernet]
 
@@ -13,6 +14,6 @@ method=auto
 
 [ipv6]
 addr-gen-mode=default
-method=disabled
+method=auto
 
 [proxy]
