@@ -1,6 +1,6 @@
 <!--keywords[Bash,Bookworm,crontab,FFMPEG,GPIO,lgpio,logrotate,Markdown,mDNS,Network,Ramdisk,Startup,service,Systembuild,Trixie,venv,WLAN]-->
 
-### Installation von betzBirdiary auf Bookworm
+### Installation von betzBirdiary auf Bookworm & Trixie
 
 - Raspian OS "Bookworm" (Debian 12) bzw. "Trixie" (Debian 13) verspricht die aktuellste Unterstützung von Pythonmodul "picamera2". Version siehe 'apt show python3-picamera2', oder 'pip show picamera2'.
 - Installation von "bookworm light 64bit" mit "Raspberry Pi Imager" (*pi/bird24* Passwort, Fat32 Bootpartition mit ssh und wpa_supplicant.conf versehen), hochfahren und im Heimnetz suchen (DHCP). Sollte zumindest im LAN konnektieren.
