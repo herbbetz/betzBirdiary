@@ -2,8 +2,8 @@ import numpy as np
 import subprocess
 import time
 from lgpioBird.HX711 import HX711
-from sharedBird import roundFlt, readPID, update_config_json
-from configBird3 import birdpath, hxDataPin, hxClckPin
+from sharedBird import roundFlt, readPID
+from configBird3 import birdpath, hxDataPin, hxClckPin, update_config_json
 
 NUM_VALS = 100
 SLEEP_BETWEEN_SAMPLES = 0.2
