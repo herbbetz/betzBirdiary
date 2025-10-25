@@ -1,0 +1,21 @@
+**buildroot**
+https://buildroot.org/download.html
+https://gitlab.com/buildroot.org/buildroot/
+    git clone https://git.buildroot.net/buildroot
+
+Build process only on ext4 (Ubuntu), not on NTFS using WSL2!
+> sudo apt install -y sed make binutils build-essential gcc g++ bash patch \
+  gzip bzip2 perl tar cpio unzip rsync file bc wget python3 cvs git	#install necessary build tools
+> make raspberrypi4_64_defconfig #writes this RPi4 config to .config
+> make menuconfig #adds modules you need, install pip for python modules not found (ephem, picamera2), no apt useful as it is no debian setup, no opkg useful
+> host python not necessary, means this need python on the host building the image. Does not concern the image itself.
+> cp .config herb1.config #for archiving
+> grep -v '^#' herb1.config > herb1_clean.config	#remove comment lines for easy viewing or editing, comments will be regenerated in .config by 'make menuconfig' or 'make savedefconfig'
+> make	#this builds the disk image to output/images/sdcard.img
+> sudo dd if=sdcard.img of=/dev/sdX bs=4M status=progress && sync	#find sdcard device sdX using lsblk, then unmount
+> Login as root with empty password	# BR2_TARGET_GENERIC_ROOT_PASSWD="" was set, for ssh over LAN cable there should be dropbox or openssh installed by menuconfig ("Target packages → Networking applications → dropbear"), but network must be working first (ping <IP> found in router)
+
+
+
+**yocto**
+https://docs.yoctoproject.org/
