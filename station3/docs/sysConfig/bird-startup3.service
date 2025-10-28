@@ -1,0 +1,27 @@
+[Unit]
+Description=Birds Startup Script
+After=network.target
+Wants=network.target avahi-daemon.service
+
+[Service]
+# start after boot completed:
+Type=idle
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/station3
+
+# Don't block boot; run detached ('disown'), bash -l means same envir variables as login shell for user pi, c means command
+ExecStart=/usr/bin/bash -lc 'setsid /home/pi/activate_birdvenv.sh && setsid /home/pi/station3/startup.sh >> /home/pi/station3/logs/startup.service.log 2>&1 & disown'
+
+# Don't try to track this long-running tree
+Restart=no
+
+# No need to wait long for "start"
+TimeoutStartSec=15
+
+# Logs
+StandardOutput=append:/home/pi/station3/logs/startup.service.log
+StandardError=append:/home/pi/station3/logs/startup.service.err
+
+[Install]
+WantedBy=multi-user.target

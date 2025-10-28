@@ -2,6 +2,11 @@
 # despite found in 'which bash' the shebang !/usr/bin/bash is not working in bullseye
 # called from startup1stage.sh, which is called from systemd bird-startup.service .
 # nohup /setsid prevents kill of backgrounded processes when this script ends
+LOGFILE="/home/pi/station3/logs/startup.log"
+log() {
+    echo "$*" >> "$LOGFILE" 2>&1
+}
+
 echo "startup2stage.sh started at $(date)" >> /home/pi/station3/logs/startup.log 2>&1
 configfile="$HOME/station3/config.sh"
 if [ -f "$configfile" ]; then

@@ -16,19 +16,19 @@ while true; do
   ONLINE=$?
   if [[ $ONLINE != 0 ]]
   then
-     echo "`date` Internet not online!"
+     echo "$(date) Internet not online!"
      CNT=$((CNT+1))
      if [[ $CNT -lt $CNTLIMIT ]] # single brackets enough?
      then
        # try restarting internet:
-       echo "`date` Internet Problem"
+       echo "$(date) Internet Problem"
        # wlan0 oder wlan1:
        sudo ip link set wlan0 down
        sleep 5
        sudo ip link set wlan0 up
      else
        # software shutdown:
-       echo "`date` shutdown due to internet lost for $CNTLIMIT minutes" | mail -s "internet lost" pi@localhost
+       echo "$(date) shutdown due to internet lost for $CNTLIMIT minutes" | mail -s "internet lost" pi@localhost
        /home/pi/station2/tasmotaDown.sh internetdown # my dedicated shutdown script
        break
      fi
@@ -36,7 +36,7 @@ while true; do
   if [[ $ONLINE == 0 ]]
   then
      CNT=0
-     echo "`date` Internet good"
+     echo "$(date) Internet good"
   fi
 done
 exit

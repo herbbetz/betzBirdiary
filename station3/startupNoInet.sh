@@ -3,7 +3,6 @@
 APPDIR=/home/pi/station3
 FIFO=/home/pi/station3/ramdisk/birdpipe
 LOGFILE="/home/pi/station3/logs/startup.log"
-
 log() {
     echo "$*" >> "$LOGFILE" 2>&1
 }
