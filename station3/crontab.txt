@@ -3,7 +3,8 @@
 APPDIR=/home/pi/station3
 # crontab variable substitution not working like in bash, therefore full path, not $APPDIR:
 # the following could be only 'python3', as 'PATH=/home/pi/station3/birdvenv/bin:...' in bird-startup.service, see 'which python3' .
-PYTHON=/home/pi/birdvenv/bin/python3
+# PYTHON=/home/pi/birdvenv/bin/python3
+PYTHON=/usr/bin/python3
 # use /etc/systemd/system/bird-startup.service with systemctl instead
 # @reboot bash $APPDIR/startup.sh >> /home/pi/station3/logs/cron_startup.log 2>&1
 #
@@ -20,7 +21,7 @@ PYTHON=/home/pi/birdvenv/bin/python3
 # shut down station at 18:54 daily before disconnecting mains at 19:00 :
 54 21 * * * bash $APPDIR/tasmotaDown.sh eveningDown >> $APPDIR/logs/down.log 2>&1
 # run system update on the first of each month around noon:
-1 12 1 * * /home/pi/update-system.sh >> $APPDIR/logs/update.log 2>&1
+# 1 12 1 * * /home/pi/update-system.sh >> $APPDIR/logs/update.log 2>&1
 # run update from github on the 15th of each month around noon:
-1 12 15 * * /home/pi/update-fromGit.sh >> $APPDIR/logs/update.log 2>&1
+# 1 12 15 * * /home/pi/update-fromGit.sh >> $APPDIR/logs/update.log 2>&1
 # ----

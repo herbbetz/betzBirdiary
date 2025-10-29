@@ -3,7 +3,8 @@
 # set -e  # Exit immediately if a command exits with a non-zero status
 # exec >> /home/pi/station2/logs/statist.log 2>&1 # Redirect stdout and stderr to a log file
 DIR="/home/pi/station3/statist"
-PYTHON="/home/pi/birdvenv/bin/python3"
+# PYTHON="/home/pi/birdvenv/bin/python3"
+PYTHON="/usr/bin/python3"
 cd "$DIR"
 
 # 1) download from birdiary api's to apidata.json

@@ -1,0 +1,2 @@
+- config.sh löschen und austragen aus (meist $APPDIR statt "source config.sh"): bashrc.sh, startup2stage.sh
+- birdvenv auskommentieren aus (meist $PYTHON=): flaskBird3.py, build_md_contents.py, crontab.txt, startup2stage.sh, mdroid.sh, bashrc.sh, statist/getStats.sh, ../update-system.sh, bird-startup.service

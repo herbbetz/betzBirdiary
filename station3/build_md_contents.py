@@ -53,8 +53,8 @@ def find_markdown_files(root, parentdir_symlink, contents_md_file):
 
     # Negative list: directories to skip entirely
     negative_dirs = []
-    if parentdir_symlink:
-        negative_dirs.append(os.path.join(os.path.realpath(parentdir_symlink), "birdvenv"))
+    # if parentdir_symlink:
+        # negative_dirs.append(os.path.join(os.path.realpath(parentdir_symlink), "birdvenv"))
 
     while stack:
         dirpath, follow_symlinks, under_parentdir = stack.pop()

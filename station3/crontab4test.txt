@@ -1,7 +1,8 @@
 # ----pi crontab on 15thJune2025:
 # this is for testing purposes, where 'crontab crontab4test.txt' switches off all crontab triggers
 APPDIR=/home/pi/station3
-PYTHON=home/pi/birdvenv/bin/python3
+# PYTHON=home/pi/birdvenv/bin/python3
+# PYTHON=/usr/bin/python3
 # use /etc/systemd/system/bird-startup.service with systemctl instead
 # @reboot bash $APPDIR/startup.sh >> /home/pi/station3/logs/cron_startup.log 2>&1
 # ----

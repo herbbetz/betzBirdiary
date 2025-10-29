@@ -11,8 +11,6 @@ else
     exit 1
 fi
 
-# source /home/pi/station3/config.sh
-
 if [[ -z $1 ]];then
     msg="noarg"
 else

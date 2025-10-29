@@ -16,7 +16,8 @@ import matplotlib.pyplot as plt
 from collections import defaultdict
 import io
 
-PYTHON = "/home/pi/birdvenv/bin/python3"
+# PYTHON = "/home/pi/birdvenv/bin/python3"
+PYTHON = "/usr/bin/python3"
 ### inactivity monitor for endpoint /msgjson
 lock = threading.Lock()
 timeout = 5  # seconds
