@@ -34,6 +34,7 @@
 6. Als `root` füge am Ende von `/etc/fstab` folgende Zeilen ein:
 ````
 # 50 MB ramdisk for /home/pi/station3/ramdisk:
+# beware: /home/pi/station3/ramdisk must exist, owned by pi
 tmpfs /home/pi/station3/ramdisk tmpfs defaults,size=50M,noatime,uid=1000,gid=1000,mode=0700 0 0
 ````
 ​      danach `systemctl daemon-reload`, dann zeigt `df -h`, dass `station3/ramdisk` jetzt als *Ramdisk* läuft.
