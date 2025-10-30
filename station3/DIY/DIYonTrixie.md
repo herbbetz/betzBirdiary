@@ -4,7 +4,9 @@
 
 1. Flashen von `Raspbian Trixie 64bit Desktop` mit `RPi Imager v1.9.6 (Windows)`, dabei dort eigene PasswortLogin- und WLAN-Einstellungen vorgeben mit `Ctrl-Shift-X` und anwenden.
 
-   *Hochfahren und LAN/WLAN im Router testen, dann `ssh pi@<IP4>`*. Frägt das Login nach `publickey`, dann mit HDMI/Monitor einloggen und Umstellen in `/etc/ssh/sshd_config`. Auch sonst ist zum Debuggen bes. des Bootvorganges beim Raspberry4 das *Mikro-HDMI-Kabel/USB-Keyboard* ratsam.
+   Hochfahren und LAN/WLAN im Router suchen. Erscheint LAN oder WLAN nicht im Router, dann neu Hochfahren mit HDMI-Monitor. Dazu benötigt man beim RPi4 zum Monitor das Mikro-HDMI-Kabel sowie USB-Keyboard & Mouse. Es erscheint der Desktop, wo rechts oben die eigenen WLAN-Daten einzutragen sind. Durch das WLAN-Symbol hat man ständige Kontrolle über die WLAN Aktivität. Öffne ein Terminal auf dem Desktop (Ctrl-Alt-T) und lies Deine `<IP4>` mit `ifconfig`. Gib Dir ein Login-Passwort mit `sudo passwd pi` und root-Passwort mit `sudo passwd root`.
+
+   Auf anderem PC teste `ssh pi@<IP4>`. Frägt das Login nach `publickey`, dann über HDMI-Monitor und Desktop Terminal Umstellen in `/etc/ssh/sshd_config`. Neustart mit `sudo systemctl restart sshd` und neue ssh-Session mit `ssh pi@<IP4>` von extern.
 
    `sudo apt update && sudo apt upgrade`
 
@@ -29,8 +31,6 @@
    
      
    
-5. Ein *root-Passwort* erhältst Du mit `sudo passwd root`.
-
 6. Als `root` füge am Ende von `/etc/fstab` folgende Zeilen ein:
 ````
 # 50 MB ramdisk for /home/pi/station3/ramdisk:
@@ -68,6 +68,8 @@ tmpfs /home/pi/station3/ramdisk tmpfs defaults,size=50M,noatime,uid=1000,gid=100
 
 **Optionale Optimierungen**
 
+- statische WLAN-IP4 einrichten (bei mir `192.168.178.210`), z.B. in den `Desktop Settings` oder `nmtui`. Verifiziere mit `ifconfig` oder `nmcli -f NAME,FILENAME connection show`.
+
 - WLAN Powersave und IP6 in NetworkManager/Netplan deaktivieren: 
 
   - `nano /etc/NetworkManager/conf.d/wifi-powersave.conf` trage ein:
@@ -85,7 +87,11 @@ tmpfs /home/pi/station3/ramdisk tmpfs defaults,size=50M,noatime,uid=1000,gid=100
 
    Verifizieren mit `iw dev wlan0 get power_save` bzw. `ip a | grep inet6`.
 
-- regelmässig aus pi crontab: `update-system.sh` und `update-fromGit.sh`. Letzteres erfordert ein Github-Setup in `home/pi`, das  von `https://github.com/herbbetz/betzBirdiary` nur `station3 ohne ramdisk/, logs/, debug/ u.a.` aktualisiert.
+- regelmässig aus pi crontab: `update-system.sh` und `update-fromGit.sh`. Letzteres erfordert ein Github-Setup in `home/pi`, das  von `https://github.com/herbbetz/betzBirdiary` nur `station3 ohne ramdisk/, logs/, debug/ u.a.` aktualisiert (sh. `../gitHowto.txt` und `../update-fromGit.sh`).
+
+- Einrichten von *VNC-Server* oder *RPi Connect* über `sudo raspi-config (Interface Options)` und Desktop-Programmen wie lokalen Browser (`chrome keyring PW: bird24`).
+
+- Einrichten von NGROK zur Fernwartung durch Supporter.
 
 - bei `boot`abschalten:  `sudo systemctl disable bluetooth`(Bluetooth), `sudo systemctl disable alsa-restore alsa-state`(Sound), `sudo systemctl disable cups cups-browsed`(Drucker), `sudo systemctl disable ModemManager`(Mobilfunk).
 

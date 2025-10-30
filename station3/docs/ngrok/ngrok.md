@@ -1,6 +1,6 @@
 <!--keywords[Fernsupport,ngrok,ssh]-->
 
-[NGROK](https://ngrok.com/) ist ein 'reverse tunneling provider'. Ich verwende ihn zum Aufbau einer Verbindung zwecks Fernwartung und Support eines Systemes auf dem Raspberry. Das ermöglicht eine ssh-Verbindung, die der Kunde im Raspberry Terminal beim Support anfordert. Dazu muss er nicht einmal einen Port in seinem Heimrouter freigeben. Er verbindet seinen Raspberry mit NGROK durch das Kommando `ngrok tcp 22`. Dies zeigt ihm Daten an wie `Forwarding tcp://0.tcp.ngrok.io:12345 -> localhost:22`, die er dem Support mitteilt. Der Support kann sich dann in seinen Raspberry einloggen mit `ssh pi@0.tcp.ngrok.io -p 12345` und eine Fehlersuche durchführen. Und das im Freemium Modell, also gratis.
+[NGROK](https://ngrok.com/) ist ein 'reverse tunneling provider'. Ich verwende ihn zum Aufbau einer Verbindung zwecks Fernwartung und Support eines Systemes auf dem Raspberry. Das ermöglicht eine ssh-Verbindung, die der Kunde im Raspberry Terminal beim Support anfordert (durch Ausführen von `home/pi/ngrok.sh`). Dazu muss er nicht einmal einen Port in seinem Heimrouter freigeben. Er verbindet seinen Raspberry mit NGROK durch das Kommando `ngrok tcp 22`. Dies zeigt ihm Daten an wie `Forwarding tcp://0.tcp.ngrok.io:12345 -> localhost:22`, die er dem Support mitteilt. Der Support kann sich dann in seinen Raspberry einloggen mit `ssh pi@0.tcp.ngrok.io -p 12345` und eine Fehlersuche durchführen. Und das im Freemium Modell, also gratis.
 
 ---
 
@@ -28,17 +28,17 @@ Auf dem Raspberry installiert wurde der NGROK Client durch folgende Kommandos al
 
 - `ngrok config edit` ermöglicht gleichzeitig mehrere Tunnel, z.B. ssh und http:8080 
 ```
-  version: 2
-  authtoken: <YOUR_AUTH_TOKEN> 
-  tunnels:
+version: 3
+agent:
+  authtoken: <YOUR_AUTH_TOKEN>
 
-    ssh:
-      addr: 22
-      proto: tcp
-
-    web:
-      addr: 8080
-      proto: http
+tunnels:
+  ssh:
+    addr: 22
+    proto: tcp
+  web:
+    addr: 8080
+    proto: http
 ```
 - `ngrok start ssh web` oder `ngrok start --all` aktiviert dann die Tunnel.
 
