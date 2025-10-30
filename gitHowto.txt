@@ -52,10 +52,15 @@ git pull
 rsync -av --exclude='/home/pi/githubRepo/.git' --exclude-from=/home/pi/githubRepo/.rsync-exclude station3/ /home/pi/stationtest/
 # rsync -av --delete githubRepo/station3/ /home/pi/stationtest/ # would also delete files removed on Github
 ----/home/pi/githubRepo/.rsync-exclude:
+acknowledge
 debug
 environments
+github
+gpiozero
 logs
 movements
 parentdir
+pigpioBird
+pigpiotest
 ramdisk
 ----

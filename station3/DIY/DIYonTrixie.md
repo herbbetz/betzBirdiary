@@ -96,4 +96,6 @@ tmpfs /home/pi/station3/ramdisk tmpfs defaults,size=50M,noatime,uid=1000,gid=100
 
 - bei `boot`abschalten:  `sudo systemctl disable bluetooth`(Bluetooth), `sudo systemctl disable alsa-restore alsa-state`(Sound), `sudo systemctl disable cups cups-browsed`(Drucker), `sudo systemctl disable ModemManager`(Mobilfunk).
 
+- das ist nützlich: `sudo apt install mailutils` , [logrotate](https://linuxconfig.org/logrotate)
+
 - das braucht man sicher nicht: `sudo apt remove cloud-init`
