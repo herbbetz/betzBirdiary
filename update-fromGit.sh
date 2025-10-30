@@ -6,3 +6,7 @@ git pull
 echo "updating station3/ from betzBirdiary download in githubRepo/"
 rsync -av  --exclude-from=/home/pi/githubRepo/.rsync-exclude station3/ /home/pi/station3/
 # rsync -av --delete githubRepo/station3/ /home/pi/stationtest/ # would also delete files removed on Github
+# permissions were changed according to github repo
+sudo chown -R pi:pi /home/pi/station3/
+chmod +x /home/pi/station3/*.sh
+
