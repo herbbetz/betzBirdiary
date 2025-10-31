@@ -23,4 +23,7 @@
   
     **Achtung:** *Eine aktivierte `crontab` fährt gelegentlich das System herunter, z.B. wegen Sonnenuntergang. Zum abendlichen Softwaretest diesen Schritt erst mal überspringen.*
   
-  -  rebooten und testen, ob alles funktioniert: Browserzugang, Kalibrierung der Waage usw.
+  - rebooten und testen, ob alles funktioniert: Browserzugang (eigene birdiary boxId eintragen), Kalibrierung der Waage usw.
+
+Happy birding,
+herber7be7z@gmail.com
