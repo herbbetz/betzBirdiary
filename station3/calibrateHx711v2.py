@@ -96,5 +96,6 @@ print("---- SAVED THESE VALUES TO YOUR CONFIG FILE ----")
 print(f"offset (units without load): {mean_no_load}")
 print(f"scaleFactor (units per gram): {scale_factor}")
 
-update_config_json(config_path, mean_no_load, scale_factor)
+update_config_json({"hxOffset": mean_no_load, "hxScale": scale_factor})
+print("If no more gram measurements please reboot.")
 hx.close()

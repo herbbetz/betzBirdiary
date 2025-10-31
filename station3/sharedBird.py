@@ -1,5 +1,5 @@
 # shared functions
-import os, subprocess, json
+import os, subprocess
 
 PIDfile = ["mainPID.txt", "hxFiPID.txt"] # PIDfile ids for programms
 app_dir = '/home/pi/station3/' # path to main app directory
