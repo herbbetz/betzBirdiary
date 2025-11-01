@@ -1,0 +1,28 @@
+# ----pi crontab DEUTSCH 1.Nov 2025:
+APPDIR=/home/pi/station3
+PYTHON=/usr/bin/python3
+### min hour dayOfMonth month dayOfWeek(0=sunday)   command ###
+#
+# Lade Birdiary Statistiken alle geraden Stunden 0:00, 2:00, 4:00 usw.
+0 */2 * * * bash $APPDIR/statist/getStats.sh >> $APPDIR/logs/statist.log 2>&1
+#
+# Lies die Systembetriebsdaten alle 14 min, wird dargestellt im Browser:
+*/14 * * * * bash $APPDIR/sysmon2.sh >> $APPDIR/logs/sysmon.log 2>&1
+#
+# Lade Temperatur/Feuchte (DHT22) auf birdiary Plattform alle 15 min, wird dargestellt im Browser:
+*/15 * * * * $PYTHON $APPDIR/dhtBird3.py >> $APPDIR/logs/dht_sun.log 2>&1
+#
+# Fahre die Station herunter bei Sonnenuntergang, Zeiten stehen im Browser unter 'actions-settings':
+*/16 17-22 * * * $PYTHON $APPDIR/sunset3.py >> $APPDIR/logs/dht_sun.log 2>&1
+#
+# Fahre täglich abends die Station herunter um 21:54:
+# 54 21 * * * bash $APPDIR/tasmotaDown.sh eveningDown >> $APPDIR/logs/down.log 2>&1
+# ohne Tasmota und messenger:
+54 21 * * * sudo shutdown -h now >> $APPDIR/logs/down.log 2>&1
+# 
+# Mache ein Update des Systems jeden Ersten des Monats mittags:
+# 1 12 1 * * /home/pi/update-system.sh >> $APPDIR/logs/update.log 2>&1
+#
+# mach ein Update mit neuen Dateien von github.com/herbbetz/betzBirdiary jeden 15ten des Monats mittags:
+# 1 12 15 * * /home/pi/update-fromGit.sh >> $APPDIR/logs/update.log 2>&1
+# ----

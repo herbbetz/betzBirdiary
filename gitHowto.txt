@@ -51,7 +51,8 @@ cd /home/pi/githubRepo
 git pull
 rsync -av --exclude='/home/pi/githubRepo/.git' --exclude-from=/home/pi/githubRepo/.rsync-exclude station3/ /home/pi/stationtest/
 # rsync -av --delete githubRepo/station3/ /home/pi/stationtest/ # would also delete files removed on Github
-----/home/pi/githubRepo/.rsync-exclude:
+----/home/pi/githubRepo/.rsync-exclude, especially 'config.json', which is anonymized on github:
+config.json
 acknowledge
 debug
 environments

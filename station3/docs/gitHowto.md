@@ -1,0 +1,82 @@
+<!--keywords[GithubRepo,OTA,rsync,sparse-checkout]-->
+````
+git config --global user.email "herbertbetz@csi.com"
+git config --global user.name "herbbetz"
+git config --global core.autocrlf false
+git config --global --add safe.directory
+````
+D:/birdiary/githubMirror/betzBirdiary 
+global alle win11 user
+
+Download into \githubMirror:
+`git clone https://github.com/herbbetz/betzBirdiary.git`
+    for https://github.com/herbbetz/betzBirdiary
+`cd betzBirdiary`
+    to make changes
+
+Upload after changes from inside \githubMirror\betzBirdiary:
+````
+git add -A
+git commit -m "my update 2025-08-07-11-00"
+git push
+````
+Sync a local repo clone (nach Laptop-Wechsel):
+`git pull origin main  (OR: git fetch origin && git merge origin/main)`
+
+**Remove repo history**:
+https://www.youtube.com/watch?v=2yeM0v4tYpw
+locally on a cloned repo with tags/releases removed from remote github.com :
+````
+git checkout --orphan last (last is arbitrary for newest files)
+git add -A (copy all to this new branch)
+git commit -am "fresh init 2025-09-05-15-42"
+git branch -D main (delete branch main)
+git branch -m main (the branch 'last' that we are in, is renamed main)
+git push -f origin main (push forcefully to remote github)
+git gc --aggressive --prune=all (gc for 'garbage collection')
+git push --set-upstream origin main
+````
+**Only pull a subdirectory like '/station3' recursively**:
+- for pull of public repo into trixie, there is no password or github login needed
+````
+cd /home/pi
+git clone --no-checkout https://github.com/herbbetz/betzBirdiary githubRepo
+cd githubRepo
+````
+- initiales Setup:
+````
+git sparse-checkout init --cone # cone means recursively, like cutting a pyramid from a dir tree
+git sparse-checkout set station3
+git sparse-checkout list
+git checkout main
+````
+- später:
+````
+cd /home/pi/githubRepo
+git pull
+````
+- Dann mit /home/pi/station3 synchronisieren:
+`rsync -av --exclude-from=/home/pi/.rsync-exclude githubRepo/station3/ /home/pi/station3/`
+- /home/pi/update-fromGit.sh:
+````
+#!/bin/bash
+cd /home/pi/githubRepo
+git pull
+rsync -av --exclude='/home/pi/githubRepo/.git' --exclude-from=/home/pi/githubRepo/.rsync-exclude station3/ /home/pi/stationtest/
+# rsync -av --delete githubRepo/station3/ /home/pi/stationtest/ # would also delete files removed on Github
+````
+- /home/pi/githubRepo/.rsync-exclude, especially 'config.json', which is anonymized on github:
+````
+config.json
+acknowledge
+debug
+environments
+github
+gpiozero
+logs
+movements
+parentdir
+pigpioBird
+pigpiotest
+ramdisk
+````

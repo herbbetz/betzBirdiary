@@ -9,4 +9,3 @@ rsync -av  --exclude-from=/home/pi/githubRepo/.rsync-exclude station3/ /home/pi/
 # permissions were changed according to github repo
 sudo chown -R pi:pi /home/pi/station3/
 chmod +x /home/pi/station3/*.sh
-
