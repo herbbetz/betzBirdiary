@@ -43,7 +43,7 @@
 
 - `dpkg -l | grep vnc`zeigt, dass `wayvnc` als VNC Server verwendet wird.
 
-- der Autostart von `station3/widgets.py` ist nur sinnvoll und funktioniert erst, wenn das `wayland_display` garantiert bereit ist. Deshalb wird es durch einen `userspace service` gestartet in ` ~/.config/systemd/user/widgets.service`, eingerichtet mit folgendem Code:
+- der Autostart von `station3/widgets.py` ist nur sinnvoll und funktioniert erst, wenn das `wayland_display` garantiert bereit ist. Deshalb wird es durch einen `userspace service` gestartet in ` ~/.config/systemd/user/widgets.service`. Anders als `root services` zum Booten (in `etc/systemd/system`) hat ein `userspace service` Zugriff auf das `env` von `pi`, z.B.  auch auf `"desktop ready" (/run/user/1000/wayland-0)`.
 
   ````
   cd ~/.config; mkdir systemd; chmod 700 systemd; mkdir user; chmod 700 user
@@ -60,15 +60,15 @@
     Description=Bird desktop widgets (Wayfire)
     After=graphical-session.target
     Wants=graphical-session.target
-
+  
     [Service]
     Type=simple
     ExecStart=/usr/bin/python3 /home/pi/station3/widgets.py >> /home/pi/station3/logs/widgets.log 2>&1
     # No Restart= line, so service stops on failure
-
+  
     [Install]
     WantedBy=default.target
     ````
 
 
-  
+

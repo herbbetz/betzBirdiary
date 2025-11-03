@@ -27,3 +27,12 @@
 
 Happy birding,
 herber7be7z@gmail.com
+
+
+
+**Bonus-Tipps**
+
+- Dateien, die man selbst verändert, bitte ausserhalb der Station sichern (z.B. mittels WinSCP oder auf Nextcloud), damit sie das nächste Update überleben: `config.json, crontab, station3/keep, station3/mybirds`.
+- eigene Vogelvideos und -bilder konfigurieren in `station3/keep/gallery.js` bzw. `station3/mybirds/species.js`. Videobearbeitung siehe `station3/docs/video`.
+- die Desktop Version beinhaltet [*RPi Connect*](https://www.raspberrypi.com/documentation/services/connect.html) , das in `raspi-config` aktiviert werden muss und ein *Cloud Connect Account* benötigt. Das Desktop-Symbol ist über die Taskleiste in Plugins als `connect` aktivierbar.
+- Integration in *Home Assistant* und andere IOT: Daten zu Kamerastandbild, Belichtung, Temperatur und Systemdaten sind alle in `station3/ramdisk/*.json` und werden auch durch den *Flask Webserver* nach aussen geliefert. 
