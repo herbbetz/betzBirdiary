@@ -1,11 +1,27 @@
+#!/usr/bin/env python3
 # startup script for widget on wayfire desktop
+import os
+import time
 import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Gdk, GLib, Pango
 import json
-import os
+
+# --- Wait for Wayland display to be ready ---
+wayland_display = os.environ.get("WAYLAND_DISPLAY", "wayland-0")
+timeout = 30  # seconds
+interval = 0.5
+elapsed = 0
+
+while not os.path.exists(f"/run/user/{os.getuid()}/{wayland_display}") and elapsed < timeout:
+    time.sleep(interval)
+    elapsed += interval
+
+if elapsed >= timeout:
+    print(f"[widgets.py] Warning: Wayland display {wayland_display} not found after {timeout}s")
 
 # Paths to your JSON files
+VID_JSON = os.path.expanduser("~/station3/ramdisk/vidmsg.json")
 ENV_JSON = os.path.expanduser("~/station3/ramdisk/env.json")
 SYSMON_JSON = os.path.expanduser("~/station3/ramdisk/sysmon.json")
 
@@ -76,10 +92,17 @@ class DesktopWidget(Gtk.Window):
             return {}
 
     def update(self):
+        vidmsg = self.read_json(VID_JSON)
         env = self.read_json(ENV_JSON)
         sysmon = self.read_json(SYSMON_JSON)
 
-        text = "Environment\n"
+        text = "Camera\n"
+        text += f"Illumination: {vidmsg.get('luxraw', '?')}\n"
+        text += f"Luxcategory: {vidmsg.get('lux', '?')}\n"
+        text += f"Browser active: {vidmsg.get('clientactive', '?')}\n"
+        text += f"Standby: {vidmsg.get('standby', '?')}\n\n"
+
+        text += "Environment\n"
         text += f"Date: {env.get('date', '?')}\n"
         text += f"Temp: {env.get('temperature', '?')} °C\n"
         text += f"Humidity: {env.get('humidity', '?')} %\n\n"

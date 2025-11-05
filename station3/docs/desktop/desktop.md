@@ -50,25 +50,26 @@
   cd ~/.config/systemd/user; nano widgets.service; chmod 644 widgets.service
   systemctl --user daemon-reload
   systemctl --user enable widgets.service
-  systemctl --user start widgets.service
+  systemctl --user start widgets.service (or systemctl --user enable --now widgets.service => enable and start)
   systemctl --user status widgets.service
   
   ````
   wobei in widgets.service steht:
     ````
     [Unit]
-    Description=Bird desktop widgets (Wayfire)
-    After=graphical-session.target
-    Wants=graphical-session.target
+  Description=Bird desktop widgets (Wayfire)
+  After=graphical-session.target
+  PartOf=graphical-session.target
+  [Service]
+  Type=simple
+  # 5 secs delay, so wayland desktop is available
+  ExecStart=/bin/bash -c 'sleep 5; exec /usr/bin/python3 /home/pi/station3/widgets.py >> /home/pi/station3/logs/widgets.log 2>&1'
+  # No Restart= line, so service stops on failure
   
-    [Service]
-    Type=simple
-    ExecStart=/usr/bin/python3 /home/pi/station3/widgets.py >> /home/pi/station3/logs/widgets.log 2>&1
-    # No Restart= line, so service stops on failure
-  
-    [Install]
-    WantedBy=default.target
+  [Install]
+  WantedBy=default.target
     ````
 
 
 
+- Bilder der Kamerasicht werden nur erzeugt bei aktivem Webbrowser, weshalb ein Image-Widget (siehe widget-img.py) keine kontinuierliche Sicht liefert.

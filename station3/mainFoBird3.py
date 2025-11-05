@@ -89,8 +89,8 @@ def get_brightness(picam, now):
     luxdata["luxcategory"] = luxcategory
     # if light_level != set_brightness.last_light_level:
     ms.setLux(luxcategory) # this also sets "autostdby" for bad light conditions
-    ms.setLuxRaw(f'{metalux} at {luxdata["timestamp"]}, gain {gain}/ expo {exposure}')
-    
+    # ms.setLuxRaw(f'{metalux} at {luxdata["timestamp"]}, gain {gain}/ expo {exposure}')
+    ms.setLuxRaw(f'Lux {metalux}/ gain {gain}/ expo {exposure}') # format for desktop widgets.py
     if now.minute % 15 == 0 or get_brightness.last_logged_minute == -1: # log every 15 minutes or at first call
         if now.minute != get_brightness.last_logged_minute:
             get_brightness.last_logged_minute = now.minute
@@ -141,7 +141,7 @@ def send_realtime_movement(files):
         return uploadFail
 
 def send_movement(circ_output, wght, trigger_ns): # first parameter is either circ_output OR picam, the latter in case of no circ_output
-    if send_movement.vid_cnt >= upmaxcnt:
+    if upmaxcnt > 0 and send_movement.vid_cnt >= upmaxcnt: # upmaxcnt=0 means no limit
         ms.log("upload limit reached")
         subprocess.call(f"bash {birdpath['appdir']}/tasmotaDown.sh limitdown", shell=True)
         time.sleep(2)

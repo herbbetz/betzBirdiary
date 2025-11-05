@@ -16,7 +16,12 @@ from configBird3 import birdpath
 #   lastvid: date of last video upload, confirm: need for confirmation of video upload in vidshot.html, 'confirm' is 0 or 1 (0 for python->False, json->false, javascript->false)
 #   linecnt, linetxt: for logging output
 #   envirEvt, sysmonEvt: new data available as value increased
-#   confirm and upmode are only, if several mainVideo scripts can be exchanged
+#   confirm and upmode are only, if several mainVideo scripts can be exchanged (old acknowlegde mode)
+#   standby: 0 or 1, set by webGUI to stop video capturing
+#   clientactive: 0 or 1, set by flaskBird3.py when webclient is active
+#   lux: illumination category 1..6, set by mainFoBird3.py
+#   luxraw: raw lux data string for webGUI display, set by mainFoBird3.py
+#   recording: 0 or 1, set by mainFoBird3.py
 message = {"imgid": 0, "lastvid": "", "vidcnt": 0, "linecnt": 0, "linetxt": "", "envirEvt": 0, "sysmonEvt": 0,
            "upmode": 0, "confirm": 0, "standby": 0, "clientactive": 0, "lux": 0, "luxraw": 0, "recording": 0} # define dictionary
 
