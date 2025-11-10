@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 # startup script for widget on wayfire desktop
+
 import os
 import time
 import gi
@@ -20,12 +21,15 @@ while not os.path.exists(f"/run/user/{os.getuid()}/{wayland_display}") and elaps
 if elapsed >= timeout:
     print(f"[widgets.py] Warning: Wayland display {wayland_display} not found after {timeout}s")
 
-# Paths to your JSON files
+# --- Paths to your JSON files ---
 VID_JSON = os.path.expanduser("~/station3/ramdisk/vidmsg.json")
 ENV_JSON = os.path.expanduser("~/station3/ramdisk/env.json")
 SYSMON_JSON = os.path.expanduser("~/station3/ramdisk/sysmon.json")
 
-# Update interval in milliseconds
+luxLevels = ["dim", "cloudy", "shiny", "sunny", "dark", "blazing"]
+
+# --- Update interval in milliseconds ---
+# update is also active, if desktop is not viewed by VNC client or HDMI monitor and data have not changed. However CPU load is minimal.
 UPDATE_INTERVAL = 60000
 
 class DesktopWidget(Gtk.Window):
@@ -39,15 +43,15 @@ class DesktopWidget(Gtk.Window):
         self.set_skip_pager_hint(True)
         self.stick()
 
-        # Transparent background
-        screen = self.get_screen()
-        visual = screen.get_rgba_visual()
+        # --- Transparent background setup ---
+        gdk_screen = self.get_screen()
+        visual = gdk_screen.get_rgba_visual()
         if visual:
             self.set_visual(visual)
-        
+
         self.connect("draw", self.on_draw)
 
-        # Label for text output
+        # --- Label for text output ---
         self.label = Gtk.Label()
         self.label.set_xalign(0)
         self.label.set_yalign(0)
@@ -55,10 +59,21 @@ class DesktopWidget(Gtk.Window):
         self.add(self.label)
 
         self.set_size_request(300, 200)
-        self.move(20, 40)  # position on screen
+
+        # --- Position widget: 10px from left, halfway down screen ---
+        default_screen = Gdk.Screen.get_default()
+        if default_screen:
+            monitor = default_screen.get_primary_monitor()
+            geometry = default_screen.get_monitor_geometry(monitor)
+            x = geometry.x + 10
+            y = geometry.y + geometry.height // 2
+            self.move(x, y)
+        else:
+            self.move(10, 400)  # fallback if no screen info
+
         self.show_all()
 
-        # CSS styling for font and color
+        # --- CSS styling for font and color ---
         css = b"""
         #widget-label {
             font-family: Monospace;
@@ -69,12 +84,12 @@ class DesktopWidget(Gtk.Window):
         style_provider = Gtk.CssProvider()
         style_provider.load_from_data(css)
         Gtk.StyleContext.add_provider_for_screen(
-            screen,
+            gdk_screen,
             style_provider,
             Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION
         )
 
-        # Start periodic update
+        # --- Start periodic update ---
         GLib.timeout_add(UPDATE_INTERVAL, self.update)
         self.update()  # initial draw
 
@@ -96,9 +111,15 @@ class DesktopWidget(Gtk.Window):
         env = self.read_json(ENV_JSON)
         sysmon = self.read_json(SYSMON_JSON)
 
+        # --- Build display text ---
         text = "Camera\n"
         text += f"Illumination: {vidmsg.get('luxraw', '?')}\n"
-        text += f"Luxcategory: {vidmsg.get('lux', '?')}\n"
+        if 'lux' in vidmsg:
+            value = int(vidmsg['lux'])
+            label = luxLevels[value - 1] if 0 < value < len(luxLevels) else '?'
+            recordReady = "ready" if 0 < value <= 4 else "inactive"
+            text += f"Luxlevel: {value} {label} {recordReady}\n"
+
         text += f"Browser active: {vidmsg.get('clientactive', '?')}\n"
         text += f"Standby: {vidmsg.get('standby', '?')}\n\n"
 
@@ -117,6 +138,7 @@ class DesktopWidget(Gtk.Window):
 
         self.label.set_text(text)
         return True  # continue periodic update
+
 
 if __name__ == "__main__":
     win = DesktopWidget()
