@@ -5,13 +5,13 @@ import os
 import time
 import gi
 gi.require_version("Gtk", "3.0")
-from gi.repository import Gtk, Gdk, GLib, Pango
+from gi.repository import Gtk, Gdk, GLib
 import json
 
 # --- Wait for Wayland display to be ready ---
 wayland_display = os.environ.get("WAYLAND_DISPLAY", "wayland-0")
-timeout = 30  # seconds
-interval = 0.5
+timeout = 60  # seconds
+interval = 1.0
 elapsed = 0
 
 while not os.path.exists(f"/run/user/{os.getuid()}/{wayland_display}") and elapsed < timeout:
