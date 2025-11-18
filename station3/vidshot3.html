@@ -321,7 +321,7 @@
                 state.fetchPromises.length = 0;
 
                 // Video message display
-                const msg = data['lastvid'] ?? "";
+                const msg = data['lastvid'] ?? ""; // 'lastvid' from vidmsg.json set in mainFoBird3.py
                 if (msg.trim().length === 0) {
                     dom.vidmsg.style.visibility = "hidden";
                     document.title = "Picamera Stream";

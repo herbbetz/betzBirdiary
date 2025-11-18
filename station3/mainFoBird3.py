@@ -216,7 +216,8 @@ def send_movement(circ_output, wght, trigger_ns): # first parameter is either ci
         ms.setVidDateStr(f"video#{send_movement.vid_cnt} at {movementStart} kept local")
         subprocess.call(f"bash {birdpath['appdir']}/mdroid.sh VideoUpfail_keepdir", shell=True)
     else:
-        ms.setVidDateStr(f"video#{send_movement.vid_cnt} of {upmaxcnt} at {movementStart}")
+        if upmaxcnt>0: ms.setVidDateStr(f"video#{send_movement.vid_cnt} of {upmaxcnt} at {movementStart}")
+        else: ms.setVidDateStr(f"video#{send_movement.vid_cnt} at {movementStart}")
         subprocess.call(f"bash {birdpath['appdir']}/mdroid.sh newVideo{send_movement.vid_cnt}", shell=True)
 
 send_movement.vid_cnt = 0
