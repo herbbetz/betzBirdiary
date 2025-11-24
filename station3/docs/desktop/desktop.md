@@ -58,18 +58,33 @@
     ````
     [Unit]
   Description=Bird desktop widgets (Wayfire)
-  After=graphical-session.target
+  After=graphical-session.target wayfire.service
   PartOf=graphical-session.target
+  
   [Service]
   Type=simple
-  # 5 secs delay, so wayland desktop is available
-  ExecStart=/bin/bash -c 'sleep 5; exec /usr/bin/python3 /home/pi/station3/widgets.py >> /home/pi/station3/logs/widgets.log 2>&1'
-  # No Restart= line, so service stops on failure
+  ExecStart=/usr/bin/python3 /home/pi/station3/widgets.py >> /home/pi/station3/logs/widgets.log 
+  Restart=on-failure
+  RestartSec=5
   
   [Install]
   WantedBy=default.target
     ````
 
+​	Außerdem kann `Gdk` seine Verbindung zu `Wayland Compositor` verlieren, wenn `Wayfire` nur bei Login via `VNC / HDMI` läuft und nicht kontinuierlich. Über `/etc/lightdm/lightdm.conf` kann LightDM ständig laufen als sog. `auto-login`. Dann steht in `lightdm.conf`:
 
-
+````
+[Seat:*]
+autologin-user=pi
+autologin-session=wayfire
+````
+Der komplexen Abhängigkeit von `Gdk` und `Wayland` kann man am einfachsten entgehen durch einen Link `~/Desktop/widgets.desktop` mit dem Inhalt
+````
+[Desktop Entry]
+Type=Application
+Name=Bird Widgets
+Exec=/usr/bin/python3 /home/pi/station3/widgets.py >> /home/pi/station3/logs/widgets.log 
+Icon=monitor
+Terminal=false
+````
 - Bilder der Kamerasicht werden nur erzeugt bei aktivem Webbrowser, weshalb ein Image-Widget (siehe widget-img.py) keine kontinuierliche Sicht liefert.

@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
 # startup script for widget on wayfire desktop
+# started by ~/.config/systemd/user/widgets.service
+# Disable accessibility bus (not needed for this widget)
 
 import os
+os.environ['NO_AT_BRIDGE'] = '1' # env to disable AT-SPI (accessibility) warning
 import time
 import gi
 gi.require_version("Gtk", "3.0")
 from gi.repository import Gtk, Gdk, GLib
 import json
 
-# --- Wait for Wayland display to be ready ---
+'''
+# --- Wait for Wayland display to be ready --- not neccessary, if script is started by desktop link
 wayland_display = os.environ.get("WAYLAND_DISPLAY", "wayland-0")
 timeout = 60  # seconds
 interval = 1.0
@@ -21,6 +25,13 @@ while not os.path.exists(f"/run/user/{os.getuid()}/{wayland_display}") and elaps
 if elapsed >= timeout:
     print(f"[widgets.py] Warning: Wayland display {wayland_display} not found after {timeout}s")
 
+print("[widgets.py] Attempting to initialize GTK...")
+if not Gtk.init_check(None)[0]:
+    print("[widgets.py] Error: Failed to initialize GTK")
+    print(f"[widgets.py] WAYLAND_DISPLAY={os.environ.get('WAYLAND_DISPLAY', 'not set')}")
+    exit(1)
+print("[widgets.py] GTK initialized successfully")
+'''
 # --- Paths to your JSON files ---
 VID_JSON = os.path.expanduser("~/station3/ramdisk/vidmsg.json")
 ENV_JSON = os.path.expanduser("~/station3/ramdisk/env.json")
@@ -61,15 +72,18 @@ class DesktopWidget(Gtk.Window):
         self.set_size_request(300, 200)
 
         # --- Position widget: 10px from left, halfway down screen ---
-        default_screen = Gdk.Screen.get_default()
-        if default_screen:
-            monitor = default_screen.get_primary_monitor()
-            geometry = default_screen.get_monitor_geometry(monitor)
-            x = geometry.x + 10
-            y = geometry.y + geometry.height // 2
-            self.move(x, y)
+        display = Gdk.Display.get_default()
+        if display:
+            monitor = display.get_primary_monitor()
+            if monitor:
+                geometry = monitor.get_geometry()
+                x = geometry.x + 10
+                y = geometry.y + geometry.height // 2
+                self.move(x, y)
+            else:
+                self.move(10, 400)  # fallback
         else:
-            self.move(10, 400)  # fallback if no screen info
+            self.move(10, 400)  # fallback if no display info
 
         self.show_all()
 

@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
 # widget-img.py — simple GTK3 image widget for Wayfire
+'''
+43: DeprecationWarning: Gdk.Screen.get_primary_monitor is deprecated
+  monitor = screen.get_primary_monitor()
+44: DeprecationWarning: Gdk.Screen.get_monitor_geometry is deprecated
+  geometry = screen.get_monitor_geometry(monitor)
+44: DeprecationWarning: Gdk.Screen.get_width is deprecated
+45: DeprecationWarning: Gdk.Screen.get_height is deprecated
+'''
 import os
 import time
 import json

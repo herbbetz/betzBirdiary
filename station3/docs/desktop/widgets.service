@@ -1,0 +1,13 @@
+[Unit]
+Description=Bird desktop widgets (Wayfire)
+After=graphical-session.target wayfire.service
+PartOf=graphical-session.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /home/pi/station3/widgets.py >> /home/pi/station3/logs/widgets.log 
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target
