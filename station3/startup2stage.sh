@@ -5,7 +5,10 @@
 echo "startup2stage.sh started at $(date)" >> /home/pi/station3/logs/startup.log 2>&1
 APPDIR="$HOME/station3"
 PYTHON="/usr/bin/python3"
- 
+LOGFILE="/home/pi/station3/logs/startup.log"
+log() {
+    echo "$*" >> "$LOGFILE" 2>&1
+}
 # waits for internet, even /etc/systemd/system/bird-startup.service does not guarantee for this, despite 'After=network-online.target, Wants=network-online.target'
 # Wait for DNS to resolve webhook target
 dnshost=trigger.macrodroid.com # or cloudfare.com (1.1.1.1)
