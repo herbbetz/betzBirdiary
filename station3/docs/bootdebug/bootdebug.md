@@ -19,7 +19,7 @@
 
   - Adapter Outputs: TX, RX, GND, 5V, 3V
 
-  - old adapter for ESP-01 programming
+  - old adapter for ESP-01 programming, Windows and Ubuntu usually have driver support for CH340G.
 
     <img src="ch340G.jpg" alt="ch340G" style="zoom:25%;" />
 
