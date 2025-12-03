@@ -18,6 +18,8 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))) # add parent directory to sys.path to import configBird2
 from configBird3 import boxId, serverUrl
 
+apidatafile = "/home/pi/station3/ramdisk/apidata.json" # for sparing sd card
+
 def parse_datetime(dt_str):
     # Split on the decimal, keep only the first part (before microseconds) in records where .%f is not present
     main_part = dt_str.split('.')[0]
@@ -103,7 +105,7 @@ def main():
         "data": all_values,
         "created": datetime.now().strftime("%Y-%m-%d-%H-%M")
     }
-    with open("apidata.json", "w") as f:
+    with open(apidatafile, "w") as f:
         json.dump(output, f)    
 
 if __name__ == "__main__":

@@ -2,9 +2,9 @@ import json
 import matplotlib.pyplot as plt
 from datetime import datetime
 from dateslice import start_date, end_date
-
+apidatafile = "/home/pi/station3/ramdisk/apidata.json"
 # Load data
-with open('apidata.json') as f:
+with open(apidatafile) as f:
     data = json.load(f)
 
 unfiltered = data['data']
