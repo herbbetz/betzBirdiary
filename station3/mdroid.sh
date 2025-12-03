@@ -1,7 +1,7 @@
 #!/bin/bash
 # do not rely on sourced path variables during boot!
 appdir=/home/pi/station3
-logfile="/home/pi/station3/logs/curl.log"
+logfile="/dev/null" # "/home/pi/station3/logs/startup.log"
 echo >> $logfile # just a newline
 echo "***mdroid.sh**************************" >> $logfile
 if cd "$appdir"; then
