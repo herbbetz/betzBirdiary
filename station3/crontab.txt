@@ -1,4 +1,4 @@
-# ----pi crontab on 17thJuly2025:
+# ----pi crontab on 3thDez2025:
 # this is for testing purposes, where 'crontab crontab4test.txt' switches off all crontab triggers
 APPDIR=/home/pi/station3
 # crontab variable substitution not working like in bash, therefore full path, not $APPDIR:
