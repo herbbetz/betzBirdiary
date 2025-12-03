@@ -1,4 +1,4 @@
-<!--keywords[boot,debug,HDMI,UART]-->
+<!--keywords[booterror,debug,HDMI,SDkartenschonung,UART]-->
 
 **Boot Debugging des Raspberry 4B SBC**
 
