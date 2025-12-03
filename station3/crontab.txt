@@ -11,15 +11,15 @@ PYTHON=/usr/bin/python3
 ### min hour dayOfMonth month dayOfWeek(0=sunday)   command ###
 # Calling with bash does not need file permissions like 'chmod +x *.sh'
 # run on even hours like 0:00, 2:00, 4:00
-0 */2 * * * bash $APPDIR/statist/getStats.sh >> $APPDIR/logs/statist.log 2>&1
+0 */2 * * * bash $APPDIR/statist/getStats.sh >> /dev/null # $APPDIR/logs/statist.log 2>&1
 # read sys params every 15 min:
-*/14 * * * * bash $APPDIR/sysmon2.sh >> $APPDIR/logs/sysmon.log 2>&1
+*/14 * * * * bash $APPDIR/sysmon2.sh >> /dev/null # $APPDIR/logs/sysmon.log 2>&1
 # upload environment data every 15 min:
-*/15 * * * * $PYTHON $APPDIR/dhtBird3.py >> $APPDIR/logs/dht_sun.log 2>&1
+*/15 * * * * $PYTHON $APPDIR/dhtBird3.py >> /dev/null # $APPDIR/logs/dht_sun.log 2>&1
 # shut down on sunset:
-*/16 17-22 * * * $PYTHON $APPDIR/sunset3.py >> $APPDIR/logs/dht_sun.log 2>&1
+*/16 17-22 * * * $PYTHON $APPDIR/sunset3.py >> /dev/null # $APPDIR/logs/dht_sun.log 2>&1
 # shut down station at 18:54 daily before disconnecting mains at 19:00 :
-54 21 * * * bash $APPDIR/tasmotaDown.sh eveningDown >> $APPDIR/logs/down.log 2>&1
+54 21 * * * bash $APPDIR/tasmotaDown.sh eveningDown >> /dev/null # $APPDIR/logs/down.log 2>&1
 # run system update on the first of each month around noon:
 # 1 12 1 * * /home/pi/update-system.sh >> $APPDIR/logs/update.log 2>&1
 # run update from github on the 15th of each month around noon:
