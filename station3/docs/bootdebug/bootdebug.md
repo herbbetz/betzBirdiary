@@ -29,3 +29,10 @@
 [ CH_PD ] [ TX ]
 [ RST ] [ VCC (3.3V) ]
 ````
+
+**SD Card Schonung**
+
+- Das 7-fache Blinken beim Booten bedeutet ein Problem beim Hochfahren, meist durch Schädigung der SD card, die unter Windows noch lesbar sein kann, aber nicht mehr das `boot/kernel8.img` lädt.
+- Maßnahmen zur Schonung der SD-Karte:
+	- `camdata.json` über `ramdisk` schreiben (mainFoBird) und lesen (flaskBird)
+	- Logdateien während Produktivbetrieb nach `/dev/null` (startup.sh, ,mdroid.sh)
