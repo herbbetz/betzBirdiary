@@ -1,7 +1,7 @@
 {
     "serverUrl": "https://wiediversistmeingarten.org/api/",
     "boxId": "87bab185-7630-461c-85e6-c04cXXXXXXXX",
-    "upmaxcnt": 20,
+    "upmaxcnt": 0,
     "videodurate": 8,
     "hflip_val": 1,
     "vflip_val": 1,
