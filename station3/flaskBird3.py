@@ -158,7 +158,7 @@ def camdata_svg():
    keyParam = request.args.get("target", "brightness") # defaults to "brightness" if only "/camdata" is asked for, but request should be like "/camdata?target=brightness" or "/camdata?target=metaLux"
    # Load data from file
    try:
-      with open("camdata/camdata.json", "r") as f:
+      with open("ramdisk/camdata.json", "r") as f:
          data = json.load(f)
    except Exception as e:
       return Response(_svg_error(f"Data load error: {e}"), mimetype="image/svg+xml")

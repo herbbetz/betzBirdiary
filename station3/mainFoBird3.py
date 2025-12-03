@@ -104,7 +104,7 @@ def get_brightness(picam, now):
 get_brightness.last_logged_minute = -1 #static var
 
 def luxProtocol(lData):
-    camdatafile = "camdata/camdata.json"
+    camdatafile = "ramdisk/camdata.json" # spares SD card more than "camdata/camdata.json"
     data = []
     maxdata = 100
     if os.path.exists(camdatafile):
