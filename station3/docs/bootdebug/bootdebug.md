@@ -1,14 +1,24 @@
-<!--keywords[booterror,debug,HDMI,SDkartenschonung,UART]-->
+<!--keywords[booterror,debug,HDMI,kermit,minicom,screen,SDkartenschonung,UART]-->
 
 **Boot Debugging des Raspberry 4B SBC**
 
 - vor dem Netzwerk gibt es Meldungen über Mikro-HDMI / USB-Keyboard
 
 - das UART-Interface (Baud rate 115200-8N1) kann den Bootprozess noch vor dem Laden des Linuxkernel loggen.
-  - Terminal Programm: Putty, screen, minicom, kermit
+  - Terminal Programm: Putty, screen, minicom (includes kermit)
 
-  - `enable_uart=1` in `/boot/firmware/config.txt` (Grundeinstellung in dietPi)
+  - Ubuntu:  Monitoring des USB-TTL-Adapters mit `sudo dmesg -w` und `ls -l /dev/ttyUSB0`, `sudo screen /dev/ttyUSB0 9600` bzw. `sudo minicom -s` und `sudo minicom -D /dev/ttyUSB0 -b 115200` ermöglicht UART-Login in den Raspberry.
 
+  - `enable_uart=1` in `/boot/firmware/config.txt` (diet-config advanced -> in cmdline.txt `console=tty1 console=serial0,115200`), dann `ls -l /dev/serial0`. Testsendung mit `echo "hello" > /dev/serial0`. Die Dateiübertragung via UART geschieht aus `minicom-kermit`, wenn auf dem Raspberry ein Kermit als Empfänger eingerichtet ist:
+  
+    ````
+    sudo apt install ckermit
+    cd ~/files
+    kermit -r
+    ````
+  
+    
+  
   - USB-TTL-Adapter: Adapter TX → Pi GPIO 15 (RXD); Adapter RX → Pi GPIO 14 (TXD); Adapter GND → Pi GPIO any GND
 
 
@@ -21,14 +31,11 @@
 
   - old adapter for ESP-01 programming, Windows and Ubuntu usually have driver support for CH340G.
 
-    <img src="ch340G.jpg" alt="ch340G" style="zoom:25%;" />
+    This adapter corresponds to the ESP-01 pinout, which you can stack directly on it (https://www.youtube.com/watch?v=6uaIWZCRSz8).
+    
+    <img src="ch340g.png" alt="ch340G" style="zoom:50%;" />
 
-````
-[ GND ] [ GPIO2 ]
-[ GPIO0 ] [ RX ]
-[ CH_PD ] [ TX ]
-[ RST ] [ VCC (3.3V) ]
-````
+
 
 **SD Card Schonung**
 
