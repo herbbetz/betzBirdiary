@@ -69,7 +69,7 @@ def sendFifo(wght):
         else:
             raise  # Unexpected error (e.g. permission, missing file)    
 
-def judgeWeight(wght, timeString): # nested function, returns True if wght should be used for scaleAdjust
+def judgeWeight(wght, timeString, wghtBaseValid): # nested function, returns True if wght should be used for scaleAdjust
     # global weightThreshold, weightlimit -> read-only vars
     if (wght > weightlimit) or len(judgeWeight.vals) > 100: # often when balance strain gauge disconnected
         judgeWeight.vals = []
@@ -82,7 +82,7 @@ def judgeWeight(wght, timeString): # nested function, returns True if wght shoul
             judgeWeight.vals.append(wght)
         else: # case3: 1 weight and more to come, movement continued
             judgeWeight.vals.append(wght)
-            if judgeWeight.sendactive and len(judgeWeight.vals) > 2: # at least 3 consecutive values above threshold
+            if wghtBaseValid and judgeWeight.sendactive and len(judgeWeight.vals) > 2: # at least 3 consecutive values above threshold
                 judgeWeight.sendactive = False
                 ms.log(f"{len(judgeWeight.vals)} moves between {weightThreshold} and {weightlimit} push fifo!")
                 sendFifo(max(judgeWeight.vals)) # put the maximum value on bQueue, this triggers sending of video in main process
@@ -93,11 +93,30 @@ def judgeWeight(wght, timeString): # nested function, returns True if wght shoul
 judgeWeight.vals = [] # static variable belonging to function
 judgeWeight.sendactive = True
 
+def chckBaseValid(newWght, weightBaseline, weightBaseVals):
+# returns True', if newWght was 'weightBaseVals' times within 'weightBaseline',
+#    else returns False'
+    chckBaseValid.vals.append(abs(newWght) < weightBaseline)
+    # Trim buffer
+    if len(chckBaseValid.vals) > weightBaseVals:
+        chckBaseValid.vals.pop(0)
+    # Only evaluate once we have enough values
+    if len(chckBaseValid.vals) < weightBaseVals:
+        return False
+    # all() returns True if all are true, else returns false
+    return all(chckBaseValid.vals)
+# static
+chckBaseValid.vals = []
+
 #### main:
 config_path = f"{birdpath['appdir']}/config.json"  # Adjust if using full path
 samples, sampleIdx = 50, 0 # read 50 baseline samples into sampleArr to calculate median deviation from 0.0
 sampleArr = np.empty(shape=samples, dtype=float)
 sleepTime = 1.0 # shorter causes fixed value and unresponsive balance?
+# baseline monitoring:
+wghtBaseline = 0.5 * weightThreshold
+wghtBaseVals = 7 # 7 last values should be below wghtBaseline
+wghtBaseValid = False
 
 ms.init()
 ms.log(f"Start hxFiBird3 {datetime.now()}")
@@ -127,7 +146,9 @@ try:
         timeStr = str(nowDate.hour) + ":" + str(nowDate.minute) + ":" + str(nowDate.second)
         ms.log(timeStr + ' ' + str(weight) + ' grams')
 
-        if (judgeWeight(weight, timeStr) == True):
+        # wghtBaseValid = chckBaseValid(weight, wghtBaseline, wghtBaseVals) # after this baseline check the real weight surge never qualifies!
+        # if not wghtBaseValid: ms.log("weight baseline unstable")
+        if (judgeWeight(weight, timeStr, wghtBaseValid) == True):
             if (sampleIdx < samples):
                 sampleArr[sampleIdx] = weight
                 sampleIdx += 1

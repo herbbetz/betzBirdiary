@@ -158,7 +158,7 @@ def camdata_svg():
    keyParam = request.args.get("target", "brightness") # defaults to "brightness" if only "/camdata" is asked for, but request should be like "/camdata?target=brightness" or "/camdata?target=metaLux"
    # Load data from file
    try:
-      with open("ramdisk/camdata.json", "r") as f:
+      with open("camdata/camdata.json", "r") as f:
          data = json.load(f)
    except Exception as e:
       return Response(_svg_error(f"Data load error: {e}"), mimetype="image/svg+xml")
@@ -207,7 +207,50 @@ def camdata_svg():
 
       return Response(svg, mimetype="image/svg+xml")
 
-# remove mp4 and record from gallery.js, 'del' button in gallery3.html handled by it's sendDelRec(recId)
+@app.route("/daywatch")
+def daygallery():
+    dayimg_dir = "ramdisk"
+    # gather jpg images
+    images = [
+        f for f in os.listdir(dayimg_dir)
+        if f.lower().endswith(".jpg")
+        # if f.lower().endswith(".jpg") and "-" in f #only .jpg filenames containing "-"
+    ]
+    # start HTML
+    html = """
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>Image Gallery</title>
+        <style>
+            body { font-family: Arial; padding: 20px; }
+            .image-container { margin-bottom: 20px; }
+            img { max-width: 400px; display: block; margin-bottom: 5px; }
+            .label { font-weight: bold; }
+        </style>
+    </head>
+    <body>
+        <h1>Image Gallery</h1>
+    """
+    # append each image block
+    for img in images:
+        html += f"""
+        <div class="image-container">
+            <img src="{dayimg_dir}/{img}" alt="{img}">
+            <div class="label">{img}</div>
+        </div>
+        """
+    # finish HTML
+    html += """
+    <hr>
+    <div><a href="vidshot3.html" class="button">back</a></div>
+    </body>
+    </html>
+    """
+    return html
+
+
+# remove mp4 and record from gallery.js, 'del' button in gallery3.html handled by it's sendDelRec(recId):
 @app.route('/delrecord', methods=['POST'])
 def delrecord():
    data = request.json['data']

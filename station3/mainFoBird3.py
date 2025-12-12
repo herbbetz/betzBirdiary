@@ -104,7 +104,7 @@ def get_brightness(picam, now):
 get_brightness.last_logged_minute = -1 #static var
 
 def luxProtocol(lData):
-    camdatafile = "ramdisk/camdata.json" # spares SD card more than "camdata/camdata.json"
+    camdatafile = "camdata/camdata.json" # not suited for ramdisk/ to spare SD card, because data of several days/sessions
     data = []
     maxdata = 100
     if os.path.exists(camdatafile):
@@ -140,7 +140,7 @@ def send_realtime_movement(files):
         ms.log(f"failed movement upload: {e}")
         return uploadFail
 
-def send_movement(circ_output, wght, trigger_ns): # first parameter is either circ_output OR picam, the latter in case of no circ_output
+def send_movement(circ_output, picam, wght, trigger_ns): # first parameter is either circ_output OR picam, the latter in case of no circ_output
     if upmaxcnt > 0 and send_movement.vid_cnt >= upmaxcnt: # upmaxcnt=0 means no limit
         ms.log("upload limit reached")
         subprocess.call(f"bash {birdpath['appdir']}/tasmotaDown.sh limitdown", shell=True)
@@ -153,6 +153,10 @@ def send_movement(circ_output, wght, trigger_ns): # first parameter is either ci
 
     video_filename = movementStartStr + ".h264"
     audio_filename = movementStartStr + ".wav"
+
+    # for local review:
+    imgName = f"ramdisk/{movementStartStr}.jpg"
+    capture_img(picam, imgName)
 
     # for video with circ output (dashcam):
     outmem = io.BytesIO()
@@ -326,7 +330,7 @@ def main():
                     trigger_ns = time.time_ns() # check for nanosecs till recording
                     weight = bQueue.get()
                     # picam.set_controls(camsetting)
-                    send_movement(c_output, weight, trigger_ns) # if no circ_output, replace c_output by picam
+                    send_movement(c_output, picam, weight, trigger_ns) # if no circ_output, replace c_output by picam
                     ms.setRecording(0)
                     # reset_camera(picam, camsetting, config)
                     while not bQueue.empty(): bQueue.get()
