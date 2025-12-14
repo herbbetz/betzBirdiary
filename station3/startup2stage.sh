@@ -57,7 +57,7 @@ setsid $PYTHON dhtBird3.py > /dev/null 2>&1 & # >> logs/dht_sun.log 2>&1 &
 #    bash hxFiBirdStart.sh
 #    sleep 2
 # done
-setsid $PYTHON hxFiBird3.py > /dev/null 2>&1 & # >> logs/hxFiBird.log 2>&1 & # first FIFO writer, seems the most critical to init
+setsid $PYTHON hxFiBirdState.py > /dev/null 2>&1 & # >> logs/hxFiBird.log 2>&1 & # first FIFO writer, seems the most critical to init
 # widgets for wayfire desktop will not work here, because wayfire or vnc/X11 env not yet ready! Moreover no use running it, when no desktop shown.
 # setsid $PYTHON widgets.py &
 echo "startup2stage.sh ended at $(date)" > /dev/null 2>&1 # >> /home/pi/station3/logs/startup.log 2>&1
