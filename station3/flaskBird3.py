@@ -213,8 +213,8 @@ def daygallery():
     # gather jpg images
     images = [
         f for f in os.listdir(dayimg_dir)
-        if f.lower().endswith(".jpg")
-        # if f.lower().endswith(".jpg") and "-" in f #only .jpg filenames containing "-"
+        # if f.lower().endswith(".jpg")
+        if f.lower().endswith(".jpg") and "-" in f #only .jpg filenames containing "-"
     ]
     # start HTML
     html = """

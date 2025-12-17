@@ -78,7 +78,8 @@ def get_brightness(picam, now):
         luxcategory = 4 # bright
     # check for over-/under-expo:
     # luxLimit = [500,10000] in config.json
-    expoScore = gain * exposure
+    expoScore = metalux # or gain * exposure ?
+    # luxcategory > 4 leads to standby in ms.setLux() and ms.getStandby()
     if expoScore < luxLimit[0]:
         luxcategory = 6 # too dark
     elif expoScore > luxLimit[1]:
