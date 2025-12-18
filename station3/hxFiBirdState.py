@@ -98,9 +98,9 @@ class WeightFSM:
 
         self.weightThreshold = weightThreshold
         self.weightMax = weightMax
-        self.weightBaseline = 0.5 * weightThreshold # tolerance for baseline
+        self.weightBaseline = 0.7 * weightThreshold # tolerance for baseline
 
-        self.baseline_window = 7 # number of values that baseline should have been stable
+        self.baseline_window = 5 # number of values that baseline should have been stable
         self.surge_window = 3 # number of values considered for a valid surge
 
         self.baseline_buf = []
@@ -114,9 +114,10 @@ class WeightFSM:
         return all(v < self.weightBaseline for v in self.baseline_buf)
 
     def _update_baseline_buf(self, w):
-        self.baseline_buf.append(abs(w))
-        if len(self.baseline_buf) > self.baseline_window:
-            self.baseline_buf.pop(0)
+        if w < self.weightThreshold:
+            self.baseline_buf.append(abs(w))
+            if len(self.baseline_buf) > self.baseline_window:
+                self.baseline_buf.pop(0)
 
     def _reset_surge(self):
         self.surge_buf = []
@@ -133,9 +134,8 @@ class WeightFSM:
 
         # ---------------- IDLE ----------------
         if self.state == STATE_IDLE:
-            self._update_baseline_buf(w)
-            self.baseline_stable_at_entry = self._baseline_stable()
 
+            # FIRST: detect surge
             if w > self.weightThreshold and w < self.weightMax:
                 self.state = STATE_SURGE_CANDIDATE
                 self._reset_surge()
@@ -143,12 +143,17 @@ class WeightFSM:
                 ms.log(f"{timeString} first movement above threshold")
                 return None
 
+            # ONLY baseline samples reach here
+            self._update_baseline_buf(w)
+            self.baseline_stable_at_entry = self._baseline_stable()
+
             return "IDLE" if self.baseline_stable_at_entry else None
 
         # -------- SURGE CANDIDATE --------
         if self.state == STATE_SURGE_CANDIDATE:
             if w > self.weightThreshold and w < self.weightMax:
                 self.surge_buf.append(w)
+                ms.log(f"basebuf {self.baseline_buf}, {self.baseline_stable_at_entry}")
                 if len(self.surge_buf) >= self.surge_window:
                     if self.baseline_stable_at_entry:
                         self.state = STATE_SURGE_CONFIRMED
@@ -234,8 +239,11 @@ try:
                 sampleArr[sampleIdx] = weight
                 sampleIdx += 1
             else:
-                apartZero = np.median(sampleArr)
+                spread = np.max(sampleArr) - np.min(sampleArr)
+                if (spread < 0.2):
+                    ms.log("no baseline spread -> disconnected?")
 
+                apartZero = np.median(sampleArr)
                 # safety clamp: only if EMA somehow failed
                 if abs(apartZero) > 1.5:
                     hxOffset -= apartZero * hxScale
