@@ -223,6 +223,20 @@ try:
 
         event = fsm.update(weight, timeStr)
 
+        ### for debugging:
+        median_str = (
+            f"{np.median(sampleArr[:sampleIdx]):.3f}"
+            if sampleIdx > 5 else "n/a"
+        )
+        ms.log(
+        f"{weight}g "
+        f"evt={event} "
+        f"EMA={baseline_est:.3f} "
+        f"median={median_str} "
+        f"sampleIdx={sampleIdx}"
+        )
+        ###
+
         # -------- baseline-driven offset adaption (EMA + samples safety median) --------
         if event == "IDLE":
 
