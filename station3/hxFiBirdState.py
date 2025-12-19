@@ -153,12 +153,12 @@ class WeightFSM:
         if self.state == STATE_SURGE_CANDIDATE:
             if w > self.weightThreshold and w < self.weightMax:
                 self.surge_buf.append(w)
-                ms.log(f"basebuf {self.baseline_buf}, {self.baseline_stable_at_entry}")
+                # ms.log(f"basebuf {self.baseline_buf}, {self.baseline_stable_at_entry}")
                 if len(self.surge_buf) >= self.surge_window:
                     if self.baseline_stable_at_entry:
                         self.state = STATE_SURGE_CONFIRMED
                         peak = max(self.surge_buf)
-                        ms.log(f"{len(self.surge_buf)} moves → FIFO push ({peak} g)")
+                        ms.log(f"{len(self.surge_buf)} moves → FIFO push")
                         sendFifo(peak)
                         self._reset_surge()
                         return "SURGE_OK"
