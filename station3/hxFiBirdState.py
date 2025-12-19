@@ -219,7 +219,7 @@ try:
 
         now = datetime.now()
         timeStr = f"{now.hour}:{now.minute}:{now.second}"
-        ms.log(f"{timeStr} {weight} grams")
+        ms.log(f"{timeStr} {weight} grams", False)
 
         event = fsm.update(weight, timeStr)
 
@@ -247,7 +247,7 @@ try:
                 # safety clamp: only if EMA somehow failed
                 if abs(apartZero) > 1.5:
                     hxOffset -= apartZero * hxScale
-                    ms.log(f"hxOffset median safety adjust: {hxOffset}")
+                    ms.log(f"hxOffset median adjust: {hxOffset}")
 
                 sampleIdx = 0
         if event == "SURGE_OK":

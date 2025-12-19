@@ -78,14 +78,14 @@ def get_brightness(picam, now):
         luxcategory = 4 # bright
     # check for over-/under-expo:
     # luxLimit = [500,10000] in config.json
-    expoScore = metalux # or gain * exposure ?
+    # expoScore = gain * exposure ? beware: high expoScore is low metaLux
     # luxcategory > 4 leads to standby in ms.setLux() and ms.getStandby()
-    if expoScore < luxLimit[0]:
-        luxcategory = 6 # too dark
-    elif expoScore > luxLimit[1]:
-        luxcategory = 5 # too bright
+    if metalux < luxLimit[0]:
+        luxcategory = 5 # too dark
+    elif metalux > luxLimit[1]:
+        luxcategory = 6 # too bright
 
-    # luxlabel = ["undef", "dark", "dim", "normal", "bright", "too bright", "too dark"]
+    # luxlabel = ["undef", "dark", "dim", "normal", "bright", "too dark", "too bright"]
 
     luxdata["luxcategory"] = luxcategory
     # if light_level != set_brightness.last_light_level:
@@ -98,7 +98,7 @@ def get_brightness(picam, now):
             whitebalance(picam)
             luxProtocol(luxdata)
             if luxcategory > 4:
-                ms.log(f"stdby /resetting camera due to extreme exposure score {expoScore} at {now}")
+                ms.log(f"stdby /resetting camera due to extreme metalux {metalux} at {now}")
                 picam.set_controls({'ExposureTime': 0, 'AnalogueGain': 1.5}) # 0 means "AeEnable resets exposure according to preselected gain", see https://github.com/raspberrypi/picamera2/issues/1305
                 time.sleep(0.5)
 

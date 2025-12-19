@@ -193,12 +193,12 @@ def chStandby():
 def clearStandby(): # mainFoBird clears forgotten standby after 300 secs of webGUI inactivity
     setmsgprop('standby', 0)
     
-def log(txt):
+def log(txt, terminal=True):
     def change(data):
         data['linecnt'] += 1
         data['linetxt'] = txt
         return data
-    print(txt, flush=True) #show in terminal or mail
+    if terminal: print(txt, flush=True) #show in terminal or mail
     txt = txt.strip() # trim off newline
     updatemsg(change)
 

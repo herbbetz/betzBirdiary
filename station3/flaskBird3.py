@@ -2,6 +2,7 @@
 # send_from_directory() is more secure than send_file() against 'directory traversal attacks'
 # DO NOT NAME THIS PROGRAM flask.py ! That's reserved for the module.
 from flask import Flask, jsonify, request, send_from_directory, abort, Response
+import logging # Werkzeug logger handles Flask's server output
 import json # for reading in json file
 import subprocess
 import os # for os.remove() and BASE_DIR
@@ -305,5 +306,7 @@ if __name__ == '__main__':
    ms.init()
    ms.log(f"Start flaskBird3 {datetime.now()}")
    threading.Thread(target=monitor_inactivity, daemon=True).start() # daemon=True so it will not block the main thread or it's exit
+   logging.getLogger('werkzeug').setLevel(logging.ERROR) # Werkzeug logger prints no info/warning
+   # logging.getLogger('werkzeug').disabled = True
    app.run(host='0.0.0.0', port=8080, debug=debug_mode) # port 80 "Permission denied"
    ms.log(f"End flaskBird3 {datetime.now()}")
