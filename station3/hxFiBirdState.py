@@ -190,7 +190,7 @@ baseline_est = 0.0
 baseline_alpha = 0.002   # tuned for 1 Hz HX711 sampling
 
 ms.init()
-ms.log(f"Start hxFiBird3 {datetime.now()}")
+ms.log(f"Start hxFiBirdState {datetime.now()}")
 
 if hxScale == 0:
     ms.log("hxScale must not be zero")
@@ -274,4 +274,4 @@ finally:
     update_config_json({"hxOffset": hxOffset, "hxScale": hxScale})
     hx.close()
     clearPID(1)
-    ms.log(f"End hxFiBird3 {datetime.now()}")
+    ms.log(f"End hxFiBirdState {datetime.now()}")
