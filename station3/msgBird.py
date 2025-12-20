@@ -198,8 +198,8 @@ def log(txt, terminal=True):
         data['linecnt'] += 1
         data['linetxt'] = txt
         return data
-    if terminal: print(txt, flush=True) #show in terminal or mail
     txt = txt.strip() # trim off newline
+    if terminal: print(txt, flush=True) #show in terminal or mail
     updatemsg(change)
 
 def setEnvirEvt():

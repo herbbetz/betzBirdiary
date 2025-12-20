@@ -122,7 +122,7 @@ class WeightFSM:
     def _reset_surge(self):
         self.surge_buf = []
 
-    def update(self, w, timeString):
+    def update(self, w):
         """
         Process one weight sample.
 
@@ -140,7 +140,7 @@ class WeightFSM:
                 self.state = STATE_SURGE_CANDIDATE
                 self._reset_surge()
                 self.surge_buf.append(w)
-                ms.log(f"{timeString} first movement above threshold")
+                ms.log("first movement above threshold")
                 return None
 
             # ONLY baseline samples reach here
@@ -216,12 +216,12 @@ try:
     while True:
         reading = hx.read_raw()
         weight = roundFlt((reading + hxOffset) / hxScale)
-
+        '''
         now = datetime.now()
         timeStr = f"{now.hour}:{now.minute}:{now.second}"
         ms.log(f"{timeStr} {weight} grams", False)
-
-        event = fsm.update(weight, timeStr)
+        '''
+        event = fsm.update(weight)
 
         ### for debugging:
         median_str = (
@@ -230,10 +230,9 @@ try:
         )
         ms.log(
         f"{weight}g "
-        f"evt={event} "
+        f"{event} "
         f"EMA={baseline_est:.3f} "
-        f"median={median_str} "
-        f"sampleIdx={sampleIdx}"
+        f"median={median_str}"
         )
         ###
 
