@@ -221,23 +221,23 @@ try:
         timeStr = f"{now.hour}:{now.minute}:{now.second}"
         ms.log(f"{timeStr} {weight} grams", False)
         '''
+        ms.log(f"{weight} grams", False) # False only outputs to ramdisk/vidmsg.json, not to terminal -> /logs
         event = fsm.update(weight)
-
-        ### for debugging:
-        median_str = (
-            f"{np.median(sampleArr[:sampleIdx]):.3f}"
-            if sampleIdx > 5 else "n/a"
-        )
-        ms.log(
-        f"{weight}g "
-        f"{event} "
-        f"EMA={baseline_est:.3f} "
-        f"median={median_str}"
-        )
-        ###
 
         # -------- baseline-driven offset adaption (EMA + samples safety median) --------
         if event == "IDLE":
+            ### for debugging:
+            if weight > 2.0:
+                median_str = (
+                    f"{np.median(sampleArr[:sampleIdx]):.3f}"
+                    if sampleIdx > 5 else "n/a"
+                )
+                ms.log(
+                f"{weight}g "
+                f"EMA={baseline_est:.3f} "
+                f"{sampleIdx}. median={median_str}"
+                )
+            ###
 
             # ---- EMA drift tracking  = Exponential Moving Average, adapts every measurement ----
             baseline_est = (1.0 - baseline_alpha) * baseline_est + baseline_alpha * weight
