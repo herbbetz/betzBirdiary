@@ -187,7 +187,7 @@ apartZero = 0
 sleepTime = 1.0
 # EMA baseline tracking
 baseline_est = 0.0
-baseline_alpha = 0.1 # 0.002 # tuned for 1 Hz HX711 sampling
+baseline_alpha = 0.03 # tuned for 1 Hz HX711 sampling
 
 ms.init()
 ms.log(f"Start hxFiBirdState {datetime.now()}")
@@ -220,32 +220,31 @@ try:
         timeStr = f"{now.hour}:{now.minute}:{now.second}"
         
         event = fsm.update(weight, timeStr)
+        ### for debugging:
+        if weight > 0.5 * weightThreshold:
+            ms.log(
+            f"{event} "
+            f"{timeStr} "
+            f"{weight}g "
+            f"EMA={baseline_est:.3f} "
+            f"{sampleIdx}.median={apartZero}"
+            )
+        else:
+            ms.log(f"{weight} grams {event}", False) # False only outputs to ramdisk/vidmsg.json, not to terminal -> /logs
+        ###
 
         # -------- baseline-driven offset adaption (EMA + samples safety median) --------
-        if event == "IDLE":
-            ### for debugging:
-            if weight > 2.0:
-                median_str = (
-                    f"{apartZero:.3f}"
-                    if sampleIdx == samples else f"{samples - sampleIdx}"
-                )
-                ms.log(
-                f"{timeStr} "
-                f"{weight}g "
-                f"EMA={baseline_est:.3f} "
-                f"median={median_str}"
-                )
-            else:
-                ms.log(f"{weight} grams", False) # False only outputs to ramdisk/vidmsg.json, not to terminal -> /logs
-            ###
+        if event == "IDLE": 
+            if abs(weight) < 0.7 * weightThreshold: # EMA while no edge cases
+                # ---- EMA drift tracking  = Exponential Moving Average, adapts every measurement ----
+                baseline_est = (1.0 - baseline_alpha) * baseline_est + baseline_alpha * weight
 
-            # ---- EMA drift tracking  = Exponential Moving Average, adapts every measurement ----
-            baseline_est = (1.0 - baseline_alpha) * baseline_est + baseline_alpha * weight
-
-            # Only apply small EMA correction if clearly drifting
-            if abs(baseline_est) > 0.3:  # tighter threshold than median
-                hxOffset -= baseline_est * hxScale
-                ms.log(f"{timeStr}hxOffset EMA adjust: {hxOffset}")
+                # Only apply small EMA correction if clearly drifting
+                if abs(baseline_est) > 0.6:  # tighter threshold than median
+                    corr = np.clip(baseline_est, -1.5, 1.5) # max correction of -1.5 to 1.5
+                    hxOffset -= corr * hxScale
+                    ms.log(f"{timeStr}hxOffset EMA adjust: {hxOffset}")
+                    baseline_est = 0.0
 
             # ---- Median batch safety net ----
             if sampleIdx < samples:
@@ -258,7 +257,7 @@ try:
 
                 apartZero = np.median(sampleArr)
                 # safety clamp: only if EMA somehow failed
-                if abs(apartZero) > 1.5:
+                if abs(apartZero) > 2.0:
                     hxOffset -= apartZero * hxScale
                     ms.log(f"{timeStr} hxOffset median adjust: {hxOffset}")
                 sampleIdx = 0
