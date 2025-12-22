@@ -122,7 +122,7 @@ class WeightFSM:
     def _reset_surge(self):
         self.surge_buf = []
 
-    def update(self, w):
+    def update(self, w, timestr):
         """
         Process one weight sample.
 
@@ -131,7 +131,6 @@ class WeightFSM:
             "SURGE_OK" -> surge confirmed, FIFO already sent
             None       -> ignore for calibration
         """
-
         # ---------------- IDLE ----------------
         if self.state == STATE_IDLE:
 
@@ -140,7 +139,7 @@ class WeightFSM:
                 self.state = STATE_SURGE_CANDIDATE
                 self._reset_surge()
                 self.surge_buf.append(w)
-                ms.log("first movement above threshold")
+                ms.log(f"{timestr} fst move above threshold")
                 return None
 
             # ONLY baseline samples reach here
@@ -158,7 +157,7 @@ class WeightFSM:
                     if self.baseline_stable_at_entry:
                         self.state = STATE_SURGE_CONFIRMED
                         peak = max(self.surge_buf)
-                        ms.log(f"{len(self.surge_buf)} moves → FIFO push")
+                        ms.log(f"{timestr} {len(self.surge_buf)} moves → FIFO: {peak}g")
                         sendFifo(peak)
                         self._reset_surge()
                         return "SURGE_OK"
@@ -183,11 +182,12 @@ config_path = f"{birdpath['appdir']}/config.json"
 samples = 50
 sampleIdx = 0
 sampleArr = np.empty(shape=samples, dtype=float)
+apartZero = 0
 
 sleepTime = 1.0
 # EMA baseline tracking
 baseline_est = 0.0
-baseline_alpha = 0.002   # tuned for 1 Hz HX711 sampling
+baseline_alpha = 0.1 # 0.002 # tuned for 1 Hz HX711 sampling
 
 ms.init()
 ms.log(f"Start hxFiBirdState {datetime.now()}")
@@ -216,27 +216,27 @@ try:
     while True:
         reading = hx.read_raw()
         weight = roundFlt((reading + hxOffset) / hxScale)
-        '''
         now = datetime.now()
         timeStr = f"{now.hour}:{now.minute}:{now.second}"
-        ms.log(f"{timeStr} {weight} grams", False)
-        '''
-        ms.log(f"{weight} grams", False) # False only outputs to ramdisk/vidmsg.json, not to terminal -> /logs
-        event = fsm.update(weight)
+        
+        event = fsm.update(weight, timeStr)
 
         # -------- baseline-driven offset adaption (EMA + samples safety median) --------
         if event == "IDLE":
             ### for debugging:
             if weight > 2.0:
                 median_str = (
-                    f"{np.median(sampleArr[:sampleIdx]):.3f}"
-                    if sampleIdx > 5 else "n/a"
+                    f"{apartZero:.3f}"
+                    if sampleIdx == samples else f"{samples - sampleIdx}"
                 )
                 ms.log(
+                f"{timeStr} "
                 f"{weight}g "
                 f"EMA={baseline_est:.3f} "
-                f"{sampleIdx}. median={median_str}"
+                f"median={median_str}"
                 )
+            else:
+                ms.log(f"{weight} grams", False) # False only outputs to ramdisk/vidmsg.json, not to terminal -> /logs
             ###
 
             # ---- EMA drift tracking  = Exponential Moving Average, adapts every measurement ----
@@ -245,7 +245,7 @@ try:
             # Only apply small EMA correction if clearly drifting
             if abs(baseline_est) > 0.3:  # tighter threshold than median
                 hxOffset -= baseline_est * hxScale
-                ms.log(f"hxOffset EMA adjust: {hxOffset}")
+                ms.log(f"{timeStr}hxOffset EMA adjust: {hxOffset}")
 
             # ---- Median batch safety net ----
             if sampleIdx < samples:
@@ -254,15 +254,15 @@ try:
             else:
                 spread = np.max(sampleArr) - np.min(sampleArr)
                 if (spread < 0.2):
-                    ms.log("no baseline spread -> disconnected?")
+                    ms.log(f"{timeStr} no baseline spread -> disconnected?")
 
                 apartZero = np.median(sampleArr)
                 # safety clamp: only if EMA somehow failed
                 if abs(apartZero) > 1.5:
                     hxOffset -= apartZero * hxScale
-                    ms.log(f"hxOffset median adjust: {hxOffset}")
-
+                    ms.log(f"{timeStr} hxOffset median adjust: {hxOffset}")
                 sampleIdx = 0
+
         if event == "SURGE_OK":
             baseline_est = 0.0 # reset EMA
         time.sleep(sleepTime)
