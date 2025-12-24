@@ -223,15 +223,13 @@ def daygallery():
     <html>
     <head>
         <title>Image Gallery</title>
-        <style>
-            body { font-family: Arial; padding: 20px; }
-            .image-container { margin-bottom: 20px; }
-            img { max-width: 400px; display: block; margin-bottom: 5px; }
-            .label { font-weight: bold; }
-        </style>
+        <link rel="stylesheet" href="bird.css">
     </head>
     <body>
         <h1>Image Gallery</h1>
+        <div class="indented">
+        <div class="rowed"><a href="vidshot3.html" class="button">back</a> <a href="https://www.wiediversistmeingarten.org/view" class="button" target="_blank">Birdiary Karte</a></div>
+        </div><hr>
     """
     # append each image block
     for img in images:
@@ -243,8 +241,6 @@ def daygallery():
         """
     # finish HTML
     html += """
-    <hr>
-    <div><a href="vidshot3.html" class="button">back</a></div>
     </body>
     </html>
     """
