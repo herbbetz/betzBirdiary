@@ -5,6 +5,12 @@ body{
     column-gap: 2%;
     font-size: 16px;
 }
+hr{
+    border: 0; /* important for height&bg-color to work */
+    height: 3px;
+    background-color: aqua; /* line color */
+    margin: 1.5rem 0; /* vertical spacing */
+}
 h2{
     font-size: 18px;
 }
