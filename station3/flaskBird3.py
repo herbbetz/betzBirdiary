@@ -233,10 +233,12 @@ def daygallery():
     """
     # append each image block
     for img in images:
+        videoUrl = img.replace(" ", "_").replace(":", "").replace(".jpg", "")
+        url = f"https://wiediversistmeingarten.org/api/uploads/videos/{videoUrl}.mp4"
         html += f"""
         <div class="image-container">
             <img src="{dayimg_dir}/{img}" alt="{img}">
-            <div class="label">{img}</div>
+            <div><a href="{url}" target="_blank">{img}</a></div>
         </div>
         """
     # finish HTML
