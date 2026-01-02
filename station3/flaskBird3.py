@@ -238,7 +238,7 @@ def daygallery():
         html += f"""
         <div class="image-container">
             <img src="{dayimg_dir}/{img}" alt="{img}">
-            <div><a href="{url}" target="_blank">{img}</a></div>
+            <div><a href="{url}" target="_blank">{videoUrl}</a></div>
         </div>
         """
     # finish HTML

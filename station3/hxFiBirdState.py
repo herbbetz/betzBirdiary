@@ -168,6 +168,7 @@ class WeightFSM:
         # -------- SURGE CONFIRMED --------
         if self.state == STATE_SURGE_CONFIRMED:
             if w < self.weightThreshold or w >= self.weightMax:
+                sendFifo(-1) # send premature video recording stop signal to mainFoBird.py
                 self.state = STATE_IDLE
                 self.baseline_buf.clear() 
             return None

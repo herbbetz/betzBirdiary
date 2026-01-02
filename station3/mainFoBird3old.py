@@ -141,7 +141,7 @@ def send_realtime_movement(files):
         ms.log(f"failed movement upload: {e}")
         return uploadFail
 
-def send_movement(circ_output, picam, wght, trigger_ns, stop_event): # first parameter is either circ_output OR picam, the latter in case of no circ_output
+def send_movement(circ_output, picam, wght, trigger_ns): # first parameter is either circ_output OR picam, the latter in case of no circ_output
     if upmaxcnt > 0 and send_movement.vid_cnt >= upmaxcnt: # upmaxcnt=0 means no limit
         ms.log("upload limit reached")
         subprocess.call(f"bash {birdpath['appdir']}/tasmotaDown.sh limitdown", shell=True)
@@ -160,23 +160,12 @@ def send_movement(circ_output, picam, wght, trigger_ns, stop_event): # first par
     capture_img(picam, imgName)
 
     # for video with circ output (dashcam):
-    stop_event.clear()   # ensure clean state
     outmem = io.BytesIO()
     circ_output.fileoutput = outmem
     circ_output.start()
     start_ns = time.time_ns()
-
-    # instead of 'time.sleep(videodurate)' poll for stop_event from readBalance():
-    deadline = time.time() + videodurate
-    while time.time() < deadline:
-        if stop_event.is_set():
-            ms.log("Rec stop by -1 signal")
-            time.sleep(1.0)  # record ~1 second extra
-            break
-        time.sleep(0.05)
-    
+    time.sleep(videodurate)
     circ_output.stop()
-    stop_event.clear()
     outmem.seek(0)
     full_video = outmem.getvalue()
  
@@ -238,7 +227,7 @@ def send_movement(circ_output, picam, wght, trigger_ns, stop_event): # first par
 
 send_movement.vid_cnt = 0
 
-def readBalance(bQ, stop_event):
+def readBalance(bQ):
     fifo = birdpath['fifo']
     if not fifoExists(fifo):
         os.mkfifo(fifo)
@@ -250,11 +239,8 @@ def readBalance(bQ, stop_event):
                 line = fp.readline()
                 data = line.strip()
                 if data != "":
-                    value = float(data)
                     ms.log("fifo rcvd: " + data)
-                    if value == -1:
-                        stop_event.set()
-                    elif ms.getStandby() == 0:
+                    if ms.getStandby() == 0:
                         bQ.put(float(data))
         except Exception as e:
             ms.log(f"Exception in readBalance: {e}")
@@ -297,8 +283,7 @@ def main():
     ms.setLux(3) # set luxcategory to normal
     ms.log("Set up balance receive as child process")
     bQueue = multiprocessing.Queue()
-    stop_recording_event = multiprocessing.Event()
-    child1 = multiprocessing.Process(target=readBalance, args=(bQueue, stop_recording_event))
+    child1 = multiprocessing.Process(target=readBalance, args=(bQueue,))
     child1.start()
     camera_transform = libcamera.Transform(hflip=hflip_val, vflip=vflip_val)
 
@@ -346,7 +331,7 @@ def main():
                     trigger_ns = time.time_ns() # check for nanosecs till recording
                     weight = bQueue.get()
                     # picam.set_controls(camsetting)
-                    send_movement(c_output, picam, weight, trigger_ns, stop_recording_event) # if no circ_output, replace c_output by picam
+                    send_movement(c_output, picam, weight, trigger_ns) # if no circ_output, replace c_output by picam
                     ms.setRecording(0)
                     # reset_camera(picam, camsetting, config)
                     while not bQueue.empty(): bQueue.get()
