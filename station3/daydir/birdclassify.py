@@ -114,9 +114,10 @@ def main():
     with open(csv_path, "w", encoding="utf-8") as f:
         if keep:
             for r in keep:
-                fname = os.path.basename(r["path"])
-                nameparts = fname.split(".")
-                f.write(f"Img#{nameparts[2]}: {r['label']}, {r['confidence']:.2f}%\n")
+                # fname = os.path.basename(r["path"])
+                # nameparts = fname.split(".")
+                # f.write(f"Img#{nameparts[2]}: {r['label']}, {r['confidence']:.2f}%\n")
+                f.write(f"{r['label']}, {r['confidence']:.2f}%\n")
         else:
             f.write("No images recognized\n")
 
