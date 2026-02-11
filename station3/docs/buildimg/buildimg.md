@@ -76,7 +76,7 @@ Zur Konfiguration der Station siehe [config.json](../../configjson.md).
 
   `sudo losetup -d /dev/loop0` detaches img.
 
-  `xz -k -z9 raw.img` (-k keeps raw.img) , dauert 15 min auf altem 'Satellite C660 Toshiba Laptop'. xz Kompression kann von balena etcher unter Win/Ubuntu direkt geflasht werden in 10 min. (xz ohne progress bar, evtl. Pipeviewer: `pv raw.img | xz -z9 > raw.img.xz`). Unpack: `xz -dk raw.img.xz`
+  `xz -k -9v raw.img` (-k keeps raw.img, v mit Progressbar) , dauert 15 min auf altem 'Satellite C660 Toshiba Laptop'. xz Kompression kann von balena etcher oder RPiImager unter Win/Ubuntu direkt geflasht werden in 10 min. Unpack: `xz -dk raw.img.xz`. Vielleicht kann hohe Kompression (-9 oder -9e) dem balena etcher manchmal auch Probleme (Memoryverbrauch) machen.
 
 - Schrumpfen des Image mit dem Linuxskript '[pishrink.sh](pishrink.md)', unter Windows ausführen auf WSL oder über Docker Desktop mit 'borgesnotes/pishrink:latest' . 
 

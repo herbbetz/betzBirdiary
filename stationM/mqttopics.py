@@ -1,3 +1,0 @@
-mqttopics = {
-    'balance': 'topics/balance'
-}

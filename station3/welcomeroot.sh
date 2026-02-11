@@ -16,6 +16,9 @@ echo "| > /etc/fstab for station3/ramdisk"
 echo "| > /etc/hosts, hostname"
 echo "| > /etc/avahi/avahi-daemon.conf wanted in bird-startup.service"
 echo "| > /etc/logrotate.d/birdlogrotate"
+echo "|"
+echo "| > empty __init__.py in station3/ allows for relative imports in subdirs"
+echo "|    like 'from station3.configBird3 import birdpath'"
 echo " ----------------------------------------"
 echo
 # cd /etc/... put into root`s .bashrc

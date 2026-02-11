@@ -1,0 +1,35 @@
+https://github.com/vaskar11/Bird-Recognition-System PyTorch komplett falsche Diagnosen, kein Spatz oder Meise, nur indische Vogelarten.
+
+Another PyTorch CNN:
+    https://github.com/josperrod9/BIRD_CLASS_RECOGNITION (spanish)
+    uses a different CNN model the model definition of which chatGPT could defer from the 'train.py' within CNN.ipynb .
+
+Claude.ai:
+    Your `.pth` file contains only weights (state_dict), not the full model. You need to specify the architecture: squeezenet1_1, squeezenet1_0, mobilenet_v2, resnet18, resnet34, efficientnet_b0
+
+    The script assumes 224x224 input size. If your model expects a different size, modify this line:
+    transforms.Resize((224, 224)),  # Change to your model's size
+    Common sizes: 224x224, 320x320, 299x299
+
+
+ChatGPT:
+python bird_classify.py 1.jpg --model acc93.95_e28_bird_filter_1022_2127.pth --arch resnet18
+
+
+
+https://github.com/Birdiary/webserver/tree/main/api/models -> tflite
+
+python .\birdclass-tflite.py 8.jpg --model .\detect.tflite
+
+TFlite & Tensorflow models:
+    - im Februar 2026 unter python 3.13 nur funktonsfähig auf x86. Für arm64 ist zwar ein wheel da, in dem aber Module wie 'imp' nicht funktionieren.
+        Es muss pyenv verwendet werden, um neben dem aktuellen Python 3.13 auch das ältere 3.11 für tensorflow innerhalb von birdvenv zu betreiben.
+        Zum Anwenden von tflite Modellen wird aber tensorflow gar nicht gebraucht, sondern nur tflite_runtime. Dies ist aber nur mit numpy < 2 (1.26.4) kompatibel, was wiederum in pyenv installiert wird.
+    - TFlite ist wohl schneller und ressourcenschonender als pytorch models
+    - für den Bild Input kann auch simpleres 'Pillow' statt 'cv2' das Pixel- und Farbformat für das Model vorab zurechtrücken.
+    - jedes Model mit Bild-Input braucht neben dem output auch die sortierten Labels dazu zwecks Textausgabe.
+    - manche tflite Modelle haben einen einfachen [1,N] output (classify.tflite der Webplattform), andere einen mehrdimensionalen (z.B. detect.tflite der Webplattform). Um ihre Ausgabe zu lesen, muss der Code das berücksichtigen.
+    - das train.py ist für alle Modelle der beste Bezug zum Erstellen von Gebrauchsskripten für das Modell.
+    - pytorch models können mit verschiedener Architektur (z.b. resnet18) trainiert sein.
+    - CNN models sind customary. Ihre Ausgabedaten entsprechen dem train.py, womit sie erstellt wurden.
+    - Labels: Vögel sind durch übermässig differenzierte IOC Klassifizierungen lateinisch bezeichnet. Deren Unterarten gehen weit über die deutsche /englische Alltagssprache hinaus.

@@ -11,6 +11,15 @@ hr{
     background-color: aqua; /* line color */
     margin: 1.5rem 0; /* vertical spacing */
 }
+.csv-block{
+    margin: 0.5em 0;
+    font-size: 0.9em;
+}
+.csv-line {
+    /* white-space: pre; */
+    font-style: italic;
+    color: #0056b3;
+}
 h2{
     font-size: 18px;
 }

@@ -48,6 +48,23 @@ def _svg_error(msg):
         f'</svg>'
     )
 
+def render_csv_block(basedir, prefix):
+    csv_path = f"{birdpath['appdir']}/{basedir}/{prefix}.csv" #os.path.join(basedir, f"{prefix}.csv")
+    if not os.path.exists(csv_path):
+      ms.log(f"not found: {csv_path}")
+      return ""
+
+    html = "<div class='csv-block'>"
+    with open(csv_path, "r", encoding="utf-8") as f:
+      for line in f:
+         line = line.strip()
+         if not line:
+            continue
+         html += f"<div class='csv-line'>{line}</div><br>\n"
+
+    html += "</div>\n"
+    return html
+
 app = Flask(__name__, static_folder='.')
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0 # disable cacheing
 BASE_DIR = os.path.abspath(os.path.dirname(__file__)) # see @app.route('/<path:filename>')
@@ -210,37 +227,61 @@ def camdata_svg():
 
 @app.route("/daywatch")
 def daygallery():
-    dayimg_dir = "ramdisk"
+    dayimg_dir = "daydir"
     # gather jpg images
-    images = [
+    images = sorted([
         f for f in os.listdir(dayimg_dir)
-        # if f.lower().endswith(".jpg")
-        if f.lower().endswith(".jpg") and "-" in f #only .jpg filenames containing "-"
-    ]
+        if f.lower().endswith(".jpg")
+        # if f.lower().endswith(".jpg") and "-" in f #only .jpg filenames containing "-"
+    ]) # needs be sorted to compare common fst part of filename
     # start HTML
     html = """
     <!DOCTYPE html>
     <html>
     <head>
-        <title>Image Gallery</title>
+        <title>Daywatch</title>
         <link rel="stylesheet" href="bird.css">
     </head>
     <body>
-        <h1>Image Gallery</h1>
+        <h1>Daily Images</h1>
         <div class="indented">
         <div class="rowed"><a href="vidshot3.html" class="button">back</a> <a href="https://www.wiediversistmeingarten.org/view" class="button" target="_blank">Birdiary Karte</a></div>
         </div><hr>
     """
-    # append each image block
+    # append each image row-wise, grouped by common prefix before "."
+    currentprefix = None
+    # following loop could be clearer (without currentprefix neccessary) by using groupby from itertools
     for img in images:
-        videoUrl = img.replace(" ", "_").replace(":", "").replace(".jpg", "")
-        url = f"https://wiediversistmeingarten.org/api/uploads/videos/{videoUrl}.mp4"
+        namesplits = img.split(".")
+        prefix = namesplits[0]  # part before the first "."
+        # msec_suffix = namesplits[1] # if len(namesplits) > 2 else ""
+        comb_prefix = f"{prefix}.{namesplits[1]}"  # e.g. 2026-02-09_092556.532543
+        vidURL = f"https://wiediversistmeingarten.org/api/uploads/videos/{comb_prefix}.mp4"
+        # If prefix changes, we handle the transition
+        if prefix != currentprefix:
+            # 1. End the PREVIOUS group's div/link (if it's not the first loop)
+            if currentprefix is not None:
+               html += "</div>"
+               html += render_csv_block(dayimg_dir, comb_prefix)
+               html += f'<div><a href="{vidURL}" target="_blank">{currentprefix}</a></div><hr>'
+
+            # 2. Start the NEW group's row
+            html += '<div class="rowed">'
+            currentprefix = prefix
+
+        # 3. Add the image (this happens for every image, new row or not)
         html += f"""
         <div class="image-container">
             <img src="{dayimg_dir}/{img}" alt="{img}">
-            <div><a href="{url}" target="_blank">{videoUrl}</a></div>
         </div>
         """
+
+    # 4. Final Cleanup: Close the very last group after the loop ends
+    if currentprefix is not None:
+      html += "</div>"
+      html += render_csv_block(dayimg_dir, comb_prefix)
+      html += f'<div><a href="{vidURL}" target="_blank">{currentprefix}</a></div><hr>'
+
     # finish HTML
     html += """
     </body>

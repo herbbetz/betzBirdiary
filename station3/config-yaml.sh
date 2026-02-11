@@ -52,7 +52,9 @@ for kv in "${kv_pairs[@]}"; do
     # Update value using jq to set .[$k] to the YAML’s value (string by default):
     json_data="$(jq --arg k "$key" --arg v "$value" '.[$k] = $v' <<< "$json_data")"
 done
-
+# write todays date as version
+today_date=$(date +%Y-%m-%d)
+json_data="$(jq --arg v "$today_date" '.["version"] = $v' <<< "$json_data")"
 # Create a temp file in the same directory as JSON_FILE (needed for atomic mv)
 json_dir="$(dirname "$JSON_FILE")"
 tmp_json="$(mktemp "${json_dir}/config.json.XXXXXX")"

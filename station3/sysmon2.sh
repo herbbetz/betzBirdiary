@@ -1,6 +1,6 @@
 #!/bin/bash
 set -euo pipefail
-# called from crontab:
+
 APPDIR="$HOME/station3"
 RAMDISK="$APPDIR/ramdisk"
 
@@ -22,21 +22,33 @@ monitor["date"]="$(date)"
 uptime_secs=$(cut -d " " -f1 /proc/uptime | cut -d"." -f1)
 monitor["uptime"]="$(secs2hours "$uptime_secs")hrs ($uptime_secs secs)"
 
-# wlan0 IP (IPv4)
+# wlan0 IP
 IP4=$(ip -4 addr show wlan0 2>/dev/null | grep -oP '(?<=inet\s)\d+(\.\d+){3}' || echo "N/A")
 HOSTNAME=$(hostname)
 monitor["wlan0"]="$IP4 $HOSTNAME"
 
-# CPU voltage & temp (only works on Raspberry Pi)
+# --- WLAN Stats (Fixed Logic) ---
+# We use || true so the script doesn't crash if wlan0 is missing from the file
+WLAN_RAW=$(grep "wlan0" /proc/net/wireless || true)
+
+if [ -n "$WLAN_RAW" ]; then
+    # Extract quality and dBm, removing trailing dots
+    QUAL=$(echo "$WLAN_RAW" | awk '{print $3}' | tr -d '.')
+    DBM=$(echo "$WLAN_RAW" | awk '{print $4}' | tr -d '.')
+    monitor["WLANquality"]="${QUAL} (${DBM}dBm)"
+else
+    monitor["WLANquality"]="Disconnected"
+fi
+
+# CPU Temp
 if command -v vcgencmd &>/dev/null; then
-    monitor["cpuvolt"]="$(vcgencmd measure_volts core | cut -d "=" -f 2)"
+    # monitor["cpuvolt"]="$(vcgencmd measure_volts core | cut -d "=" -f 2)"
     monitor["cputemp"]="$(vcgencmd measure_temp | cut -d "=" -f 2 | sed "s/'//g")"
 else
-    monitor["cpuvolt"]="N/A"
     monitor["cputemp"]="N/A"
 fi
 
-# CPU load (custom 5 sec measure)
+# CPU load
 CPULOAD=$(bash "$APPDIR/cpu5sec.sh" || echo "N/A")
 monitor["cpuload"]="${CPULOAD}%"
 
@@ -44,17 +56,17 @@ monitor["cpuload"]="${CPULOAD}%"
 outfile="$RAMDISK/sysmon.json"
 
 jq -n \
-  --arg date     "${monitor[date]}" \
-  --arg uptime   "${monitor[uptime]}" \
-  --arg wlan0    "${monitor[wlan0]}" \
-  --arg cpuvolt  "${monitor[cpuvolt]}" \
-  --arg cputemp  "${monitor[cputemp]}" \
-  --arg cpuload  "${monitor[cpuload]}" \
+  --arg date         "${monitor[date]}" \
+  --arg uptime       "${monitor[uptime]}" \
+  --arg wlan0        "${monitor[wlan0]}" \
+  --arg WLANquality  "${monitor[WLANquality]}" \
+  --arg cputemp      "${monitor[cputemp]}" \
+  --arg cpuload      "${monitor[cpuload]}" \
   '{
       date: $date,
       uptime: $uptime,
       wlan0: $wlan0,
-      cpuvolt: $cpuvolt,
+      WLANquality: $WLANquality,
       cputemp: $cputemp,
       cpuload: $cpuload
     }' > "$outfile"

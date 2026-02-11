@@ -1,0 +1,125 @@
+"""
+classifies all images of name format 'yyyy-mm-dd_hhMMss.msecs.X.jpg (X = 0–9)',
+e.g. '2026-02-02_083949.283901.0.jpg'
+
+common <filename_prefix> is yyyy-mm-dd_hhMMss.msecs
+Usage: python birdclassify.py <filename_prefix>
+
+keeps the top 2 most confident classifications that are not "none", or if all are "none" keeps prefix.0.jpg and prefix.2.jpg if they exist, and deletes the rest
+"""
+import sys
+import os
+import glob
+import numpy as np
+from PIL import Image
+from tflite_runtime.interpreter import Interpreter
+
+BASE_DIR = os.path.abspath(os.path.dirname(__file__)) # BASE_DIR = /home/pi/station3/daydir
+MODEL_PATH = f"{BASE_DIR}/model/classify.tflite"
+LABELS_PATH = f"{BASE_DIR}/model/bird_labels_de_latin.txt"
+
+
+def load_labels(path):
+    with open(path, "r", encoding="utf-8") as f:
+        return [line.strip() for line in f]
+
+def is_recognized(label: str) -> bool: # 'none' is not in label, could be enhanced by 'background' or 'unknown' or similar
+    label = label.strip().lower()
+    return "none" not in label
+
+def preprocess_image(image_path, width, height, floating_model):
+    image = Image.open(image_path).convert("RGB")
+    image = image.resize((width, height))
+    input_data = np.expand_dims(np.array(image), axis=0)
+
+    if floating_model:
+        input_data = (np.float32(input_data) - 127.5) / 127.5
+
+    return input_data
+
+
+def main():
+    if len(sys.argv) < 2:
+        print("Usage: python birdclassify.py <filename_prefix>")
+        sys.exit(1)
+
+    prefix = sys.argv[1]
+    image_files = sorted(glob.glob(f"{prefix}.*.jpg"))
+
+    if not image_files:
+        print("No matching JPG files found.")
+        sys.exit(1)
+
+    labels = load_labels(LABELS_PATH)
+
+    interpreter = Interpreter(model_path=MODEL_PATH)
+    interpreter.allocate_tensors()
+
+    input_details = interpreter.get_input_details()
+    output_details = interpreter.get_output_details()
+
+    height = input_details[0]["shape"][1]
+    width = input_details[0]["shape"][2]
+    floating_model = input_details[0]["dtype"] == np.float32
+
+    results = []
+
+    # --- classify all images ---
+    for image_path in image_files:
+        input_data = preprocess_image(image_path, width, height, floating_model)
+        interpreter.set_tensor(input_details[0]["index"], input_data)
+        interpreter.invoke()
+
+        output_data = interpreter.get_tensor(output_details[0]["index"])[0]
+
+        if output_data.dtype != np.float32:
+            output_data = output_data / 255.0
+
+        idx = int(np.argmax(output_data))
+        confidence = float(output_data[idx]) * 100.0
+        label = labels[idx] if idx < len(labels) else "unknown"
+
+        results.append({
+            "path": image_path,
+            "label": label,
+            "confidence": confidence,
+        })
+
+    # --- decision phase ---
+    recognized = [r for r in results if is_recognized(r["label"])]
+
+    keep = []
+
+    if recognized:
+        # keep top 2 by confidence
+        keep = sorted(
+            recognized,
+            key=lambda r: r["confidence"],
+            reverse=True
+        )[:2]
+    else:
+        # fallback for 'none' with all images: keep prefix.0.jpg and prefix.2.jpg if present
+        fallback = {f"{prefix}.0.jpg", f"{prefix}.2.jpg"}
+        keep = [r for r in results if os.path.basename(r["path"]) in fallback]
+
+    keep_paths = {r["path"] for r in keep}
+
+    # --- delete all others ---
+    for r in results:
+        if r["path"] not in keep_paths:
+            os.remove(r["path"])
+
+    # --- write CSV ---
+    csv_path = f"{prefix}.csv"
+    with open(csv_path, "w", encoding="utf-8") as f:
+        if keep:
+            for r in keep:
+                fname = os.path.basename(r["path"])
+                nameparts = fname.split(".")
+                f.write(f"Img#{nameparts[2]}: {r['label']}, {r['confidence']:.2f}%\n")
+        else:
+            f.write("No images recognized\n")
+
+
+if __name__ == "__main__":
+    main()

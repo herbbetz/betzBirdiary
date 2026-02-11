@@ -113,8 +113,10 @@ try:
     wapp_key         = _config['wapp_key']
     wapp_phone       = _config['wapp_phone']
     tasmota_ip       = _config['tasmota_ip']
+    mqtt_broker      = _config['mqtt_broker']
     geoloc           = _config['geoloc']
     sun              = _config['sun']
+    version          = _config['version'] # set by 'config-yaml.sh ANONconfig.yml'
 except KeyError as e:
     # ms.log(f"Missing config key: {e}")
     raise RuntimeError(f"Missing key in config.json: {e}")

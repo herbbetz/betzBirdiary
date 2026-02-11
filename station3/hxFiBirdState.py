@@ -253,8 +253,8 @@ try:
                 sampleIdx += 1
             else:
                 spread = np.max(sampleArr) - np.min(sampleArr)
-                if (spread < 0.2):
-                    ms.log(f"{timeStr} no baseline spread -> disconnected?")
+                if (spread < 0.1):
+                    ms.log(f"{timeStr} no baseline spread -> disconnected?", False)
 
                 apartZero = np.median(sampleArr)
                 # safety clamp: only if EMA somehow failed

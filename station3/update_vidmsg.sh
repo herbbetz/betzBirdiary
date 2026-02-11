@@ -1,5 +1,6 @@
 #!/bin/bash
-# sysmon2.sh puts an flock on this script
+# sysmon2.sh puts an flock on this script 'update_vidmsg.sh' using a line like: flock "$msgfile" "$APPDIR/update_vidmsg.sh" "$msgfile"
+# msgfile=vidmsg.json
 # helper script for sysmon2.sh to avoid messy subshell quoting inside it
 set -euo pipefail
 

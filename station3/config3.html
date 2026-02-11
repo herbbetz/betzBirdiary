@@ -20,13 +20,23 @@
         <div class="rowed"><a href="vidshot3.html" class="button">back</a> <a href="settings.html" class="button" target="_blank">settings</a></div>
         <div><a href="/daywatch" class="button" id="daywatch">daywatch</a></div>
     </div>
+    <hr><div>Version <span id="version"></span>, herber7be7z@gmail.com</div>
 </body>
 <script>
     //@ts-check
     'use strict';
+    const versionElem = document.getElementById('version');
     const stdbyElem = document.getElementById('stdby');
     const vidmsgJson = "/msgjson2"; //"ramdisk/vidmsg.json";
     
+    function getVersion() {
+        fetch('/config.json', {cache: 'reload', mode: 'no-cors'})
+        .then((response) => response.json())
+        .then((data) => {
+            let version = data['version']
+            versionElem.textContent = version;
+        })
+    }
     function getVidmsg() {
         fetch(vidmsgJson, {cache: 'reload', mode: 'no-cors'})
         .then((response) => response.json())
@@ -49,6 +59,7 @@
 
     // Call the updateStream function when the page loads
     window.onload = function() {
+        getVersion();
         updateStream(); //update loop
     };
 

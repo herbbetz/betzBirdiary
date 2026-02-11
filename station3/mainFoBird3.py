@@ -141,7 +141,7 @@ def send_realtime_movement(files):
         ms.log(f"failed movement upload: {e}")
         return uploadFail
 
-def send_movement(circ_output, picam, wght, trigger_ns, stop_event): # first parameter is either circ_output OR picam, the latter in case of no circ_output
+def send_movement(circ_output, picam, wght, stop_event): # first parameter is either circ_output OR picam, the latter in case of no circ_output
     if upmaxcnt > 0 and send_movement.vid_cnt >= upmaxcnt: # upmaxcnt=0 means no limit
         ms.log("upload limit reached")
         subprocess.call(f"bash {birdpath['appdir']}/tasmotaDown.sh limitdown", shell=True)
@@ -156,23 +156,31 @@ def send_movement(circ_output, picam, wght, trigger_ns, stop_event): # first par
     audio_filename = movementStartStr + ".wav"
 
     # for local review:
-    imgName = f"ramdisk/{movementStartStr}.jpg"
-    capture_img(picam, imgName)
+    daydir = "daydir"
+    imgCnt, imgMax = 0, 9
+    videoUrlStr = movementStartStr.replace(":", "").replace(" ", "_")
 
     # for video with circ output (dashcam):
     stop_event.clear()   # ensure clean state
     outmem = io.BytesIO()
     circ_output.fileoutput = outmem
     circ_output.start()
-    start_ns = time.time_ns()
 
     # instead of 'time.sleep(videodurate)' poll for stop_event from readBalance():
-    deadline = time.time() + videodurate
+    ms.log(f"video started at {time.time()}")
+    deadline = time.time() + videodurate # time.time() returns seconds.msecs since epoch (1.1.1970)
     while time.time() < deadline:
+        if imgCnt < imgMax:
+            imgName = f"{daydir}/{videoUrlStr}.{imgCnt}.jpg"
+            capture_img(picam, imgName)
+            ms.log(f"img#{imgCnt} taken at {time.time()}")
+            imgCnt += 1
         if stop_event.is_set():
             ms.log("Rec stop by -1 signal")
             time.sleep(1.0)  # record ~1 second extra
             break
+        else:
+            time.sleep(0.5) # record img interval
         time.sleep(0.05)
     
     circ_output.stop()
@@ -219,9 +227,7 @@ def send_movement(circ_output, picam, wght, trigger_ns, stop_event): # first par
         "videoKey": (video_filename, full_video)
     }
 
-    record_latency_ms = (start_ns - trigger_ns) // 1_000_000
     movementStart = movementStartStr.split('.')[0] # remove terminal msecs part
-    ms.log(f"Trigger latency: {record_latency_ms} ms till video {movementStart}")
     send_movement.vid_cnt += 1
     ms.setVidCnt(send_movement.vid_cnt)
 
@@ -235,6 +241,19 @@ def send_movement(circ_output, picam, wght, trigger_ns, stop_event): # first par
         if upmaxcnt>0: ms.setVidDateStr(f"video#{send_movement.vid_cnt} of {upmaxcnt} at {movementStart}")
         else: ms.setVidDateStr(f"video#{send_movement.vid_cnt} at {movementStart}")
         subprocess.call(f"bash {birdpath['appdir']}/mdroid.sh newVideo{send_movement.vid_cnt}", shell=True)
+
+    # On Feb.2026 module 'imp' is not available in tensorflow wheel for python 3.13 on arm64
+    # ... so the following subprocess runs inside birdvenv, using python 3.11.8
+    # start tflite_runtime on daydir:
+    # .Popen runs asynchronously, .call does not
+    cmd = f"{birdpath['appdir']}/{daydir}/run_classify.sh {birdpath['appdir']}/{daydir}/{videoUrlStr}"
+    ms.log(f"running subprocess: {cmd}")
+    subprocess.Popen(
+        cmd,
+        shell=True,
+        stdout=sys.stdout,
+        stderr=sys.stderr
+    )
 
 send_movement.vid_cnt = 0
 
@@ -343,10 +362,10 @@ def main():
             while True:
                 if not bQueue.empty(): # child1 process 'readBalance()' fills bQueue after filtering for ms.getStandby()
                     ms.setRecording(1)
-                    trigger_ns = time.time_ns() # check for nanosecs till recording
+                    # trigger_ns = time.time_ns() # check for nanosecs till recording, is exaggerated
                     weight = bQueue.get()
                     # picam.set_controls(camsetting)
-                    send_movement(c_output, picam, weight, trigger_ns, stop_recording_event) # if no circ_output, replace c_output by picam
+                    send_movement(c_output, picam, weight, stop_recording_event) # if no circ_output, replace c_output by picam
                     ms.setRecording(0)
                     # reset_camera(picam, camsetting, config)
                     while not bQueue.empty(): bQueue.get()

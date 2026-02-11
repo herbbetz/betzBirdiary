@@ -43,7 +43,7 @@ sleep 4
 # after flaskBird, needs time to find cmd 'ifconfig':
 # mainFoBird.py contains the only FIFO reader in child process:
 # python3 mainAckBird2.py &>> logs/main.log & # watch logs live on flask webserver or in terminal, using 'tail -f ~station/logs/main.log' or 'less +F ~station/logs/main.log'
-setsid $PYTHON mainFoBird3.py > /dev/null 2>&1 & # >> logs/main.log 2>&1 & # could be used instead for direct video upload without confirmation
+setsid $PYTHON mainFoBird3.py >> logs/main.log 2>&1 &
 sleep 8 # the child process takes time to establish
 # looping shutdown scripts, when system more stable:
 setsid bash sysmon2.sh > /dev/null 2>&1 & # >> logs/sysmon.log 2>&1 # once at boot in foreground, then every 15 min via pi's crontab -l
@@ -57,7 +57,7 @@ setsid $PYTHON dhtBird3.py > /dev/null 2>&1 & # >> logs/dht_sun.log 2>&1 &
 #    bash hxFiBirdStart.sh
 #    sleep 2
 # done
-setsid $PYTHON hxFiBirdState.py >> logs/hxFiBird.log 2>&1 & # > /dev/null 2>&1 & # first FIFO writer, seems the most critical to init
+setsid $PYTHON hxFiBirdState.py > /dev/null 2>&1 & # >> logs/hxFiBird.log 2>&1 & # first FIFO writer, seems the most critical to init
 # widgets for wayfire desktop will not work here, because wayfire or vnc/X11 env not yet ready! Moreover no use running it, when no desktop shown.
 # setsid $PYTHON widgets.py &
 echo "startup2stage.sh ended at $(date)" > /dev/null 2>&1 # >> /home/pi/station3/logs/startup.log 2>&1

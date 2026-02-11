@@ -131,16 +131,16 @@ th {
   const allConfigKeys = [
     'serverUrl', 'boxId', 'upmaxcnt', 'videodurate', 'hflip_val', 'vflip_val', 'vidsize', 'losize',
     'luxThreshold', 'luxLimit', 'weightlimit', 'weightThreshold', 'hxScale', 'hxOffset', 'dhtPin',
-    'hxDataPin', 'hxClckPin', 'mdroid_key', 'wapp_key', 'wapp_phone', 'tasmota_ip', 'geoloc', 'sun'
+    'hxDataPin', 'hxClckPin', 'mdroid_key', 'wapp_key', 'wapp_phone', 'tasmota_ip', 'mqtt_broker', 'geoloc', 'sun', 'version'
   ];
 
-  const editableKeys = ['boxId', 'upmaxcnt', 'videodurate', 'wapp_key', 'wapp_phone', 'tasmota_ip'];
+  const editableKeys = ['boxId', 'upmaxcnt', 'videodurate', 'wapp_key', 'wapp_phone', 'tasmota_ip', 'mqtt_broker'];
 
   const comments = {
     "serverUrl": "birdiary API for uploads",
     "boxId": "Your birdiary station Id",
     "upmaxcnt": "Maximum video uploads per runtime (0 = no limit)",
-    "videodurate": "Video duration in seconds",
+    "videodurate": "max. video duration (secs), excl. prebuffer",
     "hflip_val": "Mirror the image horizontally (boolean)",
     "vflip_val": "Mirror the image vertically (boolean)",
     "vidsize": "Video capture resolution (width, height)",
@@ -158,8 +158,10 @@ th {
     "wapp_key": "WhatsApp API key",
     "wapp_phone": "WhatsApp phone number for notifications",
     "tasmota_ip": "IP address of the Tasmota smart plug",
+    "mqtt_broker": "MQTT server IP, port:1883,topic: birdiary/message",
     "geoloc": "Geo location (latitude, longitude) for sunset calc",
-    "sun": "Sunlight times (sunrise, sunset)"
+    "sun": "Sunlight times (sunrise, sunset)",
+    "version": "version date"
   };
 
   function showTab(idx) {

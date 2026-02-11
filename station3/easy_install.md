@@ -28,6 +28,8 @@
 
 - Optional: `sudo raspi-config --expand-rootfs` schafft Platz für eigene Anwendungen (Nachinstallation Docker oder Desktop etc.) .
 
+- Nach geglückter Installation und Kommunikation mit der birdiary Plattform die Datei `station3/config.json` sichern für künftige Versionen von betzBirdiary.
+
 
 
 

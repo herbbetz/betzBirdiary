@@ -3,6 +3,7 @@ from datetime import datetime, timezone
 import ephem # pip install ephem is more current than apt install python3-ephem
 import subprocess
 from configBird3 import birdpath, read_config_json, update_config_json
+import msgBird as ms
 
 def minutes_from_string(timestr):
     """
@@ -53,6 +54,7 @@ try:
     todayminutes = now.hour * 60 + now.minute
 
     if now_dateStr == date_saved:
+        ms.log(f"{date_saved} sun times from config.json")
         sunset_mins = minutes_from_string(sunset_saved)
     else:
         # Set observer's location and time
@@ -77,6 +79,7 @@ try:
         sun_data = {
             "sun": [now_dateStr, datetime_to_string(sunrisetime_local), datetime_to_string(sunsettime_local)]
         }
+        ms.log(f"reset {now_dateStr} sun times to config.json")
         update_config_json(sun_data)
 
     if sunset_mins - 30 < todayminutes: # 30 minutes before sunset

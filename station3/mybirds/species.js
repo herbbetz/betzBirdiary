@@ -13,6 +13,7 @@ const records = new Array(
 "rotschwanz-vorn24-4-2025|Rotschwanz|redstart",
 "2025-05-06_spatz2|Spatz|house-sparrow",
 "ehaeher2025-08-18|Eichelhäher (177g)|jay",
+"drossel20260105|Drossel? (103g)|mistle-thrush",
 "ringeltaube2025-8-2|Ringeltaube (228g)|collared-dove",
 "squirrel2025-05-26|Schmarotzer|"
 );
