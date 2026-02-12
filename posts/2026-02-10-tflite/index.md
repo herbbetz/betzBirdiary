@@ -8,7 +8,7 @@ permalink: /posts/2026-02-10-tflite/
 
 **KI-Modelle**
 
-Auf Bilder trainierte Modelle bestehen aus einem Input-Knoten für das Bild, einem Knotennetzwerk, deren Verbindungen in ihren Gewichten das Training enthalten, und so vielen Output-Knoten, wie sie Dinge klassifizieren können. Jeder Output-Knoten wirft eine Wahrscheinlichkeit (confidence in %) aus. Entsprechend den Output-Knoten braucht man auch eine sortierte Liste von Labels, die benennen, für welche Vogelart  ein Output-Knoten steht. Vor dem Input muss das Bild in das Farb- und Pixelformat (z.B. RGB 224x224) umgewandelt werden, mit dem das Modell trainiert wurde.
+Auf Bilder trainierte Modelle bestehen aus einem Input-Knoten für das Bild, einem Knotennetzwerk, deren Verbindungen in ihren Gewichten das Training enthalten, und so vielen Output-Knoten, wie sie Dinge klassifizieren können. Jeder Output-Knoten wirft eine Wahrscheinlichkeit (confidence in %) aus. Entsprechend den Output-Knoten braucht man auch eine sortierte Liste von Labels, die benennen, für welche Vogelart jeder Output-Knoten steht. Vor dem Input muss das Bild in das Farb- und Pixelformat (z.B. RGB 224x224) umgewandelt werden, mit dem das Modell trainiert wurde.
 
 **Labels auf Latein**
 
@@ -26,7 +26,7 @@ Die `TFLite_Runtime` ist im Feb. 2026 noch nicht für das neue Raspberry Trixie 
 
 **Warten auf Annis KI**
 
-Anni Kurkela hat an der Uni Münster im Nov.2025 in ihrer [Masterarbeit](https://github.com/anniquu) ein Vogel-KI-Modell via PyTorch für den ESP32 entwickelt. Leider fand ich das für 16 heimische Vogelarten trainierte PyTorch Modell im Feb.2026 online noch nicht verfügbar. Für den Raspberry 4 ließe sich daraus wohl ein Modell für die Runtime von ONXX oder TFLite ableiten und ökonomisch einbauen. 'Full Tensorflow' ist nur für das Training, nicht aber für die Anwendung des Models nötig.
+Anni Kurkela hat an der Uni Münster im Nov.2025 in ihrer [Masterarbeit](https://github.com/anniquu) ein Vogel-KI-Modell via PyTorch für den ESP32 entwickelt. Leider fand ich das für 16 heimische Vogelarten trainierte PyTorch Modell im Feb.2026 online noch nicht verfügbar. Für den Raspberry 4 ließe sich daraus wohl ein Modell für die Runtime von ONXX oder TFLite ableiten und ökonomisch einbauen. 'Full Tensorflow' ist nur für das Training, nicht aber für die Anwendung des Modells nötig.
 
 Dieses Modell auf noch mehr Vögel zu trainieren, würde ein attraktives Sichtungs- und Labelling-Tool für Vogelbilder voraussetzen, das gern und unkompliziert von allen Vogelhausbetreibern bedient wird. Ein erster Schritt dazu wäre vielleicht eine Erweiterung der birdiary Plattform zum Hochladen klassifizierter Vogelbilder statt oder mit dem Hochladen der immer schwerer zu sichtenden Masse von Videos.
 
