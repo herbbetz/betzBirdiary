@@ -20,7 +20,7 @@ Die Python Library 'picamera2' kann auf dem Raspberry während der Aufnahme eine
 
 <img src="dayimg1.jpg" style="zoom:66%;" />
 
-Bisher wurde auf der birdiary Webplattform nachträglich jeder 10te Videoframe für die KI extrahiert mithilfe des umfangreichen Pythonmodul `cv2` (`api.py line 699`, s.a. Annis `get_frames.py`)
+Bisher wurde auf der birdiary Webplattform nachträglich jeder 10te Videoframe für die KI extrahiert mithilfe des umfangreichen Pythonmodul `cv2` (`api.py line 699`, s.a. Annis `get_frames.py`).
 
 **Trixie Probleme**
 
