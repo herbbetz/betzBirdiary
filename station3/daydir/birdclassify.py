@@ -99,8 +99,6 @@ def main():
         )[:2]
     else:
         # fallback for 'none' with all images: keep prefix.0.jpg and prefix.2.jpg if present
-        # fallback = {f"{prefix}.0.jpg", f"{prefix}.2.jpg"}
-        # keep = [r for r in results if os.path.basename(r["path"]) in fallback]
         keep = [r for r in results
                 if r["path"].endswith(".0.jpg") or r["path"].endswith(".2.jpg")
         ]
@@ -109,7 +107,7 @@ def main():
     #    print("WARNING: keep is empty — skipping deletion for safety")
     #    return
 
-    keep_assert = "\n".join(r["path"] for r in keep)
+    # keep_assert = "\n".join(r["path"] for r in keep)
     # for debugging, should be empty if keep is empty
 
     keep_paths = {r["path"] for r in keep}
@@ -122,8 +120,8 @@ def main():
     # --- write CSV ---
     csv_path = f"{prefix}.csv"
     with open(csv_path, "w", encoding="utf-8") as f:
-        f.write("DEBUG keep paths:\n")
-        f.write(keep_assert + "\n\n")
+        # f.write("DEBUG keep paths:\n")
+        # f.write(keep_assert + "\n\n")
         if keep:
             for r in keep:
                 # fname = os.path.basename(r["path"])
