@@ -41,9 +41,9 @@ if [[ -n "$tasmota_ip" && "$tasmota_ip" != "null" && ! "$tasmota_ip" =~ X$ ]]; t
     fi   
 fi
 
-# clean daydir/
-rm $APPDIR/daydir/*.jpg >/dev/null 2>&1
-rm $APPDIR/daydir/*.csv >/dev/null 2>&1
+# clean daydir/, not necessary for ramdisk
+# rm $APPDIR/daydir/*.jpg >/dev/null 2>&1
+# rm $APPDIR/daydir/*.csv >/dev/null 2>&1
 
 sudo sync
 sudo shutdown -h +1

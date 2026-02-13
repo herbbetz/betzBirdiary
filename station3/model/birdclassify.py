@@ -4,19 +4,23 @@ e.g. '2026-02-02_083949.283901.0.jpg'
 
 common <filename_prefix> is yyyy-mm-dd_hhMMss.msecs
 Usage: python birdclassify.py <filename_prefix>
+beware that 'run_classify.sh' does not include a path within <filename_prefix>
 
 keeps the top 2 most confident classifications that are not "none", or if all are "none" keeps prefix.0.jpg and prefix.2.jpg if they exist, and deletes the rest
 """
 import sys
 import os
-import glob
+import glob # search for filename wildcards like '<filename_prefix>.*.jpg'
 import numpy as np
 from PIL import Image
 from tflite_runtime.interpreter import Interpreter
 
-BASE_DIR = os.path.abspath(os.path.dirname(__file__)) # BASE_DIR = /home/pi/station3/daydir
-MODEL_PATH = f"{BASE_DIR}/model/classify.tflite"
-LABELS_PATH = f"{BASE_DIR}/model/bird_labels_de_latin.txt"
+import msgBird as ms # because PYTHONPATH = home/pi/station3 in startup.sh (called by bird-startup.service)
+
+BASE_DIR = os.path.abspath(os.path.dirname(__file__)) # BASE_DIR of current script = /home/pi/station3/model
+IMG_DIR = "/home/pi/station3/ramdisk"
+MODEL_PATH = f"{BASE_DIR}/model0/classify.tflite"
+LABELS_PATH = f"{BASE_DIR}/model0/bird_labels_de_latin.txt"
 
 
 def load_labels(path):
@@ -40,14 +44,19 @@ def preprocess_image(image_path, width, height, floating_model):
 
 def main():
     if len(sys.argv) < 2:
-        print("Usage: python birdclassify.py <filename_prefix>")
+        ms.log("Usage: python birdclassify.py <filename_prefix>")
         sys.exit(1)
 
-    prefix = sys.argv[1]
-    image_files = sorted(glob.glob(f"{prefix}.*.jpg"))
+    prefix = sys.argv[1] # should contain no path
+    if "/" in prefix:
+        ms.log(f"must not contain '/': {prefix}")
+        sys.exit(1)
+
+    image_files = sorted(glob.glob(os.path.join(IMG_DIR, f"{prefix}.*.jpg")))
+    ms.log(f"AI classify {len(image_files)} images")
 
     if not image_files:
-        print("No matching JPG files found.")
+        ms.log("No matching JPG files found.")
         sys.exit(1)
 
     labels = load_labels(LABELS_PATH)
@@ -107,7 +116,7 @@ def main():
     #    print("WARNING: keep is empty — skipping deletion for safety")
     #    return
 
-    # keep_assert = "\n".join(r["path"] for r in keep)
+    keep_assert = "\n".join(r["path"] for r in keep)
     # for debugging, should be empty if keep is empty
 
     keep_paths = {r["path"] for r in keep}
@@ -118,10 +127,10 @@ def main():
             os.remove(r["path"])
 
     # --- write CSV ---
-    csv_path = f"{prefix}.csv"
+    csv_path = os.path.join(IMG_DIR, f"{prefix}.csv")
     with open(csv_path, "w", encoding="utf-8") as f:
-        # f.write("DEBUG keep paths:\n")
-        # f.write(keep_assert + "\n\n")
+        f.write("DEBUG keep paths:\n")
+        f.write(keep_assert + "\n\n")
         if keep:
             for r in keep:
                 # fname = os.path.basename(r["path"])

@@ -227,12 +227,12 @@ def camdata_svg():
 
 @app.route("/daywatch")
 def daygallery():
-    dayimg_dir = "daydir"
+    # for the images the path relative to flaskBird3.py and it s html must not contain {birdpath['appdir']}:
+    dayimg_dir = "ramdisk" # "ramdisk/daydir" would have to be created first by the img writer or else
     # gather jpg images
     images = sorted([
         f for f in os.listdir(dayimg_dir)
-        if f.lower().endswith(".jpg")
-        # if f.lower().endswith(".jpg") and "-" in f #only .jpg filenames containing "-"
+        if f.lower().endswith(".jpg") and "_" in f # only .jpg filenames containing "_" (which monitor jpg have not)
     ]) # needs be sorted to compare common fst part of filename
     # start HTML
     html = """

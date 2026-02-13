@@ -20,4 +20,4 @@ python -c "import tflite_runtime as tflite; print('tflite_runtime version:', tfl
 python -c "import numpy as np; print('numpy version:', np.__version__)"
 
 # Pass all arguments to birdclassify.py
-python "$HOME/station3/daydir/birdclassify.py" "$@"
+python "$HOME/station3/model/birdclassify.py" "$@"

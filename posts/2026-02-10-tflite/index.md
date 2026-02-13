@@ -16,11 +16,11 @@ Das auf der birdiary Plattform seit 2022 verwendete TFLite Modell beinhaltet 964
 
 **Setup auf betzBird**
 
-Die Python Library 'picamera2' kann auf dem Raspberry während der Aufnahme eines Vogelvideos im .h264-Format daraus ohne großen Mehraufwand Einzelbilder auskoppeln. Im Menüpunkt 'daywatch' der jetzigen betzBirdiary Version werden alle halbe Sekunde maximal 9 Bilder aus jedem Video ausgekoppelt, dann anschließend *lokal auf dem Raspberry demselben TFLite Modell wie auf der birdiary Plattform vorgelegt* und die zwei mit der höchsten Erkennungswahrscheinlichkeit behalten.
+Die Python Library 'picamera2' kann auf dem Raspberry während der Aufnahme eines Vogelvideos im .h264-Format daraus ohne großen Mehraufwand Einzelbilder auskoppeln. Im Menüpunkt 'daywatch' der jetzigen betzBirdiary Version werden maximal 30 Bilder aus jedem Video ausgekoppelt, dann anschließend *lokal auf dem Raspberry demselben TFLite Modell wie auf der birdiary Plattform vorgelegt* und die zwei mit der höchsten Erkennungswahrscheinlichkeit behalten.
 
 <img src="dayimg1.jpg" style="zoom:66%;" />
 
-Bisher wurde auf der birdiary Webplattform nachträglich jeder 10te Videoframe für die KI extrahiert mithilfe des umfangreichen Pythonmodul `cv2` (`api.py line 699`, s.a. Annis `get_frames.py`). Entsprechend der anderen Bildauswahl in meiner lokalen Methode stimmt die Klassifizierung trotz selbem KI-Modell nicht mit der Plattform überein. Das Modell arbeitet dafür auch lokal sehr schnell.
+Bisher wurde auf der birdiary Webplattform nachträglich jeder 10te Videoframe für die KI extrahiert mithilfe des umfangreichen Pythonmodul `cv2` (`api.py line 699`, s.a. Annis `get_frames.py`). Entsprechend der anderen Bildauswahl mit meiner lokalen Methode stimmt die Klassifizierung trotz selbem KI-Modell nicht ganz mit der Plattform überein. Das Modell arbeitet dafür auch lokal sehr schnell.
 
 **Trixie Probleme**
 

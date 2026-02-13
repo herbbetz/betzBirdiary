@@ -156,8 +156,9 @@ def send_movement(circ_output, picam, wght, stop_event): # first parameter is ei
     audio_filename = movementStartStr + ".wav"
 
     # for local review:
-    daydir = "daydir"
-    imgCnt, imgMax = 0, 9
+    daydir = "ramdisk" # "ramdisk/daydir" would have to be created first
+    model = "model"
+    imgCnt, imgMax = 0, 30 # one img is below 20 kB, so enough space on ramdisk
     videoUrlStr = movementStartStr.replace(":", "").replace(" ", "_")
 
     # for video with circ output (dashcam):
@@ -180,7 +181,7 @@ def send_movement(circ_output, picam, wght, stop_event): # first parameter is ei
             time.sleep(1.0)  # record ~1 second extra
             break
         else:
-            time.sleep(0.5) # record img interval
+            time.sleep(0.1) # record img interval
         time.sleep(0.05)
     
     circ_output.stop()
@@ -246,7 +247,7 @@ def send_movement(circ_output, picam, wght, stop_event): # first parameter is ei
     # ... so the following subprocess runs inside birdvenv, using python 3.11.8
     # start tflite_runtime on daydir:
     # .Popen runs asynchronously, .call does not
-    cmd = f"{birdpath['appdir']}/{daydir}/run_classify.sh {birdpath['appdir']}/{daydir}/{videoUrlStr}"
+    cmd = f"{birdpath['appdir']}/{model}/run_classify.sh {videoUrlStr}"
     ms.log(f"running subprocess: {cmd}")
     subprocess.Popen(
         cmd,

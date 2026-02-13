@@ -23,3 +23,6 @@ if [[ ! -p "$FIFO" ]]; then
     mkfifo "$FIFO"
     # echo "created: "$fifo
 fi
+
+# important for python module imports into scripts below /home/pi/station3, like e.g. 'import msgBird as ms' in model/birdclassify.py:
+export PYTHONPATH="/home/pi/station3" # works also on boot, because the current bash script is called by bird-startup.service

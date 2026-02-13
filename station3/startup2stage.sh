@@ -38,7 +38,7 @@ setsid bash "$APPDIR/mdroid.sh" stationLoaded & # mdroid.sh writes to startup.lo
 #
 # flaskBird first, central to communication (WebGUI)
 # flaskBird thread can write to FIFO too, but only when asked to:
-setsid $PYTHON flaskBird3.py > /dev/null 2>&1 & # >> logs/flask.log 2>&1 &
+setsid $PYTHON flaskBird3.py >> logs/flask.log 2>&1 &
 sleep 4
 # after flaskBird, needs time to find cmd 'ifconfig':
 # mainFoBird.py contains the only FIFO reader in child process:
