@@ -1,15 +1,20 @@
 #!/bin/bash
-# despite found in 'which bash' the shebang !/usr/bin/bash is not working in bullseye
 # called from startup1stage.sh, which is called from systemd bird-startup.service .
 # nohup /setsid prevents kill of backgrounded processes when this script ends
 # log to /dev/null for sparing the sd-card
 echo "startup2stage.sh started at $(date)" >> /home/pi/station3/logs/startup.log 2>&1
 APPDIR="$HOME/station3"
 PYTHON="/usr/bin/python3"
-LOGFILE="/dev/null" # "/home/pi/station3/logs/startup.log"
+LOGFILE="/home/pi/station3/logs/startup.log"
 log() {
     echo "$*" >> "$LOGFILE" 2>&1
 }
+# All python scripts in subdirs of $APPDIR need this env var to find modules in $APPDIR, e.g. 'import msgBird as ms' in '$APPDIR/model/birdclassify.py':
+log "PYTHONPATH=$PYTHONPATH"
+if [ -z "${PYTHONPATH:-}" ] || [ ! -d "$PYTHONPATH" ]; then
+    log "PYTHONPATH missing or invalid — exiting"
+    exit 1
+fi
 # waits for internet, even /etc/systemd/system/bird-startup.service does not guarantee for this, despite 'After=network-online.target, Wants=network-online.target'
 # Wait for DNS to resolve webhook target
 dnshost=trigger.macrodroid.com # or cloudfare.com (1.1.1.1)

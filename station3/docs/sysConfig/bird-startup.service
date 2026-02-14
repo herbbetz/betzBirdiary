@@ -8,6 +8,8 @@ Type=simple
 User=pi
 Group=pi
 WorkingDirectory=/home/pi/station3
+# this is being set in startup1stage.sh and monitored in startup2stage.sh:
+# Environment="PYTHONPATH=/home/pi/station3"
 
 # Keep subprocesses alive after main script ends
 KillMode=none

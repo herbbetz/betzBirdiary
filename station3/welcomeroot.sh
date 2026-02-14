@@ -17,8 +17,9 @@ echo "| > /etc/hosts, hostname"
 echo "| > /etc/avahi/avahi-daemon.conf wanted in bird-startup.service"
 echo "| > /etc/logrotate.d/birdlogrotate"
 echo "|"
-echo "| > empty __init__.py in station3/ allows for relative imports in subdirs"
-echo "|    like 'from station3.configBird3 import birdpath'"
+echo "| > empty __init__.py in station3/ of no use yet"
+echo "|    set PYTHONPATH in startup1stage.sh or bird-startup.service"
+echo "|    and in /etc/environment for root and pi, or in .bashrc"
 echo " ----------------------------------------"
 echo
 # cd /etc/... put into root`s .bashrc
