@@ -1,6 +1,8 @@
 '''
 test tflite models like classify.tflite and it's simple [1,N] output.
-Usage: python birdclassify.py test/8.jpg --model model0/classify.tflite --labels model0/bird_labels_de_latin.txt
+Usage: 
+python testmodel.py test/8.jpg --model model0/classify.tflite --labels model0/bird_labels_de_latin.txt
+python testmodel.py test/2.jpg --model model1/uas.tflite --labels model1/uas.txt
 
 Smart TFLite classifier tester.
 Tries multiple preprocessing modes to discover the correct pipeline.

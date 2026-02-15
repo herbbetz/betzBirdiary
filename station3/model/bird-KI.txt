@@ -33,3 +33,21 @@ TFlite & Tensorflow models:
     - pytorch models können mit verschiedener Architektur (z.b. resnet18) trainiert sein.
     - CNN models sind customary. Ihre Ausgabedaten entsprechen dem train.py, womit sie erstellt wurden.
     - Labels: Vögel sind durch übermässig differenzierte IOC Klassifizierungen lateinisch bezeichnet. Deren Unterarten gehen weit über die deutsche /englische Alltagssprache hinaus.
+
+Andere getestete Modelle:
+==========================
+flatc (Windows, Linux) and Netron (https://netron.app/) can help reverse engineer a model, where no train.py is available. But this is only 2nd choice.
+
+https://github.com/astrocoding/astrocoding:
+    uas.tflite sieht einfach aus mit vorhandenem Trainingskript 'zaenal_alfian_birds_classification_model.py'
+    ...jedoch ist alles ein "Albatross" (selbst Bilder ohne Vögel), vermutlich weil nicht 525 sondern 100 Vögel klassifiziert wurden usw.
+
+
+
+LogChirpy Uni Reutlingen:
+    https://github.com/mklemmingen
+    https://github.com/mklemmingen/LogChirpy
+    
+    G:\birdiary-KI\LogChirpy-main\assets\models\birds_mobilenetv2
+    G:\birdiary-KI\LogChirpy-main\dev\scripts\_model_conversion_scripts\main.py
+        bird_classifier_metadata.tflite with embedded labels, but tflite_support.metadata does not work with python 3.11.2 within a venv in WSL Debian 12 (bookworm)

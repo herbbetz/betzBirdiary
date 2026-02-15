@@ -36,6 +36,7 @@ def preprocess_image(image_path, width, height, floating_model):
     image = image.resize((width, height))
     input_data = np.expand_dims(np.array(image), axis=0)
 
+    # not really needed as model0/classify.tflite was identified as 'raw_uint8', see preprocess_image() with 3 args in testmodel0.py:
     if floating_model:
         input_data = (np.float32(input_data) - 127.5) / 127.5
 

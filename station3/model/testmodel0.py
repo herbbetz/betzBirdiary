@@ -1,6 +1,6 @@
 '''
 test tflite models like classify.tflite and it's simple [1,N] output.
-Usage: python birdclassify.py test/8.jpg --model model0/classify.tflite --labels model0/bird_labels_de_latin.txt
+Usage: python testmodel0.py test/8.jpg --model model0/classify.tflite --labels model0/bird_labels_de_latin.txt
 '''
 import argparse
 # import sys
@@ -17,6 +17,8 @@ def load_labels(path):
     with open(path, "r", encoding="utf-8") as f:
         return [line.strip() for line in f.readlines()]
 
+'''
+As testmodel.py identified classify.tflite is "raw_uint8", the floating_model can be omitted for this model only. Old code:
 
 def preprocess_image(image_path, width, height, floating_model):
     image = Image.open(image_path).convert("RGB")
@@ -27,7 +29,11 @@ def preprocess_image(image_path, width, height, floating_model):
         input_data = (np.float32(input_data) - 127.5) / 127.5
 
     return input_data
-
+'''
+def preprocess_image(image_path, width, height):
+    image = Image.open(image_path).convert("RGB")
+    image = image.resize((width, height))
+    return np.expand_dims(np.array(image).astype(np.uint8), axis=0)
 
 def main():
     '''
@@ -58,7 +64,8 @@ def main():
     floating_model = input_details[0]["dtype"] == np.float32
 
     # Preprocess and run inference
-    input_data = preprocess_image(image_path, width, height, floating_model)
+    # for more general model code: input_data = preprocess_image(image_path, width, height, floating_model)
+    input_data = preprocess_image(image_path, width, height)
     interpreter.set_tensor(input_details[0]["index"], input_data)
     interpreter.invoke()
 
