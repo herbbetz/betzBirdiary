@@ -1,0 +1,31 @@
+15.2.26 an https://github.com/mklemmingen/LogChirpy
+issue: Ihr Vogelbild-Modell im Vergleich zu birdiary
+
+Hallo Herr Lauterbach,
+
+seit einiger Zeit nehme ich an einer Vogelplattform namens "birdiary" teil, die von der Uni Münster 2022 initiiert wurde: https://www.wiediversistmeingarten.org/view.
+Meine Vogelstation ist die südlichste davon, in Landshut (nordöstlich neben München).
+
+Die Station hat ein Vogelerkennungsmodell für die aus hochgeladenen Videos extrahierten Bilder. Das wollte ich in der Genauigkeit nun mit Ihrem vergleichen.
+
+Ich nehme an, Ihr Bilderkennungsmodell ist LogChirpy-main\assets\models\birds_mobilenetv2\bird_classifier_metadata.tflite
+und die Labels sind LogChirpy-main\assets\model_labels_whoBird\labels_de.txt .
+Das Trainingsscript ist wahrscheinlich LogChirpy-main\dev\scripts\_model_conversion_scripts\main.py .
+
+Jetzt habe ich versucht, ChatGPT mithilfe Ihrer Dateien zu einem einfachen Pythonscript zu bringen, das ein .jpg eines Spatzen (Passeri domesticus) erkennt. Das war bei dem Modell von birdiary relativ einfach möglich.
+
+Aber bei LogChirpy komme ich nicht weiter:
+- Dass die Labels irgendwie in das .tflite eingebettet sind, ist schon ein Problem. ChatGPT kann nicht rekonstruieren, in welcher Sektion des .tflite, oder vielleicht nur als Link?
+- Das Python Modul 'tflite_support.metadata' ist nicht für derzeitiges Python 3.13 erhältlich. Aber auch unter Python 3.11 (WSL mit Debian 12 bookworm) kam ChatGPT damit nicht zurecht und behauptete, die Syntax müsse sich geändert haben.
+- klar ist nur 'mobilenet_v2' und 'float_-1_1' als Architektur, und damit wirft das ChatGPT Script mit Ihrem Modell "Class 128" für das Spatzenbild aus. Aber betrachte ich Ihre Labels, ist "passeri domesticus" auf Platz 4246 von 6522.
+
+Deshalb meine Frage: Haben Sie ein dem 'labels_de.txt' entsprechendes 'model.tflite' oder vielleicht sogar minimales Pythonscript, das mein Spatzenbild richtig einordnet?
+
+Vielen Dank für irgendeinen Hinweis,
+Herbert Betz
+herber7be7z@gmail.com
+==================================================
+Antwort:
+Vogelbildmodell von https://github.com/rprkh/Bird-Classifier übernommen
+
+

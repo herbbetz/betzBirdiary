@@ -61,7 +61,7 @@ def main():
 
     height = input_details[0]["shape"][1]
     width = input_details[0]["shape"][2]
-    floating_model = input_details[0]["dtype"] == np.float32
+    # floating_model = input_details[0]["dtype"] == np.float32
 
     # Preprocess and run inference
     # for more general model code: input_data = preprocess_image(image_path, width, height, floating_model)

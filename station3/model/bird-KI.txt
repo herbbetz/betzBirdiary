@@ -47,6 +47,8 @@ https://github.com/astrocoding/astrocoding:
 LogChirpy Uni Reutlingen:
     https://github.com/mklemmingen
     https://github.com/mklemmingen/LogChirpy
+    siehe Ordner Issue/ und assets/models/birds_mobilenetv2/labels.txt
+    Bildmodel übernommen von https://github.com/rprkh/Bird-Classifier
     
     G:\birdiary-KI\LogChirpy-main\assets\models\birds_mobilenetv2
     G:\birdiary-KI\LogChirpy-main\dev\scripts\_model_conversion_scripts\main.py
