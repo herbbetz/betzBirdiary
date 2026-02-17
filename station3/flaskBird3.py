@@ -56,11 +56,12 @@ def render_csv_block(basedir, prefix):
 
     html = "<div class='csv-block'>"
     with open(csv_path, "r", encoding="utf-8") as f:
+      # csv line: "{MODEL_NAME}, {img#}, {r['confidence']:.2f}, {r['label']}" or "{MODEL_NAME}, None"
       for line in f:
-         line = line.strip()
-         if not line:
+         elems = line.strip().split(",")
+         if len(elems) < 4:
             continue
-         html += f"<div class='csv-line'>{line}</div><br>\n"
+         html += f"<div class='csv-line'>{elems[0]}: {elems[3]} {elems[2]}%</div><br>\n"
 
     html += "</div>\n"
     return html
@@ -246,6 +247,7 @@ def daygallery():
         <h1>Daily Images</h1>
         <div class="indented">
         <div class="rowed"><a href="vidshot3.html" class="button">back</a> <a href="https://www.wiediversistmeingarten.org/view" class="button" target="_blank">Birdiary Karte</a></div>
+        <div class='csv-line'>model0 = Birdiary, model1 = LogChirpy</div>
         </div><hr>
     """
     # append each image row-wise, grouped by common prefix before "."

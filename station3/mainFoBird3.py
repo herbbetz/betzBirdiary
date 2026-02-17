@@ -123,13 +123,31 @@ def luxProtocol(lData):
         with open(camdatafile, "w") as outfile:
             json.dump(data, outfile, indent=2)
 
+def files_payload_size(files):
+    json_str = files["json"][1]          # str
+    audio_bytes = files["audioKey"][1]   # bytes
+    video_bytes = files["videoKey"][1]   # bytes
+
+    return (
+        len(json_str.encode("utf-8")) +
+        len(audio_bytes) +
+        len(video_bytes)
+    )
+
 def send_realtime_movement(files):
     uploadFail = True # in case of upload failure save locally
     try:
         ms.log('sending to ' + serverUrl + 'movement/' + boxId)
+        starttime = time.perf_counter()
         r = requests.post(serverUrl + 'movement/' + boxId, files=files, timeout=60)
+        elapsedtime = time.perf_counter() - starttime
         ms.log('Movement data sent: ' + files['json'][1])
         ms.log('Corresponding movement_id: ' + r.text)
+
+        size_kbytes = files_payload_size(files)/ 1024
+        speed_kbps = size_kbytes / elapsedtime
+        ms.log(f"Upload {size_kbytes:.1f} in {elapsedtime:.2f} secs = {speed_kbps:.2f} kB/s")
+
         resp = r.text.lower()
         if 'error' in resp:
             ms.log('files kept - server sent error text')

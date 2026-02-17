@@ -16,11 +16,11 @@ Das auf der birdiary Plattform seit 2022 verwendete TFLite Modell beinhaltet 964
 
 **Setup auf betzBird**
 
-Die Python Library 'picamera2' kann auf dem Raspberry während der Aufnahme eines Vogelvideos im .h264-Format daraus ohne großen Mehraufwand Einzelbilder auskoppeln. Im Menüpunkt 'daywatch' der jetzigen betzBirdiary Version werden maximal 30 Bilder aus jedem Video ausgekoppelt, dann anschließend *lokal auf dem Raspberry demselben TFLite Modell wie auf der birdiary Plattform vorgelegt* und die zwei mit der höchsten Erkennungswahrscheinlichkeit behalten.
+Die Python Library 'picamera2' kann auf dem Raspberry während der Aufnahme eines Vogelvideos im .h264-Format daraus ohne großen Mehraufwand Einzelbilder auskoppeln. Im Menüpunkt 'daywatch' der jetzigen betzBirdiary Version werden maximal 30 Bilder aus jedem Video ausgekoppelt, dann anschließend *lokal auf dem Raspberry demselben TFLite Modell wie auf der birdiary Plattform vorgelegt* und die zwei Bilder mit der höchsten Erkennungswahrscheinlichkeit werden behalten. Dasselbe passiert dann nochmal zum Vergleich mit dem tflite Model von [LogChirpy](https://github.com/mklemmingen/LogChirpy), einem Projekt zur Vogelerkennung der Uni Reutlingen.
 
 <img src="dayimg1.jpg" style="zoom:66%;" />
 
-Bisher wurde auf der birdiary Webplattform nachträglich jeder 10te Videoframe für die KI extrahiert mithilfe des umfangreichen Pythonmodul `cv2` (`api.py line 699`, s.a. Annis `get_frames.py`). Entsprechend der anderen Bildauswahl mit meiner lokalen Methode stimmt die Klassifizierung trotz selbem KI-Modell nicht ganz mit der Plattform überein. Das Modell arbeitet dafür auch lokal sehr schnell.
+Bisher wurde auf der birdiary Webplattform nachträglich jeder 10te Videoframe für die KI extrahiert mithilfe des umfangreichen Pythonmodul `cv2` (`api.py line 699`, s.a. Annis `get_frames.py`). Entsprechend der anderen Bildauswahl mit meiner lokalen Methode stimmt die Klassifizierung trotz selbem KI-Modell nicht ganz mit der Plattform überein. Das Modell arbeitet dafür auch lokal sehr schnell. Leider ist das birdiary Model auf [Kaggle](https://www.kaggle.com/) nicht mehr auffindbar.
 
 **Trixie Probleme**
 

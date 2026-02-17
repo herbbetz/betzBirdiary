@@ -109,7 +109,7 @@ def main():
             for r in keep:
                 fname = os.path.basename(r["path"])
                 nameparts = fname.split(".")
-                f.write(f"{MODEL_NAME}, {nameparts[2]}, {r['label']}, {r['confidence']:.2f}%\n")
+                f.write(f"{MODEL_NAME}, {nameparts[2]}, {r['confidence']:.2f}, {r['label']}\n")
         else:
             f.write(f"{MODEL_NAME}, None\n")
 

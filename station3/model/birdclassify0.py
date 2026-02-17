@@ -141,7 +141,7 @@ def main():
             for r in keep:
                 fname = os.path.basename(r["path"])
                 nameparts = fname.split(".")
-                f.write(f"{MODEL_NAME}, {nameparts[2]}, {r['label']}, {r['confidence']:.2f}%\n") # Img#{nameparts[2]}
+                f.write(f"{MODEL_NAME}, {nameparts[2]}, {r['confidence']:.2f}, {r['label']}\n") # Img#{nameparts[2]}
                 # f.write(f"{r['label']}, {r['confidence']:.2f}%\n")
         else:
             f.write(f"{MODEL_NAME}, None\n")
