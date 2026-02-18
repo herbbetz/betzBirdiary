@@ -145,8 +145,8 @@ def send_realtime_movement(files):
         ms.log('Corresponding movement_id: ' + r.text)
 
         size_kbytes = files_payload_size(files)/ 1024
-        speed_kbps = size_kbytes / elapsedtime
-        ms.log(f"Upload {size_kbytes:.1f} in {elapsedtime:.2f} secs = {speed_kbps:.2f} kB/s")
+        speed_kBps = size_kbytes / elapsedtime # kBps is kiloBytes per sec
+        ms.log(f"Upload {size_kbytes:.1f} kB in {elapsedtime:.2f} secs = {speed_kBps:.2f} kB/s")
 
         resp = r.text.lower()
         if 'error' in resp:
@@ -186,13 +186,14 @@ def send_movement(circ_output, picam, wght, stop_event): # first parameter is ei
     circ_output.start()
 
     # instead of 'time.sleep(videodurate)' poll for stop_event from readBalance():
-    ms.log(f"video started at {time.time()}")
-    deadline = time.time() + videodurate # time.time() returns seconds.msecs since epoch (1.1.1970)
-    while time.time() < deadline:
+    ms.log(f"video started at {datetime.now()}")
+     # time.perf_counter() is monotonic and only for time diff, time.time() is different and returns seconds.msecs since epoch (1.1.1970)
+    deadline = time.perf_counter() + videodurate
+    while time.perf_counter() < deadline:
         if imgCnt < imgMax:
             imgName = f"{daydir}/{videoUrlStr}.{imgCnt}.jpg"
             capture_img(picam, imgName)
-            ms.log(f"img#{imgCnt} taken at {time.time()}")
+            # ms.log(f"img#{imgCnt} taken at {time.time()}")
             imgCnt += 1
         if stop_event.is_set():
             ms.log("Rec stop by -1 signal")
