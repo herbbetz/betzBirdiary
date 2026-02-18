@@ -6,16 +6,7 @@ common <filename_prefix> is yyyy-mm-dd_hhMMss.msecs
 Usage: python birdclassify.py <filename_prefix>
 
 keeps the top 2 most confident classifications that are not "none"
-
-IMPORTANT:
-This model (bird_classifier.tflite) is a FULLY QUANTIZED TFLite model.
-→ Input tensor dtype: uint8
-→ Therefore NO normalization (no [-1,1] scaling)
-→ Pixel range must stay 0–255
-
-Output tensor is also quantized → confidence is optionally dequantized
 """
-
 import sys
 import os
 import glob
@@ -33,30 +24,18 @@ LABELS_PATH = f"{BASE_DIR}/{MODEL_NAME}/labels.txt"
 
 
 def load_labels(path):
-    """Load class labels from text file"""
     with open(path, "r", encoding="utf-8") as f:
         return [line.strip() for line in f]
 
 
 def is_recognized(label: str) -> bool:
-    """Return True if label is not 'none' (can be extended)"""
     label = label.strip().lower()
     return "none" not in label
 
 
 def preprocess_image(image_path, width, height):
-    """
-    Preprocess image for QUANTIZED uint8 model
-
-    Steps:
-    1. Load image as RGB
-    2. Resize with preserved aspect ratio
-    3. Center crop to model input size
-    4. Convert to uint8 WITHOUT normalization
-    """
-
     image = Image.open(image_path).convert("RGB")
-
+    # image = image.resize((width, height)) only distorts image
     # --- keep aspect ratio ---
     src_w, src_h = image.size
     scale = max(width / src_w, height / src_h)
@@ -71,8 +50,8 @@ def preprocess_image(image_path, width, height):
     bottom = top + height
     image = image.crop((left, top, right, bottom))
 
-    # --- uint8 tensor (NO normalization) ---
-    input_data = np.array(image, dtype=np.uint8)
+    input_data = np.array(image, dtype=np.float32)
+    input_data = (input_data - 127.5) / 127.5
 
     return np.expand_dims(input_data, axis=0)
 
@@ -102,30 +81,21 @@ def main():
     input_details = interpreter.get_input_details()
     output_details = interpreter.get_output_details()
 
-    # model input size
     height = input_details[0]["shape"][1]
     width = input_details[0]["shape"][2]
-
-    # quantization params for output (used to compute real confidence)
-    output_scale, output_zero = output_details[0]["quantization"]
 
     results = []
 
     # --- classify all images ---
     for image_path in image_files:
         input_data = preprocess_image(image_path, width, height)
-
         interpreter.set_tensor(input_details[0]["index"], input_data)
         interpreter.invoke()
 
         output_data = interpreter.get_tensor(output_details[0]["index"])[0]
 
-        # --- dequantize output probabilities ---
-        # converts uint8 → float probability
-        output_float = (output_data.astype(np.float32) - output_zero) * output_scale
-
-        idx = int(np.argmax(output_float))
-        confidence = float(output_float[idx]) * 100.0
+        idx = int(np.argmax(output_data))
+        confidence = float(output_data[idx]) * 100.0
         label = labels[idx] if idx < len(labels) else "unknown"
 
         results.append({
@@ -147,13 +117,12 @@ def main():
 
     # --- write CSV ---
     csv_path = os.path.join(IMG_DIR, f"{prefix}.csv")
-    with open(csv_path, "a", encoding="utf-8") as f:  # append
+    with open(csv_path, "a", encoding="utf-8") as f: # append
         if keep:
             for r in keep:
                 fname = os.path.basename(r["path"])
-                # robust extraction of image index (X in prefix.X.jpg)
-                img_index = fname.rsplit(".", 2)[1]
-                f.write(f"{MODEL_NAME}, {img_index}, {r['confidence']:.2f}, {r['label']}\n")
+                nameparts = fname.split(".")
+                f.write(f"{MODEL_NAME}, {nameparts[2]}, {r['confidence']:.2f}, {r['label']}\n")
         else:
             f.write(f"{MODEL_NAME}, None\n")
 
