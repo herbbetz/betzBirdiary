@@ -1,3 +1,5 @@
+https://www.youtube.com/watch?v=YaBX-eNdYGw&t=2s
+
 https://github.com/vaskar11/Bird-Recognition-System PyTorch komplett falsche Diagnosen, kein Spatz oder Meise, nur indische Vogelarten.
 
 Another PyTorch CNN:

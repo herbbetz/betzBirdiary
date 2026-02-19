@@ -248,6 +248,7 @@ def daygallery():
         <div class="indented">
         <div class="rowed"><a href="vidshot3.html" class="button">back</a> <a href="https://www.wiediversistmeingarten.org/view" class="button" target="_blank">Birdiary Karte</a></div>
         <div class='csv-line'>model0 = Birdiary, model1 = LogChirpy</div>
+        <a href='./model/daywatch.md'>Erklärung</a>
         </div><hr>
     """
     # append each image row-wise, grouped by common prefix before "."

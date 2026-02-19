@@ -18,7 +18,7 @@ Das auf der birdiary Plattform seit 2022 verwendete TFLite Modell beinhaltet 964
 
 Die Python Library 'picamera2' kann auf dem Raspberry während der Aufnahme eines Vogelvideos im .h264-Format daraus ohne großen Mehraufwand Einzelbilder auskoppeln. Im Menüpunkt 'daywatch' der jetzigen betzBirdiary Version werden maximal 30 Bilder aus jedem Video ausgekoppelt, dann anschließend *lokal auf dem Raspberry demselben TFLite Modell wie auf der birdiary Plattform vorgelegt* und die zwei Bilder mit der höchsten Erkennungswahrscheinlichkeit werden behalten.
 
-Dasselbe passiert dann nochmal zum Vergleich mit dem tflite Model von [LogChirpy](https://github.com/mklemmingen/LogChirpy), einem Projekt zur Vogelerkennung der Uni Reutlingen (übernommen aus [USA](https://github.com/rprkh/Bird-Classifier)). Das LogChirpy tflite hat keine Klasse 'none', und benennt auch einen Kaffeebecher oder sogar leeren Hintergrund als Vogel (mit geringerer confidence).
+Dasselbe passiert dann nochmal zum Vergleich mit dem tflite Model von [LogChirpy](https://github.com/mklemmingen/LogChirpy), einem Projekt zur Vogelerkennung der Uni Reutlingen (übernommen aus [USA](https://github.com/rprkh/Bird-Classifier)). Das LogChirpy tflite hat keine Klasse 'none', und benennt auch einen Kaffeebecher oder sogar leeren Hintergrund als Vogel (mit geringerer confidence). Ich habe hier deshalb alles unter 50% confidence empirisch auf 'none' gesetzt.
 
 <img src="dayimg1.jpg" style="zoom:66%;" />
 
@@ -26,13 +26,15 @@ Bisher wurde auf der birdiary Webplattform nachträglich jeder 10te Videoframe f
 
 **Trixie Probleme**
 
-Die `TFLite_Runtime` ist im Feb. 2026 noch nicht für das neue Raspberry Trixie (amd64) verfügbar. Die Runtime wird mit `pip` installiert und benötigt nur für sich in einer `pyenv` Umgebung das ältere Python 3.11 und das ältere Numpy 1.26, während die anderen Python Skripte mit Python 3.13 und Numpy > 2 in Trixie laufen. Erst wenn aus dem Trixie Debian Repository ein `apt install python3-tflite_runtime` möglich ist, wird die Runtime samt abhängigen Modulen (wie dem  `deprecated imp`) auf den aktuellen Stand von Trixie angehoben sein.
+Die `TFLite_Runtime` ist im Feb. 2026 noch nicht für das neue Raspberry Trixie (amd64) verfügbar. Die Runtime wird mit `pip` installiert und benötigt nur für sich in einer `pyenv` Umgebung das ältere Python 3.11 und das ältere Numpy 1.26, während die anderen Python Skripte mit Python 3.13 und Numpy > 2 in Trixie laufen. Erst wenn aus dem Trixie Debian Repository ein `apt install python3-tflite_runtime` möglich ist, wird die Runtime samt abhängigen Modulen (wie dem  `deprecated imp`) auf den aktuellen Stand von Trixie angehoben sein. Auch das Modul `litert-torch` zur Umwandlung eines .pth in ein .tflite Model läuft derzeit noch nur unter Python 3.11 .
 
-**Warten auf Annis KI**
+**Testlauf von Annis KI**
 
-Die beiden Vogelmodelle demonstrieren, dass TFLite-Runtime-Modelle auf dem Raspberry4 recht schnell klassifizieren können. Durch die fehlende Vorauswahl deutscher Vogelhaus-Vögel sind beide Modelle aber kaum brauchbar.
+Die beiden Vogelmodelle demonstrieren, dass TFLite-Runtime-Modelle auf dem Raspberry4 technisch einfach funktionieren. 'Full Tensorflow' ist nur für das Training, nicht aber für die Anwendung des Modells nötig. Die TFLite-Runtime ist klein in der Installation und schnell in der Arbeit. Durch die fehlende Vorauswahl deutscher Vogelhaus-Vögel sind beide Modelle aber inhaltlich kaum brauchbar.
 
-Anni Kurkela hat an der Uni Münster im Nov.2025 in ihrer [Masterarbeit](https://github.com/anniquu) ein Vogel-KI-Modell via PyTorch für den ESP32 entwickelt. Leider fand ich das für 16 heimische Vogelarten trainierte PyTorch Modell im Feb.2026 online noch nicht verfügbar. Für den Raspberry 4 ließe sich daraus wohl ein Modell für die Runtime von ONXX oder TFLite ableiten und ökonomisch einbauen. 'Full Tensorflow' ist nur für das Training, nicht aber für die Anwendung des Modells nötig.
+Anni Kurkela hat an der Uni Münster im Nov.2025 in ihrer [Masterarbeit](https://github.com/anniquu) ein [Vogel-KI-Modell](https://github.com/anniquu/TinyBirdiary/tree/main/main/models) auf *Squeezenet* Basis für den ESP32 entwickelt. Es unterscheidet 16 heimische Vogelarten und Mensch und Hintergrund. Für den Raspberry 4 nahm ich erstmal das [veröffentlichte](https://github.com/anniquu/bird-species-classification/tree/main/model/results/unquantized/mobilenet_v3) `birdiary_v5_mobilenetv3_fine_tuning.pth` (6 MB). Es hätten sowohl das präzisere, aber 80 MB große *EfficientNet* Model als auch *PyTorch* auf dem Raspberry Platz gehabt, aber ich wollte erst die kleinere Lösung testen. Deshalb hab ich das .pth mithilfe Modul `litert-torch` in ein *.tflite float Model* umgewandelt, was ohne Qualitätsverlust einhergehen soll.
+
+Die Vorselektion der Vögel und das Finetuning des Modells haben sich sicher gelohnt, auch wenn die KI auch hier noch nicht ganz mit der menschlichen Beurteilung mithält.
 
 Anni's Modell auf noch mehr Vögel zu trainieren, würde ein attraktives Sichtungs- und Labelling-Tool für Vogelbilder voraussetzen, das gern und unkompliziert von allen Vogelhausbetreibern bedient wird. Ein erster Schritt dazu wäre vielleicht eine Erweiterung der birdiary Plattform zum Hochladen klassifizierter Vogelbilder statt oder mit dem Hochladen der immer schwerer zu sichtenden Masse von Videos.
 

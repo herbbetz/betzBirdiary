@@ -5,7 +5,7 @@
 | | Bird Image Model |
 |---|---|
 | **Purpose** | Classify bird **photos** (JPG/PNG) |
-| **Input** | 224 x 224 x 3 RGB image, Float32, normalized to [-1, 1] |
+| **Input** | 224 x 224 x 3 RGB image, Float32, normalized to [-1, 1], quantized: no (probably hybrid, but input = float) |
 | **Output classes** | **400** bird species |
 | **Label format** | English common names, external text format |
 | **Architecture** | MobileNetV2 (image CNN) |
