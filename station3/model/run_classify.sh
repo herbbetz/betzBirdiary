@@ -9,5 +9,6 @@ source /home/pi/.pyenv/versions/birdvenv/bin/activate
 # run birdclassify.py with all arguments passed
 python /home/pi/station3/model/birdclassify0.py "$@"
 python /home/pi/station3/model/birdclassify1.py "$@"
+python /home/pi/station3/model/birdclassify2.py "$@"
 python /home/pi/station3/model/crop_imgpool.py "$@"
 # deactivate only needed for interactive shell, script is called in a subprocess/ subshell, which will exit after python finishes.
