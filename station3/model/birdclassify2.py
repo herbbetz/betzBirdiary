@@ -116,7 +116,7 @@ def main():
         })
 
     # --- decision phase (filter out "none") ---
-    recognized = [r for r in results if is_recognized(r["label"])]
+    recognized = [r for r in results if is_recognized(r["label"]) and 'background' not in r["label"].lower()]
 
     keep = []
     if recognized:

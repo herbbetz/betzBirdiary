@@ -122,7 +122,7 @@ def main():
         })
 
     # --- decision phase ---
-    recognized = [r for r in results if is_recognized(r["label"])]
+    recognized = [r for r in results if is_recognized(r["label"]) and 'none' not in r["label"].lower()]
 
     if recognized:
         keep = sorted(recognized, key=lambda r: r["confidence"], reverse=True)[:2]
