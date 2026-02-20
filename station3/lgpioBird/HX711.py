@@ -1,17 +1,18 @@
-# hx711_lgpio_blocking.py
+# HX711_lgpio_v2.py
 #
-# HX711 load cell ADC reader using lgpio
-# Designed for low-rate, high-reliability operation (≤10 SPS)
+# Hardened HX711 load cell ADC reader using lgpio
+# Pure raw driver (no offset / scaling)
 #
-# - _read_once() blocks until DATA goes low
-# - Median-of-3 filtering in read_raw()
-# - Spike rejection to suppress bit-slip errors
-# - Fixed gain = 64 enforced every read
+# Improvements:
+# - Startup stabilization helper
+# - Timeout protection in wait_ready()
+# - Median-of-3 filtering
+# - Spike rejection with safe initialization
+# - read_average() replaces misleading tare()
 #
 # Returns ONLY raw signed 24-bit values
-# Offset and scaling handled externally
 #
-# 12/2025 ChatGPT (refactored)
+# 02/2026
 
 import lgpio
 import time
@@ -33,36 +34,30 @@ class HX711:
     # ------------------------------------------------------------
 
     def delay_us(self, microseconds):
-        """Busy-wait microsecond delay (Linux-safe)."""
         end = time.perf_counter_ns() + int(microseconds * 1000)
         while time.perf_counter_ns() < end:
             pass
 
     # ------------------------------------------------------------
-    # Blocking wait
+    # Blocking wait with timeout
     # ------------------------------------------------------------
 
-    def wait_ready(self):
-        """
-        Block until HX711 DATA goes low.
-        Safe because read rate is very low (≤10 SPS).
-        """
+    def wait_ready(self, timeout=1.0):
+        start = time.time()
         while lgpio.gpio_read(self.chip, self.data_pin) == 1:
-            time.sleep(0.001)  # yield CPU
+            if (time.time() - start) > timeout:
+                raise TimeoutError("HX711 not ready (DATA stuck high)")
+            time.sleep(0.001)
 
     # ------------------------------------------------------------
     # Low-level single read (NO filtering)
     # ------------------------------------------------------------
 
     def _read_once(self):
-        """
-        Blocking read of one 24-bit signed HX711 value.
-        """
         self.wait_ready()
 
         value = 0
 
-        # Read 24 bits MSB first
         for _ in range(24):
             lgpio.gpio_write(self.chip, self.clock_pin, 1)
             self.delay_us(3)
@@ -70,14 +65,14 @@ class HX711:
             lgpio.gpio_write(self.chip, self.clock_pin, 0)
             self.delay_us(3)
 
-        # Set gain = 64 (3 extra pulses)
+        # Gain = 64 (3 pulses)
         for _ in range(3):
             lgpio.gpio_write(self.chip, self.clock_pin, 1)
             self.delay_us(3)
             lgpio.gpio_write(self.chip, self.clock_pin, 0)
             self.delay_us(3)
 
-        # Convert to signed 24-bit
+        # Convert signed 24-bit
         if value & 0x800000:
             value -= 0x1000000
 
@@ -88,13 +83,6 @@ class HX711:
     # ------------------------------------------------------------
 
     def read_raw(self):
-        """
-        Robust read:
-        - Take 3 blocking samples
-        - Median-of-3 filtering
-        - Reject impossible jumps
-        """
-
         samples = [
             self._read_once(),
             self._read_once(),
@@ -103,24 +91,47 @@ class HX711:
 
         value = sorted(samples)[1]
 
-        # Spike rejection (bit-slip / gain glitch)
-        if self.last_value is not None:
-            if abs(value - self.last_value) > 200_000:
-                return self.last_value
+        if self.last_value is None:
+            self.last_value = value
+            return value
+
+        if abs(value - self.last_value) > 200_000:
+            return self.last_value
 
         self.last_value = value
         return value
 
     # ------------------------------------------------------------
-    # Utilities
+    # Helpers
     # ------------------------------------------------------------
 
-    def tare(self, samples=15):
+    def stabilize(self, samples=10, delay=0.05):
+        """
+        Flush initial conversions to allow
+        analog front-end + gain cycle to settle.
+        Call once after power-up.
+        """
+        for _ in range(samples):
+            try:
+                self._read_once()
+            except TimeoutError:
+                pass
+            time.sleep(delay)
+
+    def read_average(self, samples=15, delay=0.1):
+        """
+        Return average raw reading.
+        Useful for external calibration routines.
+        """
         total = 0
         for _ in range(samples):
             total += self.read_raw()
-            time.sleep(0.1)
+            time.sleep(delay)
         return total / samples
+
+    # ------------------------------------------------------------
+    # Power control
+    # ------------------------------------------------------------
 
     def power_down(self):
         lgpio.gpio_write(self.chip, self.clock_pin, 1)
@@ -129,6 +140,10 @@ class HX711:
     def power_up(self):
         lgpio.gpio_write(self.chip, self.clock_pin, 0)
         self.delay_us(100)
+
+    # ------------------------------------------------------------
+    # Cleanup
+    # ------------------------------------------------------------
 
     def close(self):
         lgpio.gpiochip_close(self.chip)

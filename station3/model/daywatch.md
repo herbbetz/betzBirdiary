@@ -10,7 +10,7 @@
   - *model1*: LogChirpy der Uni Reutlingen
   - *model2*: Anni's KI-Modell aus ihrer Masterarbeit vom Nov.25 (Uni Münster)
 
-- Modelle, die `None/Background` mit hoher Wahrscheinlichkeit erkennen, dürfen nicht die vogelhaltigen Bilder verwerfen. Selbst hochprozentige `None/Background` Ergebnisse werden also nicht dargestellt oder behalten. Modellen ohne `None/Background` wird unterhalb einer Erkennungsschwelle (empirisch z.B. 50%) ein `None` nachträglich zugeteilt.
+- Modelle, die `None/Background` mit hoher Wahrscheinlichkeit erkennen, dürfen nicht zum Löschen der vogelhaltigen Bilder führen. Deshalb werden auch hochprozentige `None/Background` Bilder und Einstufungen nicht behalten. Modellen ohne `None/Background` wird unterhalb einer Erkennungsschwelle (empirisch, z.B. 50%) ein `None` nachträglich zugeteilt.
 
 - Kodierung: Die 30 Bilder sind benannt als `yyyy-mm-dd_hhMMss.msecs.X.jpg (X = 0–29)`. *modelY* hat ein spezelles *birdclassifyY.py*, welches das Prefix `yyyy-mm-dd_hhMMss.msecs` erhält und sein Resultat ins `prefix.csv` schreibt. Haben alle Modelle dorthin geschrieben, löscht `crop_imgpool.py` die überflüssigen JPGs. Das ganze wird orchestriert durch `run_classify.sh`.
 

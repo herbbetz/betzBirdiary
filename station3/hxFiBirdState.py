@@ -1,13 +1,17 @@
 """
-hxFiBird3.py
+hxFiBirdState.py  (hardened)
 
-- Initializes HX711 with tare and scaling
-- Performs resilient offset auto-calibration
+- Initializes HX711 with startup stabilization
+- Performs offset auto-calibration using averaged raw readings
 - Uses a finite-state machine to:
     * detect stable baseline
     * detect constant weight surge (>3 values)
     * trigger FIFO once per surge
     * adapt baseline offset safely
+- Adds baseline watchdog:
+    * detects impossible baseline shifts (e.g. HX711 boot glitch)
+    * logs raw + offset
+    * reinitializes HX711 and recalibrates automatically
 - Sends weight via FIFO
 - Logs events with timestamps
 - Saves updated calibration back to config
@@ -32,11 +36,23 @@ import msgBird as ms
 
 
 # --------------------------------------------------
+# Configuration constants (runtime safety tuning)
+# --------------------------------------------------
+
+STARTUP_SETTLE_TIME = 1.2     # allow HX711 analog front-end to settle
+WATCHDOG_LIMIT = 120          # grams considered impossible baseline
+WATCHDOG_SAMPLES = 5          # consecutive samples before triggering
+
+
+# --------------------------------------------------
 # Helper functions
 # --------------------------------------------------
 
 def get_mean(sensor, num_vals, hOffset, sleeptime):
-    ms.log(f"hxFi samples {num_vals} readings...")
+    """
+    Collects multiple samples and returns median + spread.
+    Used for diagnostics and calibration validation.
+    """
     readings = np.empty(shape=num_vals, dtype=float)
 
     for i in range(num_vals):
@@ -46,43 +62,82 @@ def get_mean(sensor, num_vals, hOffset, sleeptime):
 
     median = np.median(readings)
     spread = np.max(readings) - np.min(readings)
-    ms.log(f"spread from {np.min(readings)} to {np.max(readings)}")
     return median, spread
 
 
-def calibOffset(tries, sensor, hxoffset, sleeptime):
-    success = False
-    for _ in range(tries):
-        mean, spread = get_mean(sensor, 50, hxoffset, sleeptime)
-        if spread < weightThreshold:
-            if abs(mean) < 1.0:
-                success = True
-                break
-            else:
-                hxoffset -= mean * hxScale
-        time.sleep(sleeptime)
+def calibOffset(sensor, hxoffset, sleeptime):
+    """
+    Offset auto-calibration using averaged raw reading.
 
-    ms.log("hxOffset Cal OK" if success else "hxOffset Cal FAILED")
-    ms.log(f"hxOffset reset to: {hxoffset}")
+    Philosophy:
+    We assume scale is unloaded at startup. The mean raw value
+    represents baseline drift and is compensated in one step.
+    """
+    raw_mean = sensor.read_average(samples=30, delay=sleeptime)
+    weight_mean = roundFlt((raw_mean + hxoffset) / hxScale)
+
+    hxoffset -= weight_mean * hxScale
+    ms.log(f"hxOffset calibrated → {hxoffset}")
     return hxoffset
 
 
 def sendFifo(wght):
-    # nonblocking:
+    """
+    Nonblocking FIFO write.
+    If no reader exists we silently skip to avoid blocking.
+    """
     try:
         fd = os.open(fifo, os.O_WRONLY | os.O_NONBLOCK)
         with os.fdopen(fd, 'w') as fifoFp:
             fifoFp.write(str(wght) + "\n")
     except OSError as e:
-        if e.errno == errno.ENXIO: # ENXIO=6 usually, meaning no such device (FIFO reader)
-            ms.log("hxFiBird: No FIFO reader, skip write")
-        else:
-            raise # Unexpected error (e.g. permission, missing file)
+        if e.errno != errno.ENXIO:
+            raise
 
 
 # --------------------------------------------------
-# Weight finite-state machine (chatGPT)
+# Baseline Watchdog
 # --------------------------------------------------
+
+class BaselineWatchdog:
+    """
+    Detects impossible baseline shifts.
+
+    Rationale:
+    HX711 can occasionally initialize in a wrong gain/phase
+    producing a large constant offset. Because it is stable,
+    normal filtering cannot detect it.
+
+    Strategy:
+    - Observe several consecutive samples
+    - If median exceeds plausible baseline → trigger recovery
+    """
+
+    def __init__(self):
+        self.buffer = []
+
+    def check(self, weight, raw, offset):
+        self.buffer.append(weight)
+        if len(self.buffer) > WATCHDOG_SAMPLES:
+            self.buffer.pop(0)
+
+        if len(self.buffer) == WATCHDOG_SAMPLES:
+            median = np.median(self.buffer)
+            if abs(median) > WATCHDOG_LIMIT:
+                ms.log(
+                    f"WATCHDOG baseline shift: "
+                    f"weight={median} raw={raw} offset={offset}"
+                )
+                self.buffer.clear()
+                return True
+        return False
+
+
+# --------------------------------------------------
+# Weight finite-state machine
+# --------------------------------------------------
+# Detects meaningful weight events while ignoring noise.
+# Designed to trigger exactly once per weight surge.
 
 STATE_IDLE = 0
 STATE_SURGE_CANDIDATE = 1
@@ -90,18 +145,16 @@ STATE_SURGE_CONFIRMED = 2
 
 
 class WeightFSM:
-    def __init__(self,
-                 weightThreshold,
-                 weightMax):
+    def __init__(self, weightThreshold, weightMax):
 
         self.state = STATE_IDLE
 
         self.weightThreshold = weightThreshold
         self.weightMax = weightMax
-        self.weightBaseline = 0.7 * weightThreshold # tolerance for baseline
+        self.weightBaseline = 0.7 * weightThreshold  # baseline tolerance
 
-        self.baseline_window = 5 # number of values that baseline should have been stable
-        self.surge_window = 3 # number of values considered for a valid surge
+        self.baseline_window = 5
+        self.surge_window = 3
 
         self.baseline_buf = []
         self.surge_buf = []
@@ -124,40 +177,35 @@ class WeightFSM:
 
     def update(self, w, timestr):
         """
-        Process one weight sample.
-
         Returns:
-            "IDLE"     -> safe to use for offset adaption
-            "SURGE_OK" -> surge confirmed, FIFO already sent
-            None       -> ignore for calibration
+            "IDLE"     -> baseline stable (safe for calibration)
+            "SURGE_OK" -> surge confirmed
+            None       -> transitional state
         """
-        # ---------------- IDLE ----------------
+
         if self.state == STATE_IDLE:
 
-            # FIRST: detect surge
+            # detect potential surge first
             if w > self.weightThreshold and w < self.weightMax:
                 self.state = STATE_SURGE_CANDIDATE
                 self._reset_surge()
                 self.surge_buf.append(w)
-                ms.log(f"{timestr} fst move above threshold")
+                ms.log(f"{timestr} first move above threshold")
                 return None
 
-            # ONLY baseline samples reach here
             self._update_baseline_buf(w)
             self.baseline_stable_at_entry = self._baseline_stable()
 
             return "IDLE" if self.baseline_stable_at_entry else None
 
-        # -------- SURGE CANDIDATE --------
         if self.state == STATE_SURGE_CANDIDATE:
             if w > self.weightThreshold and w < self.weightMax:
                 self.surge_buf.append(w)
-                # ms.log(f"basebuf {self.baseline_buf}, {self.baseline_stable_at_entry}")
                 if len(self.surge_buf) >= self.surge_window:
                     if self.baseline_stable_at_entry:
                         self.state = STATE_SURGE_CONFIRMED
                         peak = max(self.surge_buf)
-                        ms.log(f"{timestr} {len(self.surge_buf)} moves → FIFO: {peak}g")
+                        ms.log(f"{timestr} surge → FIFO {peak}g")
                         sendFifo(peak)
                         self._reset_surge()
                         return "SURGE_OK"
@@ -165,110 +213,108 @@ class WeightFSM:
                 self.state = STATE_IDLE
             return None
 
-        # -------- SURGE CONFIRMED --------
         if self.state == STATE_SURGE_CONFIRMED:
             if w < self.weightThreshold or w >= self.weightMax:
-                sendFifo(-1) # send premature video recording stop signal to mainFoBird.py
+                sendFifo(-1)  # signal recording stop
                 self.state = STATE_IDLE
-                self.baseline_buf.clear() 
+                self.baseline_buf.clear()
             return None
 
 
 # --------------------------------------------------
-# Main
+# Main lifecycle
 # --------------------------------------------------
-
-config_path = f"{birdpath['appdir']}/config.json"
-
-samples = 50
-sampleIdx = 0
-sampleArr = np.empty(shape=samples, dtype=float)
-apartZero = 0
-
-sleepTime = 1.0
-# EMA baseline tracking
-baseline_est = 0.0
-baseline_alpha = 0.03 # tuned for 1 Hz HX711 sampling
 
 ms.init()
 ms.log(f"Start hxFiBirdState {datetime.now()}")
 
-if hxScale == 0:
-    ms.log("hxScale must not be zero")
-    exit(0)
-
 fifo = birdpath['fifo']
 if not fifoExists(fifo):
     os.mkfifo(fifo)
-    ms.log("hxFiBird created FIFO")
 
 writePID(1)
 
+# --- HX711 initialization ---
 hx = HX711(data_pin=hxDataPin, clock_pin=hxClckPin)
-hx.tare()
-hxOffset = calibOffset(2, hx, hxOffset, sleepTime)
 
-fsm = WeightFSM(
-    weightThreshold=weightThreshold,
-    weightMax = weightlimit
-)
+# Allow analog front-end and power rails to settle
+time.sleep(STARTUP_SETTLE_TIME)
+
+# Flush first conversions to ensure correct gain phase
+hx.stabilize()
+
+# Perform initial offset calibration
+hxOffset = calibOffset(hx, hxOffset, 0.05)
+
+fsm = WeightFSM(weightThreshold, weightlimit)
+watchdog = BaselineWatchdog()
+
+# EMA baseline drift tracking
+baseline_est = 0.0
+baseline_alpha = 0.03
+
+sleepTime = 1.0
+
 
 try:
     while True:
-        reading = hx.read_raw()
-        weight = roundFlt((reading + hxOffset) / hxScale)
+
+        raw = hx.read_raw()
+        weight = roundFlt((raw + hxOffset) / hxScale)
+
         now = datetime.now()
         timeStr = f"{now.hour}:{now.minute}:{now.second}"
-        
+
+        # --------------------------------------------------
+        # Watchdog: detect impossible baseline
+        # --------------------------------------------------
+        if watchdog.check(weight, raw, hxOffset):
+            ms.log("HX711 reinitializing after watchdog")
+
+            hx.close()
+            time.sleep(0.5)
+
+            hx = HX711(data_pin=hxDataPin, clock_pin=hxClckPin)
+            time.sleep(STARTUP_SETTLE_TIME)
+            hx.stabilize()
+
+            hxOffset = calibOffset(hx, hxOffset, 0.05)
+            baseline_est = 0.0
+            continue
+
+        # --------------------------------------------------
+        # FSM event processing
+        # --------------------------------------------------
         event = fsm.update(weight, timeStr)
-        ### for debugging:
-        if weight > 0.5 * weightThreshold:
-            ms.log(
-            f"{event} "
-            f"{timeStr} "
-            f"{weight}g "
-            f"EMA={baseline_est:.3f} "
-            f"{sampleIdx}.median={apartZero}"
+
+        ms.log(f"{timeStr} {weight}g event={event}", False)
+
+        # --------------------------------------------------
+        # Baseline-driven offset adaption (EMA)
+        # Only when system confidently idle
+        # --------------------------------------------------
+        if event == "IDLE" and abs(weight) < 0.7 * weightThreshold:
+
+            baseline_est = (
+                (1.0 - baseline_alpha) * baseline_est
+                + baseline_alpha * weight
             )
-        else:
-            ms.log(f"{weight} grams {event}", False) # False only outputs to ramdisk/vidmsg.json, not to terminal -> /logs
-        ###
 
-        # -------- baseline-driven offset adaption (EMA + samples safety median) --------
-        if event == "IDLE": 
-            if abs(weight) < 0.7 * weightThreshold: # EMA while no edge cases
-                # ---- EMA drift tracking  = Exponential Moving Average, adapts every measurement ----
-                baseline_est = (1.0 - baseline_alpha) * baseline_est + baseline_alpha * weight
-
-                # Only apply small EMA correction if clearly drifting
-                if abs(baseline_est) > 0.6:  # tighter threshold than median
-                    corr = np.clip(baseline_est, -1.5, 1.5) # max correction of -1.5 to 1.5
-                    hxOffset -= corr * hxScale
-                    ms.log(f"{timeStr}hxOffset EMA adjust: {hxOffset}")
-                    baseline_est = 0.0
-
-            # ---- Median batch safety net ----
-            if sampleIdx < samples:
-                sampleArr[sampleIdx] = weight
-                sampleIdx += 1
-            else:
-                spread = np.max(sampleArr) - np.min(sampleArr)
-                if (spread < 0.1):
-                    ms.log(f"{timeStr} no baseline spread -> disconnected?", False)
-
-                apartZero = np.median(sampleArr)
-                # safety clamp: only if EMA somehow failed
-                if abs(apartZero) > 2.0:
-                    hxOffset -= apartZero * hxScale
-                    ms.log(f"{timeStr} hxOffset median adjust: {hxOffset}")
-                sampleIdx = 0
+            # apply small correction only if clear drift
+            if abs(baseline_est) > 0.6:
+                corr = np.clip(baseline_est, -1.5, 1.5)
+                hxOffset -= corr * hxScale
+                ms.log(f"{timeStr} hxOffset EMA adjust → {hxOffset}")
+                baseline_est = 0.0
 
         if event == "SURGE_OK":
-            baseline_est = 0.0 # reset EMA
+            baseline_est = 0.0
+
         time.sleep(sleepTime)
 
+
 except (KeyboardInterrupt, SystemExit):
-    ms.log("balance going down")
+    ms.log("hxFiBirdState shutting down")
 
 finally:
     update_config_json({"hxOffset": hxOffset, "hxScale": hxScale})
