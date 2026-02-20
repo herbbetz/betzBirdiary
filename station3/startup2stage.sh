@@ -2,13 +2,14 @@
 # called from startup1stage.sh, which is called from systemd bird-startup.service .
 # nohup /setsid prevents kill of backgrounded processes when this script ends
 # log to /dev/null for sparing the sd-card
-echo "startup2stage.sh started at $(date)" >> /home/pi/station3/logs/startup.log 2>&1
 APPDIR="$HOME/station3"
 PYTHON="/usr/bin/python3"
-LOGFILE="/home/pi/station3/logs/startup.log"
+LOGFILE="/dev/null" # "/home/pi/station3/logs/startup.log"
 log() {
     echo "$*" >> "$LOGFILE" 2>&1
 }
+
+log "startup2stage.sh started at $(date)"
 # All python scripts in subdirs of $APPDIR need this env var to find modules in $APPDIR, e.g. 'import msgBird as ms' in '$APPDIR/model/birdclassify.py':
 log "PYTHONPATH=$PYTHONPATH"
 if [ -z "${PYTHONPATH:-}" ] || [ ! -d "$PYTHONPATH" ]; then
@@ -43,7 +44,7 @@ setsid bash "$APPDIR/mdroid.sh" stationLoaded & # mdroid.sh writes to startup.lo
 #
 # flaskBird first, central to communication (WebGUI)
 # flaskBird thread can write to FIFO too, but only when asked to:
-setsid $PYTHON flaskBird3.py >> logs/flask.log 2>&1 &
+setsid $PYTHON flaskBird3.py > /dev/null 2>&1 & # >> logs/flask.log 2>&1 &
 sleep 4
 # after flaskBird, needs time to find cmd 'ifconfig':
 # mainFoBird.py contains the only FIFO reader in child process:
@@ -62,7 +63,7 @@ setsid $PYTHON dhtBird3.py > /dev/null 2>&1 & # >> logs/dht_sun.log 2>&1 &
 #    bash hxFiBirdStart.sh
 #    sleep 2
 # done
-setsid $PYTHON hxFiBirdState.py > /dev/null 2>&1 & # >> logs/hxFiBird.log 2>&1 & # first FIFO writer, seems the most critical to init
+setsid $PYTHON hxFiBirdState.py >> logs/hxFiBird.log 2>&1 & # first FIFO writer, seems the most critical to init
 # widgets for wayfire desktop will not work here, because wayfire or vnc/X11 env not yet ready! Moreover no use running it, when no desktop shown.
 # setsid $PYTHON widgets.py &
 echo "startup2stage.sh ended at $(date)" > /dev/null 2>&1 # >> /home/pi/station3/logs/startup.log 2>&1
