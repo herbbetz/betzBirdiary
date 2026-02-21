@@ -1,24 +1,49 @@
-from HX711 import HX711
+"""
+HX711 example using lean lgpio driver
+
+- Initializes HX711 (DATA/CLOCK)
+- Stabilizes offset at startup
+- Applies scale
+- Prints weight every second
+- Compatible with Raspbian Trixie lgpio (fd + module)
+"""
+
+import lgpio
+from lgpioBird.HX711 import HX711
 import time
 
-# Initialize with GPIO17 (DATA) and GPIO23 (CLOCK)
-hx = HX711(data_pin=17, clock_pin=23)
+# ----------------- GPIO configuration -----------------
+DATA_PIN = 17
+CLOCK_PIN = 23
 
-# Tare the scale (no weight on it)
-hx.tare()
+# ----------------- Open GPIO chip -----------------
+# Returns an integer file descriptor in this lgpio version
+GPIO_FD = lgpio.gpiochip_open(0)
 
-# Set scale factor (raw units per gram or your chosen unit)
-# Example: if 100g = 20000 raw units → scale = 20000 / 100 = 200
+# ----------------- Initialize HX711 driver -----------------
+hx = HX711(gpio=lgpio, gpio_fd=GPIO_FD, dout_pin=DATA_PIN, sck_pin=CLOCK_PIN)
+
+# ----------------- Startup stabilization -----------------
+time.sleep(1.0)              # let analog front-end settle
+hxOffset = hx.stabilize()    # median-of-5 stabilization
+hx.set_offset(hxOffset)
+
+# ----------------- Apply scale -----------------
 hxScale = 700
-hxOffset = 0
+hx.set_scale(hxScale)
 
+print(f"Initial offset: {hxOffset}, scale: {hxScale}")
+
+# ----------------- Main reading loop -----------------
 try:
     while True:
-        raw = hx.read_raw()
-        weight = round((raw + hxOffset) / hxScale)
+        weight = hx.get_weight(samples=5)
         print(f"Weight: {weight:.2f} g")
-        time.sleep(1)
+        time.sleep(1.0)
+
 except KeyboardInterrupt:
     print("Exiting.")
+
 finally:
     hx.close()
+    lgpio.gpiochip_close(GPIO_FD)
