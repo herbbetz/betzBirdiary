@@ -17,5 +17,10 @@ your Python binding is too old / too incomplete for any of the modern v2 driver 
 At this point, trying to write a “portable HX711 driver” in Python directly using libgpiod on your system is practically impossible. The API is inconsistent, incomplete, and undocumented in key areas.
 If we continue to try, it will just produce more AttributeErrors — exactly what you’ve seen.
 
+- d.h. im Feb.26 hat Trixie einen Mismatch von libgpiod v1 und v2 installiert, das auch bei freiem GPIO17 kein Skript ohne Attribute-Error zulässt.
+
+- als root: `ls /dev/gpiochip*` zeigt das Interface und `gpioinfo | grep GPIO17`, ob GPIO 17 besetzt ist, wie hier z.B. durch lgpio: `line  17: "GPIO17" input consumer="lg"`.
+
+
+
 Letztendlich wird **pigpio** empfohlen, solange `pigpiod` auf RPi /DietPi /Ubuntu läuft.
-  

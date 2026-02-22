@@ -1,4 +1,4 @@
-<!--keywords[Bash,Bookworm,crontab,FFMPEG,GPIO,lgpio,logrotate,Markdown,mDNS,Network,Ramdisk,Startup,service,Systembuild,Trixie,venv,WLAN]-->
+<!--keywords[Bash,Bookworm,crontab,FFMPEG,iio,GPIO,lgpio,libgpiod, pigpio,logrotate,Markdown,mDNS,Network,Ramdisk,Startup,service,Systembuild,Trixie,venv,WLAN]-->
 
 ### Installation von betzBirdiary auf Bookworm & Trixie
 
@@ -73,18 +73,32 @@
 	- Für RPi4 und älter immer noch die einfachste [C-Schicht](https://github.com/joan2937/pigpio) in Form des Daemon 'pigpiod'. Die direkte Hardware-Adressierung funktioniert jedoch nicht mehr ab RPi5, für das lgpio gebraucht wird.
 	- 'apt list --installed | grep pigpio', 'sudo pigpiod' bzw. 'sudo killall pigpiod' .
 	- pigpio-tools (bei laufendem pigpiod): pigs (e.g. 'pigs r 4' reads GPIO 4), pig2vcd .
+	- kompatibel mit anderen Debian OS wie Ubuntu /DietPI
 	
 - [**lgpio**](https://abyz.me.uk/lg/py_lgpio.html) >> wurde für station3 verwendet:
 	- 'python3-lgpio' bereits installiert in system-site-packages.
-	- ein 'lgpiod' ist unter bookworm nicht zu finden und auch nicht nötig.
 	- siehe [Testskripte](../../lgpioBird/lgpio.md) für Hardware
 	- hx711: station3/lgpioBird/HX711.py von ChatGPT abgeleitet (schnelles Timing!), alternativ: https://github.com/endail/hx711-rpi-py and https://pypi.org/project/hx711-rpi-py/
 	- DHT22: https://abyz.me.uk/lg/examples.html#Python%20lgpio
+
+- **libgpiod**  wollte ich wegen Debian-Kompatibilität testen, liess sich aber im Feb.26 nicht auf Raspbian Trixie installieren, zuviele Versionen (v1 vs. v2), sh. `station3/libgpiod`. Es wird auch von `hx711-libgpiod` gesprochen, das dem modernen `/dev/gpiochipX` folgt. `sudo apt install cmake g++ libgpiod-dev` und `git clone https://github.com/endail/hx711.git` erzeugen C++, das dann noch ein Python Interface braucht.
+
+- **gpiod** benötigt nur Python (kein C++) und greift ebenfalls über `/dev/gpiochipX`  zu. Es baut aber auch auf der `libgpiod v1 ODER v2 api` auf, die mit Trixie im Feb.26  ein Problem hat.
 	
 - **gpiozero** als frontend to lgpio oder pigpio:
 	- sources: https://gpiozero.readthedocs.io/en/stable/
 	- für hx711 oder dht22 scheint es aber auf so hoher Abstraktionsebene nichts zu geben.
 	- deprecated: https://pypi.org/project/hx711-gpiozero/ (pip install hx711-gpiozero, https://github.com/cyrusn/hx711_gpiozero -> falscher Ansatz laut issues)
-	
+
+- **iio** wäre als Kerneldriver Modul ideal gegen *Glitches*. Es ist z.B. Bestandteil von `buildroot`, aber kein Modul  im normalen Trixiekernel (`ls /lib/modules/$(uname -r)/kernel/drivers/iio/adc/hx711.ko`). Der nachträgliche Einbau in Trixie sei mühevoll:
+
+  - [Raspberry Kernel Source](https://github.com/raspberrypi/linux) downloaden.
+  - Enable CONFIG_HX711 in menuconfig.
+  - Compile the modules specifically for your kernel version.
+
 - **andere**:
-	- https://github.com/adafruit/Adafruit_CircuitPython_DHT, https://randomnerdtutorials.com/raspberry-pi-dht11-dht22-python/
+	
+	- https://github.com/adafruit/Adafruit_CircuitPython_DHT
+	- https://randomnerdtutorials.com/raspberry-pi-dht11-dht22-python/
+
+- **dezidierter Microcontroller**: HX711  →  RP2040/microPython  →  USB Serial  →  Your Linux app (pyserial within hxFiBirdState)
