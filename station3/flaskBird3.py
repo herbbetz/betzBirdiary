@@ -253,6 +253,8 @@ def daygallery():
     """
     # append each image row-wise, grouped by common prefix before "."
     currentprefix = None
+    current_comb_prefix = None  # track the comb_prefix for the CURRENT group
+    # groupIdx = 0 # for debugging if csv block, vidURL and videolinktext have matching prefix
     # following loop could be clearer (without currentprefix neccessary) by using groupby from itertools
     for img in images:
         namesplits = img.split(".")
@@ -265,13 +267,17 @@ def daygallery():
             # 1. End the PREVIOUS group's div/link (if it's not the first loop)
             if currentprefix is not None:
                html += "</div>"
-               html += render_csv_block(dayimg_dir, comb_prefix)
-               html += f'<div><a href="{vidURL}" target="_blank">{currentprefix}</a></div><hr>'
+               html += render_csv_block(dayimg_dir, current_comb_prefix)
+               html += f'<div><a href="{vidURL_prev}" target="_blank">{currentprefix}</a></div>'
+               # html += f'DEBUG: groupIdx={groupIdx}: csv={current_comb_prefix}, video={vidURL_prev}, videolinktext={currentprefix}' # for debugging if csv block, vidURL and videolinktext have matching prefix
+               html += "<hr>"
 
             # 2. Start the NEW group's row
+            # groupIdx += 1
             html += '<div class="rowed">'
             currentprefix = prefix
-
+            current_comb_prefix = comb_prefix
+            vidURL_prev = vidURL
         # 3. Add the image (this happens for every image, new row or not)
         html += f"""
         <div class="image-container">
@@ -282,8 +288,11 @@ def daygallery():
     # 4. Final Cleanup: Close the very last group after the loop ends
     if currentprefix is not None:
       html += "</div>"
-      html += render_csv_block(dayimg_dir, comb_prefix)
-      html += f'<div><a href="{vidURL}" target="_blank">{currentprefix}</a></div><hr>'
+      html += render_csv_block(dayimg_dir, current_comb_prefix)
+      html += f'<div><a href="{vidURL_prev}" target="_blank">{currentprefix}</a></div>'
+      # html += f'lastDEBUG: groupIdx={groupIdx}: csv={current_comb_prefix}, video={vidURL_prev}, videolinktext={currentprefix}'
+      html += "<hr>"
+
 
     # finish HTML
     html += """
