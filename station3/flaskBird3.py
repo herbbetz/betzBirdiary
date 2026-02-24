@@ -254,7 +254,7 @@ def daygallery():
     # append each image row-wise, grouped by common prefix before "."
     currentprefix = None
     current_comb_prefix = None  # track the comb_prefix for the CURRENT group
-    # groupIdx = 0 # for debugging if csv block, vidURL and videolinktext have matching prefix
+    groupIdx = 0
     # following loop could be clearer (without currentprefix neccessary) by using groupby from itertools
     for img in images:
         namesplits = img.split(".")
@@ -268,12 +268,12 @@ def daygallery():
             if currentprefix is not None:
                html += "</div>"
                html += render_csv_block(dayimg_dir, current_comb_prefix)
-               html += f'<div><a href="{vidURL_prev}" target="_blank">{currentprefix}</a></div>'
+               html += f'<div>{groupIdx} <a href="{vidURL_prev}" target="_blank">{currentprefix}</a></div>'
                # html += f'DEBUG: groupIdx={groupIdx}: csv={current_comb_prefix}, video={vidURL_prev}, videolinktext={currentprefix}' # for debugging if csv block, vidURL and videolinktext have matching prefix
                html += "<hr>"
 
             # 2. Start the NEW group's row
-            # groupIdx += 1
+            groupIdx += 1
             html += '<div class="rowed">'
             currentprefix = prefix
             current_comb_prefix = comb_prefix
@@ -289,7 +289,7 @@ def daygallery():
     if currentprefix is not None:
       html += "</div>"
       html += render_csv_block(dayimg_dir, current_comb_prefix)
-      html += f'<div><a href="{vidURL_prev}" target="_blank">{currentprefix}</a></div>'
+      html += f'<div>{groupIdx} <a href="{vidURL_prev}" target="_blank">{currentprefix}</a></div>'
       # html += f'lastDEBUG: groupIdx={groupIdx}: csv={current_comb_prefix}, video={vidURL_prev}, videolinktext={currentprefix}'
       html += "<hr>"
 
