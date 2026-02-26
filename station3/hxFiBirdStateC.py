@@ -1,14 +1,13 @@
 """
 hxFiBirdStateC.py
 -----------------
-
 Bird feeder scale runtime using HX711 C daemon (hx711d).
 
 - Reads raw weight values from /home/pi/station3/ramdisk/hxfifo
 - FSM detects bird triggers and writes peak weights or -1 to birdpipe
 - Maintains software offset and EMA baseline correction
-- Performs occasional recalibration if FSM stuck in None
-- Persists calibration values from config.json
+- Performs baseline recalibration when state 'None' persists
+- Persists calibration values from configBird3
 """
 
 from datetime import datetime
@@ -16,7 +15,6 @@ import time
 import numpy as np
 import os
 import errno
-import json
 
 from sharedBird import roundFlt, fifoExists, writePID, clearPID
 from configBird3 import birdpath, hxOffset, hxScale, weightThreshold, weightlimit, update_config_json
@@ -29,26 +27,21 @@ WATCHDOG_LIMIT = 300.0
 WATCHDOG_SAMPLES = 5
 SLEEP_TIME = 1.0
 BASELINE_ALPHA = 0.03
+NONE_CALIB_LIMIT = 15
 
 # ---------------- Paths ----------------
 HXFIFO = "/home/pi/station3/ramdisk/hxfifo"
 BIRDPIPE = birdpath['fifo']
 PIDFILE = "/home/pi/station3/ramdisk/hx711d.pid"
-CONFIG_FILE = "/home/pi/station3/configBird3/config.json"
-
-# ---------------- Load calibration ----------------
-with open(CONFIG_FILE, "r") as f:
-    config = json.load(f)
-hxOffset = config.get("hxOffset", 0)
-hxScale = config.get("hxScale", 1)
 
 # ---------------- Check FIFOs ----------------
 if not fifoExists(HXFIFO):
-    ms.log(f"ERROR: hx711d FIFO missing: {HXFIFO}")
-    raise SystemExit(1)
+    os.mkfifo(HXFIFO)
+    ms.log(f"hxFiBird created missing FIFO: {HXFIFO}")
+
 if not fifoExists(BIRDPIPE):
     os.mkfifo(BIRDPIPE)
-    ms.log(f"Created missing birdpipe FIFO: {BIRDPIPE}")
+    ms.log(f"hxFiBird created missing FIFO: {BIRDPIPE}")
 
 # ---------------- Optional: check daemon ----------------
 if not os.path.exists(PIDFILE):
@@ -66,8 +59,10 @@ def sendFifo(weight):
 
 # ---------------- Watchdog ----------------
 class BaselineWatchdog:
+    """Detect impossible constant weights"""
     def __init__(self):
         self.buffer = []
+
     def check(self, weight):
         self.buffer.append(weight)
         if len(self.buffer) > WATCHDOG_SAMPLES:
@@ -99,15 +94,18 @@ class WeightFSM:
 
     def _baseline_stable(self):
         return len(self.baseline_buf) >= self.baseline_window and all(v < self.weightBaseline for v in self.baseline_buf)
+
     def _update_baseline_buf(self, w):
         if w < self.threshold:
             self.baseline_buf.append(abs(w))
             if len(self.baseline_buf) > self.baseline_window:
                 self.baseline_buf.pop(0)
+
     def _reset_surge(self):
         self.surge_buf = []
 
     def update(self, w, timestr):
+        # ---------------- IDLE ----------------
         if self.state == STATE_IDLE:
             if self.threshold < w < self.weightMax:
                 self.state = STATE_SURGE_CANDIDATE
@@ -119,6 +117,7 @@ class WeightFSM:
             self.baseline_stable_at_entry = self._baseline_stable()
             return "IDLE" if self.baseline_stable_at_entry else None
 
+        # -------- SURGE CANDIDATE --------
         if self.state == STATE_SURGE_CANDIDATE:
             if self.threshold < w < self.weightMax:
                 self.surge_buf.append(w)
@@ -133,6 +132,7 @@ class WeightFSM:
                 self.state = STATE_IDLE
             return None
 
+        # -------- SURGE CONFIRMED --------
         if self.state == STATE_SURGE_CONFIRMED:
             if w < self.threshold or w >= self.weightMax:
                 sendFifo(-1)
@@ -140,22 +140,28 @@ class WeightFSM:
                 self.baseline_buf.clear()
             return None
 
-# ---------------- Recalibration functions ----------------
-def get_mean(raw_values, hxOffset, samples=50):
-    """Return median and spread of raw readings"""
-    readings = np.empty(samples, dtype=float)
-    for i, val in enumerate(raw_values):
-        readings[i] = roundFlt((val + hxOffset) / hxScale)
+# ---------------- Baseline recalibration ----------------
+def get_mean(raw_values, hOffset, sleeptime):
+    readings = np.empty(shape=len(raw_values), dtype=float)
+    for i, raw in enumerate(raw_values):
+        readings[i] = roundFlt((raw + hOffset) / hxScale)
+        time.sleep(sleeptime)
     median = np.median(readings)
     spread = np.max(readings) - np.min(readings)
+    ms.log(f"Recalibration: spread {np.min(readings)} to {np.max(readings)}")
     return median, spread
 
-def calibOffset(raw_values, hxOffset):
-    median, spread = get_mean(raw_values, hxOffset)
-    if spread < weightThreshold and abs(median) < 2*weightThreshold:
-        hxOffset -= median * hxScale
-        ms.log(f"hxOffset recalibrated: {hxOffset}")
-    return hxOffset
+def calibOffset(tries, raw_values, hOffset, sleeptime):
+    success = False
+    for _ in range(tries):
+        median, spread = get_mean(raw_values, hOffset, sleeptime)
+        if spread < weightThreshold and abs(median) < 2 * weightThreshold:
+            hOffset -= median * hxScale
+            success = True
+        time.sleep(sleeptime)
+    ms.log("hxOffset recalibration OK" if success else "hxOffset recalibration FAILED")
+    ms.log(f"hxOffset now: {hOffset}")
+    return hOffset
 
 # ---------------- Program start ----------------
 ms.init()
@@ -165,8 +171,9 @@ writePID(1)
 fsm = WeightFSM(weightThreshold, weightlimit)
 watchdog = BaselineWatchdog()
 baseline_est = 0.0
-none_count = 0
-recent_raw = []
+none_counter = 0
+samples_for_calib = 50
+raw_sample_buffer = []
 
 try:
     with open(HXFIFO, "r") as fifo_in:
@@ -182,10 +189,6 @@ try:
             except ValueError:
                 continue
 
-            recent_raw.append(raw_value)
-            if len(recent_raw) > 50:  # keep last 50
-                recent_raw.pop(0)
-
             weight = roundFlt((raw_value + hxOffset) / hxScale)
             now = datetime.now()
             timestr = f"{now.hour}:{now.minute}:{now.second}"
@@ -194,6 +197,7 @@ try:
             if watchdog.check(weight):
                 ms.log("HX711 watchdog triggered; waiting for daemon recovery")
                 baseline_est = 0.0
+                continue
 
             # FSM update
             event = fsm.update(weight, timestr)
@@ -208,14 +212,17 @@ try:
                     ms.log(f"{timestr} hxOffset EMA adjust → {hxOffset}")
                     baseline_est = 0.0
 
-            # -------- Recalibration if FSM stuck in None ----------
+            # ----- Recalibration if state None persists -----
             if event is None and abs(weight) < 2*weightThreshold:
-                none_count += 1
-                if none_count >= 15:
-                    hxOffset = calibOffset(recent_raw[-50:], hxOffset)
-                    none_count = 0
+                none_counter += 1
+                raw_sample_buffer.append(raw_value)
+                if none_counter >= NONE_CALIB_LIMIT:
+                    hxOffset = calibOffset(1, raw_sample_buffer[-samples_for_calib:], hxOffset, SLEEP_TIME)
+                    none_counter = 0
+                    raw_sample_buffer.clear()
             else:
-                none_count = 0
+                none_counter = 0
+                raw_sample_buffer.clear()
 
             if event == "SURGE_OK":
                 baseline_est = 0.0
