@@ -1,0 +1,37 @@
+DEBUG=1 \
+        -I include \
+        -o build/shared/libhx711.so \
+                build/shared/AbstractScale.o \
+                build/shared/AdvancedHX711.o \
+                build/shared/HX711.o \
+                build/shared/Mass.o \
+                build/shared/SimpleHX711.o \
+                build/shared/Utility.o \
+                build/shared/Value.o \
+                build/shared/ValueStack.o \
+                build/shared/Watcher.o \
+        -llgpio -pthread
+g++ -std=c++11 -fexceptions -O2 -fomit-frame-pointer -pipe -Wall -Wextra -fstack-clash-protection -Wfatal-errors -Werror=format-security -Wl,-z,relro -Wl,-z,now -Wl,-z,defs -Wl,--hash-style=gnu -Wl,--as-needed -D_FORTIFY_SOURCE=2 -DNDEBUG=1 -I include -c -o build/Calibration.o src/Calibration.cpp
+g++ -std=c++11 -fexceptions -O2 -fomit-frame-pointer -pipe -Wall -Wextra -fstack-clash-protection -Wfatal-errors -Werror=format-security -Wl,-z,relro -Wl,-z,now -Wl,-z,defs -Wl,--hash-style=gnu -Wl,--as-needed -D_FORTIFY_SOURCE=2 -DNDEBUG=1 -I include \
+        -o bin/hx711calibration \
+        build/Calibration.o \
+        -L build/static \
+        -lhx711 -llgpio -pthread
+g++ -std=c++11 -fexceptions -O2 -fomit-frame-pointer -pipe -Wall -Wextra -fstack-clash-protection -Wfatal-errors -Werror=format-security -Wl,-z,relro -Wl,-z,now -Wl,-z,defs -Wl,--hash-style=gnu -Wl,--as-needed -D_FORTIFY_SOURCE=2 -DNDEBUG=1 -I include -c -o build/SimpleHX711Test.o src/SimpleHX711Test.cpp
+g++ -std=c++11 -fexceptions -O2 -fomit-frame-pointer -pipe -Wall -Wextra -fstack-clash-protection -Wfatal-errors -Werror=format-security -Wl,-z,relro -Wl,-z,now -Wl,-z,defs -Wl,--hash-style=gnu -Wl,--as-needed -D_FORTIFY_SOURCE=2 -DNDEBUG=1 -I include -c -o build/AdvancedHX711Test.o src/AdvancedHX711Test.cpp
+g++ -std=c++11 -fexceptions -O2 -fomit-frame-pointer -pipe -Wall -Wextra -fstack-clash-protection -Wfatal-errors -Werror=format-security -Wl,-z,relro -Wl,-z,now -Wl,-z,defs -Wl,--hash-style=gnu -Wl,--as-needed -D_FORTIFY_SOURCE=2 -DNDEBUG=1 -I include \
+        -o bin/simplehx711test \
+        build/SimpleHX711Test.o \
+        -L build/static \
+        -lhx711 -llgpio -pthread
+g++ -std=c++11 -fexceptions -O2 -fomit-frame-pointer -pipe -Wall -Wextra -fstack-clash-protection -Wfatal-errors -Werror=format-security -Wl,-z,relro -Wl,-z,now -Wl,-z,defs -Wl,--hash-style=gnu -Wl,--as-needed -D_FORTIFY_SOURCE=2 -DNDEBUG=1 -I include \
+        -o bin/advancedhx711test \
+        build/AdvancedHX711Test.o \
+        -L build/static \
+        -lhx711 -llgpio -pthread
+install: you may need to run ldconfig
+install -d /usr/local/lib/
+install -m 644 build/static/libhx711.a /usr/local/lib/
+install -m 644 build/shared/libhx711.so /usr/local/lib/
+install -d /usr/local/include/hx711
+install -m 644 include/*.h /usr/local/include/hx711

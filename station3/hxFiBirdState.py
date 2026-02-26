@@ -2,13 +2,13 @@
 hxFiBirdState.py
 ----------------
 
-Runtime for HX711 bird feeder scale using frozen driver.
+Runtime for HX711 bird feeder scale using Python HX711 driver.
 
-Features:
-- Software offset instead of tare
-- EMA baseline correction
-- FSM for bird detection
-- Watchdog for stuck HX711
+- Reads HX711 directly
+- FSM detects bird triggers and writes peak weights or -1 to birdpipe
+- Maintains software offset and EMA baseline correction
+- Performs occasional recalibration if FSM stuck in None
+- Persists calibration values from config.json
 """
 
 from datetime import datetime
@@ -16,52 +16,34 @@ import time
 import numpy as np
 import os
 import errno
-import lgpio
+
 from lgpioBird.HX711 import HX711
 from sharedBird import roundFlt, fifoExists, writePID, clearPID
-from configBird3 import (birdpath, hxDataPin, hxClckPin, hxOffset, hxScale,
-                          weightThreshold, weightlimit, update_config_json)
+from configBird3 import birdpath, hxDataPin, hxClckPin, hxOffset, hxScale, weightThreshold, weightlimit, update_config_json
 import msgBird as ms
 
 # ---------------- Constants ----------------
 STARTUP_SETTLE_TIME = 1.2
 BASELINE_MAX = 0.7 * weightThreshold
-WATCHDOG_LIMIT = 300.0
-WATCHDOG_SAMPLES = 5
 SLEEP_TIME = 1.0
+BASELINE_ALPHA = 0.03
 
 # ---------------- FIFO ----------------
 fifo = birdpath['fifo']
 if not fifoExists(fifo):
     os.mkfifo(fifo)
+    ms.log("hxFiBird created FIFO")
 
 def sendFifo(weight):
-    """Nonblocking FIFO write"""
     try:
         fd = os.open(fifo, os.O_WRONLY | os.O_NONBLOCK)
         with os.fdopen(fd, 'w') as fifoFp:
             fifoFp.write(str(weight) + "\n")
     except OSError as e:
-        if e.errno != errno.ENXIO:
+        if e.errno == errno.ENXIO:
+            ms.log("hxFiBird: No FIFO reader, skip write")
+        else:
             raise
-
-# ---------------- Watchdog ----------------
-class BaselineWatchdog:
-    """Detect impossible constant weights"""
-    def __init__(self):
-        self.buffer = []
-
-    def check(self, weight):
-        self.buffer.append(weight)
-        if len(self.buffer) > WATCHDOG_SAMPLES:
-            self.buffer.pop(0)
-        if len(self.buffer) == WATCHDOG_SAMPLES:
-            median = np.median(self.buffer)
-            if abs(median) > WATCHDOG_LIMIT:
-                ms.log(f"WATCHDOG sensor fault: {median} g")
-                self.buffer.clear()
-                return True
-        return False
 
 # ---------------- FSM ----------------
 STATE_IDLE = 0
@@ -82,13 +64,11 @@ class WeightFSM:
 
     def _baseline_stable(self):
         return len(self.baseline_buf) >= self.baseline_window and all(v < self.weightBaseline for v in self.baseline_buf)
-
     def _update_baseline_buf(self, w):
         if w < self.threshold:
             self.baseline_buf.append(abs(w))
             if len(self.baseline_buf) > self.baseline_window:
                 self.baseline_buf.pop(0)
-
     def _reset_surge(self):
         self.surge_buf = []
 
@@ -125,65 +105,64 @@ class WeightFSM:
                 self.baseline_buf.clear()
             return None
 
+# ---------------- Recalibration ----------------
+def get_mean(raw_values, hxOffset, samples=50):
+    readings = np.array([(v + hxOffset)/hxScale for v in raw_values[-samples:]])
+    median = np.median(readings)
+    spread = np.max(readings) - np.min(readings)
+    return median, spread
+
+def calibOffset(raw_values, hxOffset):
+    median, spread = get_mean(raw_values, hxOffset)
+    if spread < weightThreshold and abs(median) < 2*weightThreshold:
+        hxOffset -= median * hxScale
+        ms.log(f"hxOffset recalibrated: {hxOffset}")
+    return hxOffset
+
 # ---------------- Program start ----------------
 ms.init()
 ms.log(f"Start hxFiBirdState {datetime.now()}")
 writePID(1)
 
-GPIO_FD = lgpio.gpiochip_open(0)
-hx = HX711(gpio=lgpio, gpio_fd=GPIO_FD, dout_pin=hxDataPin, sck_pin=hxClckPin)
-time.sleep(STARTUP_SETTLE_TIME)
-hx.stabilize()
-
-# --- software baseline correction ---
-raw0 = hx.read_average(samples=10)
-weight0 = (raw0 + hxOffset) / hxScale
-if abs(weight0) > BASELINE_MAX:
-    ms.log(f"Baseline drift at boot {weight0:.2f} g → correcting")
-    hxOffset -= weight0 * hxScale
+hx = HX711(data_pin=hxDataPin, clock_pin=hxClckPin)
+hx.tare()
+hxOffset = calibOffset([hx.read_raw() for _ in range(50)], hxOffset)
 
 fsm = WeightFSM(weightThreshold, weightlimit)
-watchdog = BaselineWatchdog()
 baseline_est = 0.0
-baseline_alpha = 0.03
+none_count = 0
+recent_raw = []
 
-# ---------------- Main loop ----------------
 try:
     while True:
-        raw = hx.read_raw()
-        weight = roundFlt((raw + hxOffset) / hxScale)
+        raw_value = hx.read_raw()
+        recent_raw.append(raw_value)
+        if len(recent_raw) > 50:
+            recent_raw.pop(0)
+        weight = roundFlt((raw_value + hxOffset)/hxScale)
         now = datetime.now()
         timestr = f"{now.hour}:{now.minute}:{now.second}"
 
-        # Watchdog
-        if watchdog.check(weight):
-            ms.log("HX711 reinitializing after watchdog")
-            hx.close()
-            lgpio.gpiochip_close(GPIO_FD)
-            time.sleep(0.5)
-            GPIO_FD = lgpio.gpiochip_open(0)
-            hx = HX711(gpio=lgpio, gpio_fd=GPIO_FD, dout_pin=hxDataPin, sck_pin=hxClckPin)
-            time.sleep(STARTUP_SETTLE_TIME)
-            hx.stabilize()
-            raw0 = hx.read_average(samples=10)
-            weight0 = (raw0 + hxOffset) / hxScale
-            if abs(weight0) > BASELINE_MAX:
-                hxOffset -= weight0 * hxScale
-            baseline_est = 0.0
-            continue
-
-        # FSM update
         event = fsm.update(weight, timestr)
         ms.log(f"{timestr} {weight}g event={event}", False)
 
         # EMA baseline drift
         if event == "IDLE" and abs(weight) < BASELINE_MAX:
-            baseline_est = (1.0 - baseline_alpha) * baseline_est + baseline_alpha * weight
+            baseline_est = (1.0 - BASELINE_ALPHA)*baseline_est + BASELINE_ALPHA*weight
             if abs(baseline_est) > 0.6:
                 corr = np.clip(baseline_est, -1.5, 1.5)
-                hxOffset -= corr * hxScale
+                hxOffset -= corr*hxScale
                 ms.log(f"{timestr} hxOffset EMA adjust → {hxOffset}")
                 baseline_est = 0.0
+
+        # Recalibration if FSM stuck in None
+        if event is None and abs(weight) < 2*weightThreshold:
+            none_count += 1
+            if none_count >= 15:
+                hxOffset = calibOffset(recent_raw, hxOffset)
+                none_count = 0
+        else:
+            none_count = 0
 
         if event == "SURGE_OK":
             baseline_est = 0.0
@@ -196,6 +175,5 @@ except (KeyboardInterrupt, SystemExit):
 finally:
     update_config_json({"hxOffset": hxOffset, "hxScale": hxScale})
     hx.close()
-    lgpio.gpiochip_close(GPIO_FD)
     clearPID(1)
     ms.log(f"End hxFiBirdState {datetime.now()}")
