@@ -15,13 +15,16 @@ import time
 import numpy as np
 import os
 import errno
+import lgpio
 
 from lgpioBird.HX711 import HX711
 from sharedBird import roundFlt, fifoExists, writePID, clearPID
-from configBird3 import (birdpath, hxDataPin, hxClckPin,
-                          hxOffset, hxScale,
-                          weightThreshold, weightlimit,
-                          update_config_json)
+from configBird3 import (
+    birdpath, hxDataPin, hxClckPin,
+    hxOffset, hxScale,
+    weightThreshold, weightlimit,
+    update_config_json
+)
 import msgBird as ms
 
 # ---------------- Constants ----------------
@@ -34,14 +37,14 @@ BASELINE_ALPHA = 0.03
 NONE_CALIB_LIMIT = 15
 samples_for_calib = 50
 
-# ---------------- Paths ----------------
+# ---------------- FIFO ----------------
 fifo = birdpath['fifo']
 if not fifoExists(fifo):
     os.mkfifo(fifo)
     ms.log("hxFiBird created missing FIFO")
 
 # ---------------- Helper functions ----------------
-def get_mean(raw_vals, hxoffset):
+def get_mean(raw_vals):
     median = np.median(raw_vals)
     spread = np.max(raw_vals) - np.min(raw_vals)
     ms.log(f"spread from {np.min(raw_vals)} to {np.max(raw_vals)}")
@@ -50,11 +53,10 @@ def get_mean(raw_vals, hxoffset):
 def calibOffset(tries, raw_vals, hxoffset, sleeptime):
     success = False
     for _ in range(tries):
-        median, spread = get_mean(raw_vals, hxoffset)
-        if spread < weightThreshold:
-            if abs(median) < 2*weightThreshold:
-                hxoffset -= median * hxScale
-                success = True
+        median, spread = get_mean(raw_vals)
+        if spread < weightThreshold and abs(median) < 2 * weightThreshold:
+            hxoffset -= median * hxScale
+            success = True
         time.sleep(sleeptime)
     ms.log("hxOffset Cal OK" if success else "hxOffset Cal SKIPPED")
     ms.log(f"hxOffset reset to: {hxoffset}")
@@ -117,7 +119,7 @@ class WeightFSM:
 
     def update(self, w, timestr):
         if self.state == STATE_IDLE:
-            if w > self.threshold and w < self.weightMax:
+            if self.threshold < w < self.weightMax:
                 self.state = STATE_SURGE_CANDIDATE
                 self._reset_surge()
                 self.surge_buf.append(w)
@@ -128,7 +130,7 @@ class WeightFSM:
             return "IDLE" if self.baseline_stable_at_entry else None
 
         if self.state == STATE_SURGE_CANDIDATE:
-            if w > self.threshold and w < self.weightMax:
+            if self.threshold < w < self.weightMax:
                 self.surge_buf.append(w)
                 if len(self.surge_buf) >= self.surge_window and self.baseline_stable_at_entry:
                     self.state = STATE_SURGE_CONFIRMED
@@ -153,8 +155,11 @@ ms.init()
 ms.log(f"Start hxFiBirdState {datetime.now()}")
 writePID(1)
 
-hx = HX711(data_pin=hxDataPin, clock_pin=hxClckPin)
-hx.tare()
+# ---- Correct driver initialization ----
+hx = HX711.create(lgpio, dout_pin=hxDataPin, sck_pin=hxClckPin)
+hx.set_offset(-hxOffset)   # preserve legacy formula
+hx.set_scale(hxScale)
+
 fsm = WeightFSM(weightThreshold, weightlimit)
 watchdog = BaselineWatchdog()
 baseline_est = 0.0
@@ -162,9 +167,12 @@ none_counter = 0
 raw_sample_buffer = []
 
 try:
+    time.sleep(STARTUP_SETTLE_TIME)
+
     while True:
         raw_value = hx.read_raw()
         weight = roundFlt((raw_value + hxOffset) / hxScale)
+
         now = datetime.now()
         timestr = f"{now.hour}:{now.minute}:{now.second}"
 
@@ -186,8 +194,8 @@ try:
             baseline_est = 0.0
             continue
 
-        # ---------------- Recalibration identical to hxFiBirdStateC ----------------
-        if event is None and abs(weight) < 2*weightThreshold:
+        # ----- Recalibration identical to C version -----
+        if event is None and abs(weight) < 2 * weightThreshold:
             none_counter += 1
             raw_sample_buffer.append(raw_value)
             if none_counter >= NONE_CALIB_LIMIT:

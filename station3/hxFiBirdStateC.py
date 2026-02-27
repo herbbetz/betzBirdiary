@@ -201,7 +201,8 @@ try:
 
             # FSM update
             event = fsm.update(weight, timestr)
-            ms.log(f"{timestr} {weight}g event={event}", False)
+            # ms.log(f"{timestr} {weight}g event={event}", False)
+            ms.log(f"RAW={raw_value} wght={weight} OSET={hxOffset} SCA={hxScale}", False)
 
             # EMA baseline drift
             if event == "IDLE" and abs(weight) < BASELINE_MAX:
