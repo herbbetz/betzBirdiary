@@ -1,91 +1,91 @@
-"""
-HX711 driver for OLD lgpio versions
-Compatible with environments where gpio_claim_input fails
-but gpio_read works.
+# HX711.py
+# Stable HX711 driver for lgpio 0.2.x
+# Pure raw reader — no scaling, no calibration
 
-Only minimal GPIO calls are used.
-"""
-
+import lgpio
 import time
 
 
 class HX711:
-    def __init__(self, dout_pin, sck_pin, chip=0, gpio_module=None):
-        import lgpio
+    def __init__(self, data_pin=17, clock_pin=23, chip=0):
+        self.data_pin = data_pin
+        self.clock_pin = clock_pin
 
-        self.gpio = gpio_module if gpio_module else lgpio
-        self.chip = chip
-        self.dout = dout_pin
-        self.sck = sck_pin
+        # Open GPIO chip (old lgpio style)
+        self.chip = lgpio.gpiochip_open(chip)
 
-        # open gpiochip
-        self.fd = self.gpio.gpiochip_open(self.chip)
+        # Claim pins (this order is known to work)
+        lgpio.gpio_claim_input(self.chip, self.data_pin)
+        lgpio.gpio_claim_output(self.chip, self.clock_pin, 0)
 
-        # claim CLOCK as output (DATA left unclaimed!)
-        try:
-            self.gpio.gpio_claim_output(self.fd, 0, self.sck, 0)
-        except Exception:
+        self.last_value = None
+
+    # ------------------------------------------------------------
+    # Small timing helper (µs)
+    # ------------------------------------------------------------
+    def _delay_us(self, us):
+        end = time.perf_counter_ns() + us * 1000
+        while time.perf_counter_ns() < end:
             pass
 
-        self.offset = 0
-        self.scale = 1.0
-
-    # -------------------------------------------------
-
-    def is_ready(self):
-        return self.gpio.gpio_read(self.fd, self.dout) == 0
-
-    # -------------------------------------------------
-
-    def read_raw(self):
-        # wait until chip ready
-        timeout = time.time() + 1
-        while not self.is_ready():
-            if time.time() > timeout:
-                raise RuntimeError("HX711 not ready")
+    # ------------------------------------------------------------
+    # Wait until HX711 is ready (DATA goes LOW)
+    # ------------------------------------------------------------
+    def wait_ready(self):
+        while lgpio.gpio_read(self.chip, self.data_pin) == 1:
             time.sleep(0.001)
 
-        count = 0
+    # ------------------------------------------------------------
+    # Single raw 24-bit read
+    # ------------------------------------------------------------
+    def _read_once(self):
+        self.wait_ready()
+
+        value = 0
 
         for _ in range(24):
-            self.gpio.gpio_write(self.fd, self.sck, 1)
-            count = count << 1
-            self.gpio.gpio_write(self.fd, self.sck, 0)
+            lgpio.gpio_write(self.chip, self.clock_pin, 1)
+            self._delay_us(3)
 
-            if self.gpio.gpio_read(self.fd, self.dout):
-                count += 1
+            bit = lgpio.gpio_read(self.chip, self.data_pin)
+            value = (value << 1) | bit
 
-        # set channel/gain (1 pulse = channel A gain 128)
-        self.gpio.gpio_write(self.fd, self.sck, 1)
-        self.gpio.gpio_write(self.fd, self.sck, 0)
+            lgpio.gpio_write(self.chip, self.clock_pin, 0)
+            self._delay_us(3)
 
-        # convert to signed 24-bit
-        if count & 0x800000:
-            count -= 1 << 24
+        # Gain = 64 (3 pulses)
+        for _ in range(3):
+            lgpio.gpio_write(self.chip, self.clock_pin, 1)
+            self._delay_us(3)
+            lgpio.gpio_write(self.chip, self.clock_pin, 0)
+            self._delay_us(3)
 
-        return count
+        # Convert to signed 24-bit
+        if value & 0x800000:
+            value -= 0x1000000
 
-    # -------------------------------------------------
+        return value
 
-    def stabilize(self, samples=10):
-        vals = [self.read_raw() for _ in range(samples)]
-        return sum(vals) / len(vals)
+    # ------------------------------------------------------------
+    # Public read with filtering
+    # ------------------------------------------------------------
+    def read_raw(self):
+        s1 = self._read_once()
+        s2 = self._read_once()
+        s3 = self._read_once()
 
-    # -------------------------------------------------
+        value = sorted([s1, s2, s3])[1]
 
-    def set_offset(self, offset):
-        self.offset = offset
+        # Spike rejection
+        if self.last_value is not None:
+            if abs(value - self.last_value) > 200000:
+                return self.last_value
 
-    def set_scale(self, scale):
-        self.scale = scale
+        self.last_value = value
+        return value
 
-    def get_weight(self):
-        return (self.read_raw() - self.offset) / self.scale
-
-    # -------------------------------------------------
-
+    # ------------------------------------------------------------
+    # Cleanup
+    # ------------------------------------------------------------
     def close(self):
-        try:
-            self.gpio.gpiochip_close(self.fd)
-        except Exception:
-            pass
+        lgpio.gpiochip_close(self.chip)
