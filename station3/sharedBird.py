@@ -1,8 +1,10 @@
 # shared functions
 import os, subprocess
 
+app_dir = '/home/pi/station3/'
 PIDfile = ["mainPID.txt", "hxFiPID.txt"] # PIDfile ids for programms
-app_dir = '/home/pi/station3/' # path to main app directory
+PIDdir = app_dir + 'ramdisk/'
+ # path to main app directory
 keep_dir = app_dir + 'keep/'
 
 def roundFlt(flt):
@@ -22,7 +24,7 @@ def fifoExists(pipefile):
 
 def readPID(id):
     # read main program PID
-    fname = PIDfile[id]
+    fname = PIDdir + PIDfile[id]
     if not os.path.exists(fname): return -1
     with open(fname, 'r') as f:
         thepid = f.read()
@@ -31,11 +33,13 @@ def readPID(id):
 def writePID(id):
     # write main program PID
     thepid = os.getpid()
-    with open(PIDfile[id], 'w') as f:
+    fname = PIDdir + PIDfile[id]
+    with open(fname, 'w') as f:
         f.write(str(thepid))
 
 def clearPID(id):
-    os.remove(PIDfile[id])
+    fname = PIDdir + PIDfile[id]
+    os.remove(fname)
 
 def chg_punct(oldstr):
     # change punctuation in string according to following dict:

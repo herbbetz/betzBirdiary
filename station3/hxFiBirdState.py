@@ -1,7 +1,5 @@
 """
-hxFiBirdState.py
-
-Bird feeder scale runtime using frozen HX711 driver.
+Bird feeder scale runtime using blocking HX711 driver.
 
 - Reads raw weight values from HX711
 - FSM detects bird triggers and writes peak weights or -1 to birdpipe
@@ -15,7 +13,6 @@ import time
 import numpy as np
 import os
 import errno
-import lgpio
 
 from lgpioBird.HX711 import HX711
 from sharedBird import roundFlt, fifoExists, writePID, clearPID
@@ -55,7 +52,7 @@ def calibOffset(tries, raw_vals, hxoffset, sleeptime):
     for _ in range(tries):
         median, spread = get_mean(raw_vals)
         if spread < weightThreshold and abs(median) < 2 * weightThreshold:
-            hxoffset -= median * hxScale
+            hxoffset += median * hxScale
             success = True
         time.sleep(sleeptime)
     ms.log("hxOffset Cal OK" if success else "hxOffset Cal SKIPPED")
@@ -155,37 +152,47 @@ ms.init()
 ms.log(f"Start hxFiBirdState {datetime.now()}")
 writePID(1)
 
-# ---- Correct driver initialization ----
-hx = HX711.create(lgpio, dout_pin=hxDataPin, sck_pin=hxClckPin)
-hx.set_offset(-hxOffset)   # preserve legacy formula
-hx.set_scale(hxScale)
+# ---- HX711 init (blocking driver) ----
+hx = HX711(data_pin=hxDataPin, clock_pin=hxClckPin)
+
+# ---- Startup calibration (zero scale) ----
+raw_samples = [hx.read_raw() for _ in range(50)]
+time.sleep(0.05)
+hxOffset = calibOffset(2, raw_samples, hxOffset, SLEEP_TIME)
+ms.log(f"Startup calibration complete, hxOffset={hxOffset}")
 
 fsm = WeightFSM(weightThreshold, weightlimit)
 watchdog = BaselineWatchdog()
 baseline_est = 0.0
 none_counter = 0
 raw_sample_buffer = []
+offset_runtime = 0.0   # runtime baseline correction (does NOT change calibration)
 
 try:
     time.sleep(STARTUP_SETTLE_TIME)
 
     while True:
         raw_value = hx.read_raw()
-        weight = roundFlt((raw_value + hxOffset) / hxScale)
+
+        # convert to grams using calibration
+        weight = roundFlt((raw_value - (hxOffset + offset_runtime)) / hxScale)
 
         now = datetime.now()
         timestr = f"{now.hour}:{now.minute}:{now.second}"
 
         event = fsm.update(weight, timestr)
-        ms.log(f"{timestr} {weight}g event={event}", False)
 
-        # EMA baseline correction
+        # debugging:
+        print(f"RAW={raw_value:.2f}  WEIGHT={weight:.2f} g  STATE={event}")
+
+        # EMA baseline correction (runtime only — does not modify calibration)
         if event == "IDLE" and abs(weight) < BASELINE_MAX:
             baseline_est = (1.0 - BASELINE_ALPHA) * baseline_est + BASELINE_ALPHA * weight
+
             if abs(baseline_est) > 0.6:
                 corr = np.clip(baseline_est, -1.5, 1.5)
-                hxOffset -= corr * hxScale
-                ms.log(f"{timestr} hxOffset EMA adjust → {hxOffset}")
+                offset_runtime += corr * hxScale
+                ms.log(f"{timestr} runtime offset adjust → {offset_runtime}")
                 baseline_est = 0.0
 
         # Watchdog
@@ -194,7 +201,7 @@ try:
             baseline_est = 0.0
             continue
 
-        # ----- Recalibration identical to C version -----
+        # Recalibration
         if event is None and abs(weight) < 2 * weightThreshold:
             none_counter += 1
             raw_sample_buffer.append(raw_value)
