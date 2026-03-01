@@ -66,7 +66,7 @@ setsid $PYTHON "$APPDIR/dhtBird3.py" > /dev/null 2>&1 & # >> logs/dht_sun.log 2>
 setsid $PYTHON "$APPDIR/hxFiBirdState.py" >> logs/hxFiBird.log 2>&1 & # first birdpipe FIFO writer
 # setsid $PYTHON "$APPDIR/hxFiBirdStateC.py" >> logs/hxFiBird.log 2>&1 & # first birdpipe FIFO writer and hxfifo reader
 # sleep 1
-# setsid "$APPDIR/c/hx711d" 17 23 >> logs/hxFiBird.log 2>&1 & # hxfifo writer -> $APPDIR/hx711d.sh could read in "17 23" from config.json and the start ..c/hx711d with it
+# setsid bash "$APPDIR/hx711d.sh" & # hxfifo writer -> $APPDIR/hx711d.sh reads in "17 23" from config.json and starts ..c/hx711d with it, has own log()
 # widgets for wayfire desktop will not work here, because wayfire or vnc/X11 env not yet ready! Moreover no use running it, when no desktop shown.
 # setsid $PYTHON widgets.py &
 echo "startup2stage.sh ended at $(date)" > /dev/null 2>&1 # >> /home/pi/station3/logs/startup.log 2>&1

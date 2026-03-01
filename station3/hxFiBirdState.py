@@ -4,7 +4,7 @@ Bird feeder scale runtime using blocking HX711 driver.
 - Reads raw weight values from HX711
 - FSM detects bird triggers and writes peak weights or -1 to birdpipe
 - Maintains software offset and EMA baseline correction
-- Performs safe baseline recalibration on startup and during run
+- Performs safe baseline recalibration on startup and during run (spread-based)
 - Persists calibration values from configBird3
 """
 
@@ -33,6 +33,7 @@ SLEEP_TIME = 1.0
 BASELINE_ALPHA = 0.03
 NONE_CALIB_LIMIT = 15
 samples_for_calib = 50
+SPREAD_MAX = weightThreshold  # only recalibrate if spread is below this
 
 # ---------------- FIFO ----------------
 fifo = birdpath['fifo']
@@ -51,7 +52,7 @@ def calibOffset(tries, raw_vals, hxoffset, sleeptime):
     success = False
     for _ in range(tries):
         median, spread = get_mean(raw_vals)
-        if spread < weightThreshold and abs(median) < 2 * weightThreshold:
+        if spread < SPREAD_MAX and abs(median) < 2 * weightThreshold:
             hxoffset += median * hxScale
             success = True
         time.sleep(sleeptime)
@@ -155,7 +156,7 @@ writePID(1)
 # ---- HX711 init (blocking driver) ----
 hx = HX711(data_pin=hxDataPin, clock_pin=hxClckPin)
 
-# ---- Startup calibration (zero scale) ----
+# ---- Startup calibration ----
 raw_samples = [hx.read_raw() for _ in range(50)]
 time.sleep(0.05)
 hxOffset = calibOffset(2, raw_samples, hxOffset, SLEEP_TIME)
@@ -181,14 +182,13 @@ try:
         timestr = f"{now.hour}:{now.minute}:{now.second}"
 
         event = fsm.update(weight, timestr)
-
+        ms.log(f"{timestr} {weight:.2f}grams {event}")
         # debugging:
-        print(f"RAW={raw_value:.2f}  WEIGHT={weight:.2f} g  STATE={event}")
+        # ms.log(f"RAW={raw_value:.2f} {weight:.2f}g {event}")
 
         # EMA baseline correction (runtime only — does not modify calibration)
         if event == "IDLE" and abs(weight) < BASELINE_MAX:
             baseline_est = (1.0 - BASELINE_ALPHA) * baseline_est + BASELINE_ALPHA * weight
-
             if abs(baseline_est) > 0.6:
                 corr = np.clip(baseline_est, -1.5, 1.5)
                 offset_runtime += corr * hxScale
@@ -201,17 +201,17 @@ try:
             baseline_est = 0.0
             continue
 
-        # Recalibration
-        if event is None and abs(weight) < 2 * weightThreshold:
-            none_counter += 1
+        # -------- Spread-based recalibration for STATE_NONE --------
+        if event is None:
             raw_sample_buffer.append(raw_value)
-            if none_counter >= NONE_CALIB_LIMIT:
-                hxOffset = calibOffset(1, raw_sample_buffer[-samples_for_calib:], hxOffset, SLEEP_TIME)
-                none_counter = 0
+            if len(raw_sample_buffer) >= NONE_CALIB_LIMIT:
+                median, spread = get_mean(raw_sample_buffer[-samples_for_calib:])
+                if spread < SPREAD_MAX:
+                    hxOffset = calibOffset(1, raw_sample_buffer[-samples_for_calib:], hxOffset, SLEEP_TIME)
                 raw_sample_buffer.clear()
         else:
-            none_counter = 0
             raw_sample_buffer.clear()
+            none_counter = 0
 
         if event == "SURGE_OK":
             baseline_est = 0.0

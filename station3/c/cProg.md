@@ -12,4 +12,5 @@
   make clean
   make OR gcc -O2 -Wall -o hx711d hx711d.c -llgpio
   ````
-- uswcd ~/station3/c
+- anders als python3-lgpio 0.2.2 braucht der C-Daemon auf Trixie keine veraltete Syntax.
+- 

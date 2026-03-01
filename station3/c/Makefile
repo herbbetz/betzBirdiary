@@ -1,8 +1,9 @@
 # Makefile for hx711d C daemon
 
 CC = gcc
-CFLAGS = -O2 -Wall
+CFLAGS = -std=c17 -O2 -Wall -Wextra
 LDFLAGS = -llgpio
+
 TARGET = hx711d
 SRC = hx711d.c
 PID_FILE = /home/pi/station3/ramdisk/hx711d.pid
