@@ -1,7 +1,5 @@
 # test_hx711d_fifo.py
 
-import sys
-
 FIFO_PATH = "/home/pi/station3/ramdisk/hxfifo"
 
 def main():

@@ -14,7 +14,6 @@ into hxFiBirdState logic.
 """
 
 import time
-import json
 from lgpioBird.HX711 import HX711
 from configBird3 import hxDataPin, hxClckPin, hxOffset, hxScale
 
