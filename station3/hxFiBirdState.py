@@ -177,6 +177,7 @@ writePID(1)
 hx = HX711(data_pin=hxDataPin, clock_pin=hxClckPin)
 
 # ---- Startup baseline calibration ----
+# defines hxOffset anew, saved hxOffset no longer used, only the saved hxScale determined by calibrate.py
 hxOffset = startup_zero(hx)
 
 fsm = WeightFSM(weightThreshold, weightlimit)
