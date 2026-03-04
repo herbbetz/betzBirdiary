@@ -40,6 +40,12 @@ BASELINE_ZONE = 0.6 * weightThreshold
 STABLE_COUNT = 3
 DRIFT_ALPHA = 0.02
 MAX_SPREAD_FOR_CAL = weightThreshold
+MAX_STARTUP_SPREAD = 0.5 * weightThreshold * hxScale # in raw units, to avoid false cal on startup
+
+# --- Watchdog constants ---
+RAW_JUMP_LIMIT = 120000
+RAW_ABS_LIMIT = 8_000_000
+GLITCH_LIMIT = 5
 
 
 # ---------------- FIFO ----------------
@@ -53,6 +59,26 @@ if not fifoExists(fifo):
 def get_median_spread(vals):
     return np.median(vals), np.max(vals) - np.min(vals)
 
+def startup_zero(hx, retries=3):
+    #does not depend on old hxoffset, just raw median
+    ms.log("Startup zeroing...")
+
+    for attempt in range(retries):
+        time.sleep(STARTUP_SETTLE_TIME)
+
+        samples = [hx.read_raw() for _ in range(60)]
+        median, spread = get_median_spread(samples)
+
+        ms.log(f"Startup spread {spread}")
+
+        if spread < MAX_STARTUP_SPREAD:
+            ms.log(f"Startup hxOffset set to {median}")
+            return median
+
+        ms.log("Startup unstable — retrying")
+
+    ms.log("Startup zero failed — using median anyway")
+    return median
 
 def calibOffset(samples, hxoffset):
     median, spread = get_median_spread(samples)
@@ -151,29 +177,72 @@ writePID(1)
 hx = HX711(data_pin=hxDataPin, clock_pin=hxClckPin)
 
 # ---- Startup baseline calibration ----
-time.sleep(STARTUP_SETTLE_TIME)
-raw_samples = [hx.read_raw() for _ in range(40)]
-hxOffset = calibOffset(raw_samples, hxOffset)
+hxOffset = startup_zero(hx)
 
 fsm = WeightFSM(weightThreshold, weightlimit)
 
 drift_est = 0.0
 raw_idle_buffer = []
 
+# --- Watchdog runtime vars ---
+last_raw = None
+glitch_count = 0
+
 
 try:
     while True:
         raw = hx.read_raw()
-        weight = roundFlt((raw - hxOffset) / hxScale)
 
         now = datetime.now()
         tstr = f"{now.hour}:{now.minute}:{now.second}"
+
+        # -------- RAW Watchdog --------
+        glitch = False
+
+        if abs(raw) > RAW_ABS_LIMIT:
+            ms.log(f"{tstr} RAW overflow {raw}")
+            glitch = True
+
+        if last_raw is not None:
+            if abs(raw - last_raw) > RAW_JUMP_LIMIT:
+                ms.log(f"{tstr} RAW jump {raw-last_raw}")
+                glitch = True
+
+        if glitch:
+            glitch_count += 1
+
+            if glitch_count >= GLITCH_LIMIT:
+                ms.log(f"{tstr} Too many glitches → reinitializing HX711")
+
+                hx.close()
+                time.sleep(1)
+                hx = HX711(data_pin=hxDataPin, clock_pin=hxClckPin)
+
+                # re-zero after hardware reset
+                hxOffset = startup_zero(hx)
+
+                glitch_count = 0
+                last_raw = None
+                drift_est = 0.0
+                raw_idle_buffer.clear()
+
+            continue # if glitch then skip following processing and wait for next reading
+
+        glitch_count = 0
+        last_raw = raw
+
+        weight = roundFlt((raw - hxOffset) / hxScale)
+
+        # -------- Weight sanity check --------
+        if abs(weight) > weightlimit:
+            ms.log(f"{tstr} WEIGHT glitch {weight} g")
+            continue
 
         state = fsm.update(weight, tstr)
 
         # debugging:
         # ms.log(f"RAW={raw:.0f}  WEIGHT={weight:.2f} g  STATE={state}")
-        ms.log(f"{tstr} {weight:.1f}grams {state}", terminal=False) # (..., False) prints only to 'linetxt', not to stdout
+        ms.log(f"{tstr} {weight:.1f}grams {state}", terminal=False)
 
         # -------- Drift correction (IDLE only) --------
         if state == "IDLE" and abs(weight) < BASELINE_ZONE:
@@ -183,7 +252,7 @@ try:
                 ms.log(f"{tstr} drift adjust → {hxOffset}")
                 drift_est = 0.0
 
-        # -------- Recalibration (true idle only) --------
+            # -------- Recalibration (true idle only) --------
             raw_idle_buffer.append(raw)
             if len(raw_idle_buffer) >= 30:
                 hxOffset = calibOffset(raw_idle_buffer, hxOffset)

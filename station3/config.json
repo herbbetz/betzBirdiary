@@ -6,8 +6,8 @@
     "hflip_val": 1,
     "vflip_val": 1,
     "vidsize": [
-        1280,
-        960
+        800,
+        600
     ],
     "losize": [
         320,
@@ -25,7 +25,7 @@
     "weightlimit": 300,
     "weightThreshold": 5,
     "hxScale": 533,
-    "hxOffset": 176791.2,
+    "hxOffset": -178757,
     "dhtPin": 16,
     "hxDataPin": 17,
     "hxClckPin": 23,
