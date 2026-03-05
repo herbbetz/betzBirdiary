@@ -63,7 +63,7 @@ setsid $PYTHON "$APPDIR/dhtBird3.py" > /dev/null 2>&1 & # >> logs/dht_sun.log 2>
 #    bash hxFiBirdStart.sh
 #    sleep 2
 # done
-setsid $PYTHON "$APPDIR/hxFiBirdState.py" >> logs/hxFiBird.log 2>&1 & # first birdpipe FIFO writer
+setsid $PYTHON "$APPDIR/hxFiBirdStateCt.py" >> logs/hxFiBird.log 2>&1 & # first birdpipe FIFO writer
 # setsid $PYTHON "$APPDIR/hxFiBirdStateC.py" >> logs/hxFiBird.log 2>&1 & # first birdpipe FIFO writer and hxfifo reader
 # sleep 1
 # setsid bash "$APPDIR/hx711d.sh" & # hxfifo writer -> $APPDIR/hx711d.sh reads in "17 23" from config.json and starts ..c/hx711d with it, has own log()

@@ -18,7 +18,7 @@ with open(FIFO_PATH, "r") as fifo:
     while True:
         line = fifo.readline()
         if not line:
-            time.sleep(0.01)
+            time.sleep(1) # or 0.01
             continue
 
         raw = int(line.strip())

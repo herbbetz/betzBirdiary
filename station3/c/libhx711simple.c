@@ -12,13 +12,6 @@ static int chip = -1;
 static int dout_pin = -1;
 static int sck_pin = -1;
 
-/* rolling median buffer */
-
-#define MEDIAN_SIZE 5
-static long buffer[MEDIAN_SIZE];
-static int buf_pos = 0;
-static int buf_filled = 0;
-
 /* ---------- timing ---------- */
 
 static double monotonic_seconds(void)
@@ -42,37 +35,31 @@ static int wait_ready(double timeout_s)
 {
     double start = monotonic_seconds();
 
-    while (lgGpioRead(chip, dout_pin) != 0)
-    {
+    while (lgGpioRead(chip, dout_pin) != 0) {
         if (monotonic_seconds() - start > timeout_s)
             return -1;
-
         sleep_us(1000);
     }
-
     return 0;
 }
 
-/* ---------- raw read ---------- */
+/* ---------- read one sample (gain=64) ---------- */
 
-static long read_once(void)
+static long read_raw(void)
 {
     if (wait_ready(1.0) < 0)
         return 0;
 
     long value = 0;
 
-    for (int i = 0; i < 24; i++)
-    {
+    for (int i = 0; i < 24; i++) {
         lgGpioWrite(chip, sck_pin, 1);
         value = (value << 1) | lgGpioRead(chip, dout_pin);
         lgGpioWrite(chip, sck_pin, 0);
     }
 
     /* gain=64 → 3 pulses */
-
-    for (int i = 0; i < 3; i++)
-    {
+    for (int i = 0; i < 3; i++) {
         lgGpioWrite(chip, sck_pin, 1);
         lgGpioWrite(chip, sck_pin, 0);
     }
@@ -83,33 +70,11 @@ static long read_once(void)
     return value;
 }
 
-/* ---------- median ---------- 
-return median value of sorted 5 to remove single spikes
-*/
-
-static long median5(long *v)
-{
-    long a[MEDIAN_SIZE];
-
-    for (int i = 0; i < MEDIAN_SIZE; i++)
-        a[i] = v[i];
-
-    for (int i = 0; i < MEDIAN_SIZE; i++)
-        for (int j = i + 1; j < MEDIAN_SIZE; j++)
-            if (a[j] < a[i])
-            {
-                long t = a[i];
-                a[i] = a[j];
-                a[j] = t;
-            }
-
-    return a[MEDIAN_SIZE / 2];
-}
-
 /* ========================================================= */
 /* ============== EXPORTED FUNCTIONS ======================= */
 /* ========================================================= */
 
+/* must be called once before reading */
 int hx711_init(int data_pin, int clock_pin)
 {
     dout_pin = data_pin;
@@ -125,42 +90,19 @@ int hx711_init(int data_pin, int clock_pin)
     if (lgGpioClaimOutput(chip, 0, sck_pin, 0) < 0)
         return -3;
 
-    /* pre-fill median buffer */
-
-    for (int i = 0; i < MEDIAN_SIZE; i++)
-    {
-        buffer[i] = read_once();
-    }
-
-    buf_pos = 0;
-    buf_filled = 1;
-
     return 0;
 }
 
-/* filtered read */
-
+/* read one raw value */
 long hx711_read(void)
 {
     if (chip < 0)
         return 0;
 
-    long v = read_once();
-
-    buffer[buf_pos] = v;
-
-    buf_pos++;
-    if (buf_pos >= MEDIAN_SIZE)
-        buf_pos = 0;
-
-    if (!buf_filled)
-        return v;
-
-    return median5(buffer);
+    return read_raw();
 }
 
 /* cleanup */
-
 void hx711_close(void)
 {
     if (chip >= 0)
