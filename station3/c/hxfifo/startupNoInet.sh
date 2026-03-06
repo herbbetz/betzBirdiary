@@ -2,6 +2,7 @@
 # softlink this to startup.sh for testing and load all scripts manually:
 APPDIR=/home/pi/station3
 FIFO=/home/pi/station3/ramdisk/birdpipe
+# HXFIFO=/home/pi/station3/ramdisk/hxfifo
 LOGFILE="/dev/null" # "/home/pi/station3/logs/startup.log"
 log() {
     echo "$*" >> "$LOGFILE" 2>&1
@@ -25,5 +26,9 @@ if [[ ! -p "$FIFO" ]]; then
     # echo "created: "$fifo
 fi
 
+# hardware IPC hx711d.c -> hxFiBirdState.py:
+# if [[ ! -p "$HXFIFO" ]]; then
+#    mkfifo "$HXFIFO"
+# fi
 # important for python module imports into scripts below /home/pi/station3, like e.g. 'import msgBird as ms' in model/birdclassify.py:
 export PYTHONPATH="/home/pi/station3" # works also on boot, because the current bash script is called by bird-startup.service

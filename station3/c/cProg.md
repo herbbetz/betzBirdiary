@@ -2,7 +2,9 @@
 
 **HX711 C++ Treiber mit lgpio**
 
-- kein Python binding wie bei `https://github.com/endail`, sondern C-Daemon spricht mit hxFiBirdState.py via  `ramdisk/hxfifo`. Output einfach über `cat ../ramdisk/hxfifo` im anderen Terminal.
+- Nachteile von C-Daemon via `hxfifo` gegenüber`ctypes binding` : mkfifo /Verifizierung von `ramdisk/hxfifo`, extra Startbefehl von `hx711d`, Monitoring von `hx711d` und Reaktion auf dessen Absturz (ermitteln durch simples Testskript). Vorteil von `hxfifo`: leichtes Monitoring der hxfifo Values, unabhängige Absturz/Restart-Möglichkeit.
+
+- alternatives Python binding wie bei `https://github.com/endail`?
 
 - requirement: [lgpio](http://abyz.me.uk/lg/index.html)
 

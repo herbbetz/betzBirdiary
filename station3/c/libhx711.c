@@ -1,32 +1,25 @@
-/* for ctype python binding 
-gcc -std=c17 -Wall -Wextra -O2 -shared -fPIC libhx711.c -llgpio -o libhx711.so
-*/
+/*
+ * libhx711.c — Robust HX711 driver with discard, median5 and resync
+ *
+ * Build:
+ *   gcc -std=c17 -Wall -Wextra -O2 -shared -fPIC libhx711.c -llgpio -o libhx711.so
+ *
+ * This library can be loaded in Python via ctypes.
+ */
+
 #define _POSIX_C_SOURCE 200809L
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
+#include <limits.h>
 #include <lgpio.h>
 
 static int chip = -1;
 static int dout_pin = -1;
 static int sck_pin = -1;
 
-/* rolling median buffer */
-
-#define MEDIAN_SIZE 5
-static long buffer[MEDIAN_SIZE];
-static int buf_pos = 0;
-static int buf_filled = 0;
-
 /* ---------- timing ---------- */
-
-static double monotonic_seconds(void)
-{
-    struct timespec ts;
-    clock_gettime(CLOCK_MONOTONIC, &ts);
-    return ts.tv_sec + ts.tv_nsec / 1e9;
-}
 
 static void sleep_us(long us)
 {
@@ -36,42 +29,55 @@ static void sleep_us(long us)
     nanosleep(&ts, NULL);
 }
 
-/* ---------- wait until HX711 ready ---------- */
+static double monotonic_seconds(void)
+{
+    struct timespec ts;
+    clock_gettime(CLOCK_MONOTONIC, &ts);
+    return ts.tv_sec + ts.tv_nsec / 1e9;
+}
 
+/* ---------- median-of-5 helper ---------- */
+static long median5(long a, long b, long c, long d, long e)
+{
+    long arr[5] = {a,b,c,d,e};
+    for (int i=0;i<5;i++)
+        for (int j=i+1;j<5;j++)
+            if (arr[j] < arr[i])
+            {
+                long t = arr[i];
+                arr[i] = arr[j];
+                arr[j] = t;
+            }
+    return arr[2];
+}
+
+/* ---------- HX711 low-level read ---------- */
 static int wait_ready(double timeout_s)
 {
     double start = monotonic_seconds();
-
     while (lgGpioRead(chip, dout_pin) != 0)
     {
         if (monotonic_seconds() - start > timeout_s)
             return -1;
-
         sleep_us(1000);
     }
-
     return 0;
 }
 
-/* ---------- raw read ---------- */
-
-static long read_once(void)
+static long read_raw_once(void)
 {
     if (wait_ready(1.0) < 0)
-        return 0;
+        return LONG_MIN;
 
     long value = 0;
-
-    for (int i = 0; i < 24; i++)
+    for (int i=0; i<24; i++)
     {
         lgGpioWrite(chip, sck_pin, 1);
         value = (value << 1) | lgGpioRead(chip, dout_pin);
         lgGpioWrite(chip, sck_pin, 0);
     }
 
-    /* gain=64 → 3 pulses */
-
-    for (int i = 0; i < 3; i++)
+    for (int i=0; i<3; i++) // gain=64
     {
         lgGpioWrite(chip, sck_pin, 1);
         lgGpioWrite(chip, sck_pin, 0);
@@ -83,33 +89,9 @@ static long read_once(void)
     return value;
 }
 
-/* ---------- median ---------- 
-return median value of sorted 5 to remove single spikes
-*/
+/* ---------- Exported API ---------- */
 
-static long median5(long *v)
-{
-    long a[MEDIAN_SIZE];
-
-    for (int i = 0; i < MEDIAN_SIZE; i++)
-        a[i] = v[i];
-
-    for (int i = 0; i < MEDIAN_SIZE; i++)
-        for (int j = i + 1; j < MEDIAN_SIZE; j++)
-            if (a[j] < a[i])
-            {
-                long t = a[i];
-                a[i] = a[j];
-                a[j] = t;
-            }
-
-    return a[MEDIAN_SIZE / 2];
-}
-
-/* ========================================================= */
-/* ============== EXPORTED FUNCTIONS ======================= */
-/* ========================================================= */
-
+/* initialize GPIO and discard first readings */
 int hx711_init(int data_pin, int clock_pin)
 {
     dout_pin = data_pin;
@@ -121,50 +103,47 @@ int hx711_init(int data_pin, int clock_pin)
 
     if (lgGpioClaimInput(chip, 0, dout_pin) < 0)
         return -2;
-
     if (lgGpioClaimOutput(chip, 0, sck_pin, 0) < 0)
         return -3;
 
-    /* pre-fill median buffer */
-
-    for (int i = 0; i < MEDIAN_SIZE; i++)
-    {
-        buffer[i] = read_once();
-    }
-
-    buf_pos = 0;
-    buf_filled = 1;
+    // discard first 5 readings
+    for (int i=0;i<20;i++)
+        read_raw_once();
 
     return 0;
 }
 
-/* filtered read */
-
+/* read median-of-5 to reduce spikes */
 long hx711_read(void)
 {
-    if (chip < 0)
-        return 0;
+    long a = read_raw_once();
+    long b = read_raw_once();
+    long c = read_raw_once();
+    long d = read_raw_once();
+    long e = read_raw_once();
 
-    long v = read_once();
+    return median5(a,b,c,d,e);
+}
 
-    buffer[buf_pos] = v;
+/* software resync if HX711 glitches */
+int hx711_resync(void)
+{
+    if (chip >= 0)
+    {
+        lgGpiochipClose(chip);
+        chip = -1;
+    }
 
-    buf_pos++;
-    if (buf_pos >= MEDIAN_SIZE)
-        buf_pos = 0;
+    if (dout_pin < 0 || sck_pin < 0)
+        return -1;
 
-    if (!buf_filled)
-        return v;
-
-    return median5(buffer);
+    return hx711_init(dout_pin, sck_pin);
 }
 
 /* cleanup */
-
 void hx711_close(void)
 {
     if (chip >= 0)
         lgGpiochipClose(chip);
-
     chip = -1;
 }

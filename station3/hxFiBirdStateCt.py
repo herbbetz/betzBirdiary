@@ -36,12 +36,7 @@ import msgBird as ms
 class HX711_CT:
 
     def __init__(self, data_pin, clock_pin):
-        '''
-        libpath = os.path.join(
-            os.path.dirname(__file__),
-            "c/libhx711.so"
-        )
-        '''
+
         libpath = f"{birdpath['appdir']}/c/libhx711.so"
         self.lib = ctypes.CDLL(libpath)
 
@@ -72,12 +67,12 @@ class HX711_CT:
 
 # ---------------- Constants ----------------
 STARTUP_SETTLE_TIME = 1.2
-SLEEP_TIME = 1.0
+SLEEP_TIME = 0.15
 
 BASELINE_ZONE = 0.6 * weightThreshold
 STABLE_COUNT = 3
 DRIFT_ALPHA = 0.02
-MAX_SPREAD_FOR_CAL = weightThreshold
+MAX_SPREAD_FOR_CAL = weightThreshold * hxScale
 MAX_STARTUP_SPREAD = 0.5 * weightThreshold * hxScale
 
 # --- Watchdog constants ---
@@ -127,7 +122,7 @@ def calibOffset(samples, hxoffset):
     ms.log(f"Calibration spread {spread}")
 
     if spread < MAX_SPREAD_FOR_CAL:
-        hxoffset += median * hxScale
+        hxoffset = median
         ms.log("hxOffset Cal OK")
     else:
         ms.log("hxOffset Cal SKIPPED")
@@ -332,15 +327,19 @@ try:
         ms.log(f"{tstr} {weight:.1f}grams {state}", terminal=False)
 
         # -------- Drift correction (IDLE only) --------
-        if state == "IDLE" and abs(weight) < BASELINE_ZONE:
-
+        if state == "IDLE":
+            if abs(weight) > 20:
+                ms.log("Baseline >> 0, recalibration")
+                hxOffset = startup_zero(hx)
+                continue
+            
             drift_est = (1 - DRIFT_ALPHA) * drift_est + DRIFT_ALPHA * weight
 
             if abs(drift_est) > 0.5:
 
                 hxOffset += drift_est * hxScale
 
-                ms.log(f"{tstr} drift adjust → {hxOffset}")
+                ms.log(f"EMA drift adjust → {hxOffset}")
 
                 drift_est = 0.0
 
