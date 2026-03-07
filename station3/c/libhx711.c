@@ -113,16 +113,24 @@ int hx711_init(int data_pin, int clock_pin)
     return 0;
 }
 
-/* read median-of-5 to reduce spikes */
+/* read median-of-5 to reduce spikes 
+and exclude jumps > 150000 */
 long hx711_read(void)
 {
-    long a = read_raw_once();
-    long b = read_raw_once();
-    long c = read_raw_once();
-    long d = read_raw_once();
-    long e = read_raw_once();
+    static long last = 0;
 
-    return median5(a,b,c,d,e);
+    long v = median5(
+        read_raw_once(),
+        read_raw_once(),
+        read_raw_once(),
+        read_raw_once(),
+        read_raw_once()
+    );
+
+    if (last && labs(v - last) > 150000) v = last;
+    last = v;
+
+    return v;
 }
 
 /* software resync if HX711 glitches */

@@ -52,10 +52,10 @@ sleep 4
 setsid $PYTHON "$APPDIR/mainFoBird3.py" > /dev/null 2>&1 & # >> logs/main.log 2>&1 & # birdpipe reader
 sleep 8 # the child process takes time to establish
 # looping shutdown scripts, when system more stable:
-setsid bash "$APPDIR/sysmon2.sh" > /dev/null 2>&1 & # >> logs/sysmon.log 2>&1 # once at boot in foreground, then every 15 min via pi's crontab -l
-sleep 2
-# upload environment at start
-setsid $PYTHON "$APPDIR/dhtBird3.py" > /dev/null 2>&1 & # >> logs/dht_sun.log 2>&1 &
+# these now have their own systemd timer:
+# setsid bash "$APPDIR/sysmon2.sh" > /dev/null 2>&1 & # >> logs/sysmon.log 2>&1 # once at boot in foreground, then every 15 min via pi's crontab -l
+# sleep 2
+# setsid $PYTHON "$APPDIR/dhtBird3.py" > /dev/null 2>&1 & # >> logs/dht_sun.log 2>&1 &
 #
 # first FIFO writer, seems the most critical to init
 # run in foreground inside a bash while loop, being restarted after each selfprogrammed end of process

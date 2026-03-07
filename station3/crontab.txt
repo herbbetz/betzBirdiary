@@ -13,9 +13,11 @@ PYTHON=/usr/bin/python3
 # run on even hours like 0:00, 2:00, 4:00
 0 */2 * * * bash $APPDIR/statist/getStats.sh >> /dev/null # $APPDIR/logs/statist.log 2>&1
 # read sys params every 15 min:
-*/14 * * * * bash $APPDIR/sysmon2.sh >> /dev/null # $APPDIR/logs/sysmon.log 2>&1
+# REPLACED BY SYSTEMD TIMER:
+# */14 * * * * bash $APPDIR/sysmon2.sh >> /dev/null # $APPDIR/logs/sysmon.log 2>&1
 # upload environment data every 15 min:
-*/15 * * * * $PYTHON $APPDIR/dhtBird3.py >> /dev/null # $APPDIR/logs/dht_sun.log 2>&1
+# REPLACED BY SYSTEMD TIMER:
+# */15 * * * * $PYTHON $APPDIR/dhtBird3.py >> /dev/null # $APPDIR/logs/dht_sun.log 2>&1
 # shut down on sunset:
 */16 17-22 * * * $PYTHON $APPDIR/sunset3.py >> /dev/null # $APPDIR/logs/dht_sun.log 2>&1
 # shut down station at 18:54 daily before disconnecting mains at 19:00 :
