@@ -1,0 +1,17 @@
+[Unit]
+Description=Bird Station Monitoring and Control
+# Wait until the network is technically "up"
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+# Run as the 'pi' user so it has access to /home/pi/
+User=pi
+Group=pi
+# The scripts to execute
+ExecStart=/usr/bin/bash /home/pi/station3/sysmon2.sh
+ExecStart=/usr/bin/python3 /home/pi/station3/dhtBirdCt.py
+
+[Install]
+WantedBy=multi-user.target

@@ -1,4 +1,4 @@
-# ----pi crontab on 3thDez2025:
+# ----pi crontab on 7thMar2026:
 # this is for testing purposes, where 'crontab crontab4test.txt' switches off all crontab triggers
 APPDIR=/home/pi/station3
 # crontab variable substitution not working like in bash, therefore full path, not $APPDIR:
@@ -11,7 +11,8 @@ PYTHON=/usr/bin/python3
 ### min hour dayOfMonth month dayOfWeek(0=sunday)   command ###
 # Calling with bash does not need file permissions like 'chmod +x *.sh'
 # run on even hours like 0:00, 2:00, 4:00
-0 */2 * * * bash $APPDIR/statist/getStats.sh >> /dev/null # $APPDIR/logs/statist.log 2>&1
+# MOVED TO startup2stage.sh:
+# 0 */2 * * * bash $APPDIR/statist/getStats.sh >> /dev/null # $APPDIR/logs/statist.log 2>&1
 # read sys params every 15 min:
 # REPLACED BY SYSTEMD TIMER:
 # */14 * * * * bash $APPDIR/sysmon2.sh >> /dev/null # $APPDIR/logs/sysmon.log 2>&1

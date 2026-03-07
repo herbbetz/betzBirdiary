@@ -1,0 +1,13 @@
+[Unit]
+Description=Run bird15m service after boot and every 15 minutes
+
+[Timer]
+# First run: 1 minute after boot (gives system time to settle)
+OnBootSec=1min
+# Subsequent runs: 15 minutes after the service was last activated
+OnUnitActiveSec=15min
+# Ensure it catches up if the Pi was off during a scheduled slot
+Persistent=true
+
+[Install]
+WantedBy=timers.target

@@ -121,7 +121,7 @@ def chstandby():
 
 @app.route('/envupdate')
 def envupdate():
-   cmd = f"{PYTHON} {birdpath['appdir']}/dhtBird3.py"
+   cmd = f"{PYTHON} {birdpath['appdir']}/dhtBirdCt.py"
    subprocess.call(cmd, shell=True)
    return jsonify(success=True)
 
