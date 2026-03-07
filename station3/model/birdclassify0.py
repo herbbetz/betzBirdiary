@@ -34,31 +34,13 @@ def is_recognized(label: str) -> bool:
     label = label.strip().lower()
     return "none" not in label
 
-
-def preprocess_image(image_path, width, height, input_scale, input_zero_point):
+# the classify_birds.py on the birdiary website does no center crop,
+#   so for comparable results of birds:
+def preprocess_image(image_path, width, height):
     image = Image.open(image_path).convert("RGB")
-    # image = image.resize((width, height)) # would be distortion only
-    # --- keep aspect ratio ---
-    src_w, src_h = image.size
-    scale = max(width / src_w, height / src_h)
-    new_w = int(src_w * scale)
-    new_h = int(src_h * scale)
-    image = image.resize((new_w, new_h), Image.BILINEAR)
-
-    # --- center crop ---
-    left = (new_w - width) // 2
-    top = (new_h - height) // 2
-    right = left + width
-    bottom = top + height
-    image = image.crop((left, top, right, bottom))
-
-    # --- quantize to uint8 using model params ---
-    img = np.array(image).astype(np.float32)
-    img = img / input_scale + input_zero_point
-    img = np.clip(img, 0, 255).astype(np.uint8)
-
+    image = image.resize((width, height), Image.BILINEAR)
+    img = np.array(image)
     return np.expand_dims(img, axis=0)
-
 
 def main():
     if len(sys.argv) < 2:

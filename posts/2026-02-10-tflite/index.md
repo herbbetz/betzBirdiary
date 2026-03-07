@@ -10,6 +10,12 @@ permalink: /posts/2026-02-10-tflite/
 
 Auf Bilder trainierte Modelle bestehen aus einem Input-Knoten für das Bild, einem Knotennetzwerk, deren Verbindungen in ihren Gewichten das Training enthalten, und so vielen Output-Knoten, wie sie Dinge klassifizieren können. Jeder Output-Knoten wirft eine Wahrscheinlichkeit (confidence in %) aus. Entsprechend den Output-Knoten braucht man auch eine sortierte Liste von Labels, die benennen, für welche Vogelart jeder Output-Knoten steht. Die Labels sind im Format `txt` oder `json` oder auch eingebettet auf verschiedene Arten in das `model.tflite`. Vor dem Input muss das Bild (hier RGB 320x240) in das Farb- und Pixelformat (z.B. RGB 224x224) umgewandelt werden, mit dem das Modell trainiert wurde, entweder durch Verzerrung oder besser durch 'centercrop'.
 
+````
+Ein Model funktioniert immer so am besten, wie es trainiert wurde, am besten also auf demselben Device und mit demselben Image Preprocessing. Trainingsdaten von der ESP-Cam mit Fischaugenperspektive (OV2640) sind zu trennen von solchen aus der RaspiCam v1.3 . Wurde centercrop und 224x224px beim Training nicht eingesetzt, dann auch nicht bei der Anwendung.
+````
+
+
+
 **Labels auf Latein**
 
 Das auf der birdiary Plattform seit 2022 verwendete TFLite Modell beinhaltet 964 Labels an Vogelarten. Ungeachtet der Fehleinschätzungen des Modells ist es auf die wissenschaftliche Vogelklassifizierung trainiert. Diese besteht in lateinischen Bezeichnungen, die so viele Vogelarten unterscheiden, wie es die deutsche oder englische Alltagssprache nicht hergibt. Kohlmeisen werden z.B. lateinisch in mehrere Unterarten unterteilt. Wer das nicht glaubt, sollte mal einen Blick auf die [IOC Klassifizierung](https://www.worldbirdnames.org/) für Vögel werfen. Damit können die lateinischen Namen nur grob ins Deutsche übersetzt werden.
@@ -22,7 +28,7 @@ Dasselbe passiert dann nochmal zum Vergleich mit dem tflite Model von [LogChirpy
 
 <img src="dayimg1.jpg" style="zoom:66%;" />
 
-Bisher wurde auf der birdiary Webplattform nachträglich jeder 10te Videoframe für die KI extrahiert mithilfe des umfangreichen Pythonmodul `cv2` (`api.py line 699`, s.a. Annis `get_frames.py`). Entsprechend der anderen Bildauswahl mit meiner lokalen Methode stimmt die Klassifizierung trotz selbem KI-Modell nicht ganz mit der Plattform überein. Das birdiary Model kam von [Kaggle](https://www.kaggle.com/), ist aber dort mittlerweile gelöscht.
+Bisher wurde auf der birdiary Webplattform nachträglich jeder 10te Videoframe für die KI extrahiert mithilfe des umfangreichen Pythonmodul `cv2` (`api.py line 699` und `scripts/classify_birds.py`, s.a. Annis `get_frames.py`). Meine andere Methode der Bildauswahl, besonders aber ein unterschiedliches Image Preprocessing führen schnell dazu, dass das Resultat sich zwischen Raspberry und Plattform trotz demselben Model deutlich unterscheiden kann. Das birdiary Model kam von [Kaggle](https://www.kaggle.com/), ist aber dort mittlerweile gelöscht. Wie es ursprünglich trainiert wurde, ist unbekannt.
 
 **Trixie Probleme**
 

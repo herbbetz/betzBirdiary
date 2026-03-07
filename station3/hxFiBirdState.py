@@ -24,11 +24,10 @@ import errno
 from lgpioBird.HX711 import HX711
 from sharedBird import roundFlt, fifoExists, writePID, clearPID
 from configBird3 import (
-    birdpath, hxDataPin, hxClckPin,
-    hxOffset, hxScale,
+    birdpath, hxDataPin, hxClckPin,hxScale,
     weightThreshold, weightlimit,
     update_config_json
-)
+) # hxOffset from config.json is not used
 import msgBird as ms
 
 
