@@ -1,8 +1,7 @@
 /*
 apt install libtensorflow-lite-dev => /usr/include/tensorflow/lite/c/c_api.h, /usr/lib/libtensorflow-lite.so
-https://raw.githubusercontent.com/nothings/stb/master/stb_image.h => image loader library to avoid dependency on OpenCV or similar
-
-gcc testmodel0.c -o testmodel0 -ltensorflowlite -lm -ldl -lpthread
+apt install libjpeg62-turbo-dev
+gcc tflite_classify.c -o tflite_classify -ltensorflow-lite -ljpeg -lm -lpthread -ldl
 ./testmodel0 test/8.jpg model0/classify.tflite model0/bird_labels_de_latin.txt
 */
 #include <stdio.h>
