@@ -34,13 +34,17 @@ def is_recognized(label: str) -> bool:
     label = label.strip().lower()
     return "none" not in label
 
+
 # the classify_birds.py on the birdiary website does no center crop,
 #   so for comparable results of birds:
 def preprocess_image(image_path, width, height):
     image = Image.open(image_path).convert("RGB")
     image = image.resize((width, height), Image.BILINEAR)
-    img = np.array(image)
+
+    img = np.array(image).astype(np.uint8)
+
     return np.expand_dims(img, axis=0)
+
 
 def main():
     if len(sys.argv) < 2:
@@ -61,7 +65,7 @@ def main():
 
     labels = load_labels(LABELS_PATH)
 
-    interpreter = Interpreter(model_path=MODEL_PATH)
+    interpreter = Interpreter(model_path=MODEL_PATH, num_threads=4)
     interpreter.allocate_tensors()
 
     input_details = interpreter.get_input_details()
@@ -70,9 +74,6 @@ def main():
     height = input_details[0]["shape"][1]
     width = input_details[0]["shape"][2]
 
-    input_scale, input_zero_point = input_details[0]["quantization"]
-    output_scale, output_zero_point = output_details[0]["quantization"]
-
     results = []
 
     # --- classify all images ---
@@ -80,18 +81,13 @@ def main():
         input_data = preprocess_image(
             image_path,
             width,
-            height,
-            input_scale,
-            input_zero_point
+            height
         )
 
         interpreter.set_tensor(input_details[0]["index"], input_data)
         interpreter.invoke()
 
         output_data = interpreter.get_tensor(output_details[0]["index"])[0]
-
-        # --- dequantize output ---
-        output_data = (output_data.astype(np.float32) - output_zero_point) * output_scale
 
         idx = int(np.argmax(output_data))
         confidence = float(output_data[idx]) * 100.0
