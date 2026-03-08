@@ -17,19 +17,6 @@ def load_labels(path):
     with open(path, "r", encoding="utf-8") as f:
         return [line.strip() for line in f.readlines()]
 
-'''
-As testmodel.py identified classify.tflite is "raw_uint8", the floating_model can be omitted for this model only. Old code:
-
-def preprocess_image(image_path, width, height, floating_model):
-    image = Image.open(image_path).convert("RGB")
-    image = image.resize((width, height))
-    input_data = np.expand_dims(np.array(image), axis=0)
-
-    if floating_model:
-        input_data = (np.float32(input_data) - 127.5) / 127.5
-
-    return input_data
-'''
 def preprocess_image(image_path, width, height):
     image = Image.open(image_path).convert("RGB")
     image = image.resize((width, height))

@@ -16,4 +16,8 @@
 
 - Die JPG Images und ihre Diagnosen im `prefix.csv` sind  auf `ramdisk` und werden mit jedem Reboot gelöscht.
 
+- Die Geschwindigkeit der `tflite runtime` wäre auf dem Raspberry durch verschiedene Maßnahmen sogar noch steigerbar, z.B. Python threads (`interpreter = Interpreter(model_path=MODEL_PATH, num_threads=4)`= XNNPACK delegate, PIL decoder buffer, input tensor preallocation.
+
+- *Tensorflow Light C API* ermöglicht die Anwendung trainierter Modelle in C ohne Umweg über Python. Auch diese API wäre noch beschleunigbar durch *NEON acceleration* und *libjpeg*.
+
   Näheres siehe im [Blog](https://herbbetz.github.io/betzBirdiary/posts/2026-02-10-tflite/).

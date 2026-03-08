@@ -10,8 +10,8 @@ permalink: /posts/2026-02-10-tflite/
 
 Auf Bilder trainierte Modelle bestehen aus einem Input-Knoten für das Bild, einem Knotennetzwerk, deren Verbindungen in ihren Gewichten das Training enthalten, und so vielen Output-Knoten, wie sie Dinge klassifizieren können. Jeder Output-Knoten wirft eine Wahrscheinlichkeit (confidence in %) aus. Entsprechend den Output-Knoten braucht man auch eine sortierte Liste von Labels, die benennen, für welche Vogelart jeder Output-Knoten steht. Die Labels sind im Format `txt` oder `json` oder auch eingebettet auf verschiedene Arten in das `model.tflite`. Vor dem Input muss das Bild (hier RGB 320x240) in das Farb- und Pixelformat (z.B. RGB 224x224) umgewandelt werden, mit dem das Modell trainiert wurde. So erfahren die Bilder beim Einspeisen zum Training und später Anwenden des Modells eventuell folgende Umwandlungen (= *Preprocessing*):
 
-- Einspeisung verzerrt (distorted)  oder 'centercrop' (aspect ratio erhalten).
-- Pixelwerte [0..255] (*uint8*) pro Farbkanal werden in *floats* umgewandelt zwischen [0..1] oder [-1..1], weil Modelle damit effektiver lernen. Dazu gibt es 2 Verfahren: *Normalisation* oder *Quantization*. Das häufige *MobileNetV2* von Google verwendet [-1..1] Normalization.
+- Einspeisung   'centercrop' (aspect ratio erhalten) oder verzerrtes Bild (stretched).
+- Pixelwerte [0..255] (*uint8*) pro Farbkanal werden in *floats* umgewandelt zwischen [0..1] oder [-1..1], weil Modelle damit effektiver lernen. Dazu gibt es 2 Verfahren: *Normalisation* oder *Quantization*. Das häufige *MobileNetV2* von Google verwendet [-1..1] Normalization von 224x224 px Images.
 - seltener: Farbmodell (RGB) kann geändert werden. Verschiedene Image-Bibliotheken (Pillow vs. cv2).
 - Wird beim Anwenden ein anderes Preprocessing verwendet als beim Training, verblasst die Sicherheit (alle Outputs haben gleich niedrige confidence) oder jedes Bild fällt in dieselbe Gruppe (wie 'none').
 
@@ -33,7 +33,7 @@ Dasselbe passiert dann nochmal zum Vergleich mit dem tflite Model von [LogChirpy
 
 <img src="dayimg1.jpg" style="zoom:66%;" />
 
-Bisher wurde auf der birdiary Webplattform nachträglich jeder 10te Videoframe für die KI extrahiert mithilfe des umfangreichen Pythonmodul `cv2` (`api.py line 699` und `scripts/classify_birds.py`, s.a. Annis `get_frames.py`). Meine andere Methode der Bildauswahl, besonders aber ein unterschiedliches Image Preprocessing führen schnell dazu, dass das Resultat sich zwischen Raspberry und Plattform trotz demselben Model deutlich unterscheiden kann. Das birdiary Model kam von [Kaggle](https://www.kaggle.com/), ist aber dort mittlerweile gelöscht. Wie es ursprünglich trainiert wurde, ist unbekannt, wahrscheinlich *MobileNetV2* .
+Bisher wurde auf der birdiary Webplattform nachträglich jeder 10te Videoframe für die KI extrahiert mithilfe des umfangreichen Pythonmodul `cv2` (`api.py line 699` und `scripts/classify_birds.py`, s.a. Annis `get_frames.py`). Meine andere Methode der Bildauswahl, besonders aber ein unterschiedliches Image Preprocessing führen schnell dazu, dass das Resultat sich zwischen Raspberry und Plattform trotz demselben Model deutlich unterscheiden kann. Das birdiary Model kam von [Kaggle](https://www.kaggle.com/), ist aber dort mittlerweile gelöscht. Wie es ursprünglich trainiert wurde, ist unbekannt. ChatGPT meint, es ist typisch für ein Model von *Tensorflow Hub*, das eine obligatorische Bildeingabe im *uint8*-Format intern in die für *MobileNetV2* typische *[-1..1] Normalisation* umwandelt.
 
 **Trixie Probleme**
 
