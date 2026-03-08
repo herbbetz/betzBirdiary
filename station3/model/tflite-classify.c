@@ -327,7 +327,7 @@ int main(int argc,char **argv)
     /* ------------------------------------------------ */
     /* find top-k predictions                           */
     /* ------------------------------------------------ */
-
+    printf("Loaded %d labels\n", label_count);
     printf("\nTop %d predictions\n",TOPK);
     printf("------------------\n");
 
@@ -351,13 +351,13 @@ int main(int argc,char **argv)
             (best < label_count) ?
             labels[best] : "unknown";
 
-        /* IMPORTANT: use %s so label text is safe */
+        /* IMPORTANT: use label as last per line, german unicode chars can puzzle terminal output */
 
-        printf("%d: %s (%.2f%%)\n",
-               k+1,
-               label,
-               best_score*100.0f);
-    }
+        printf("%2d: %6.2f%%  %s\n",
+            k+1,
+            best_score*100.0f,
+            label);
+     }
 
     /* ------------------------------------------------ */
     /* cleanup                                          */

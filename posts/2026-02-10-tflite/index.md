@@ -39,6 +39,8 @@ Bisher wurde auf der birdiary Webplattform nachträglich jeder 10te Videoframe f
 
 Die `TFLite_Runtime` ist im Feb. 2026 noch nicht für das neue Raspberry Trixie (amd64) verfügbar. Die Runtime wird mit `pip` installiert und benötigt nur für sich in einer `pyenv` Umgebung das ältere Python 3.11 und das ältere Numpy 1.26, während die anderen Python Skripte mit Python 3.13 und Numpy > 2 in Trixie laufen. Erst wenn aus dem Trixie Debian Repository ein `apt install python3-tflite_runtime` möglich ist, wird die Runtime samt abhängigen Modulen (wie dem  `deprecated imp`) auf den aktuellen Stand von Trixie angehoben sein. Auch das Modul `litert-torch` zur Umwandlung eines PyTorch .pth in ein TFLite Model läuft derzeit noch nur unter Python 3.11 .
 
+Es gibt auch die *Tensorflow Lite C API* . Sie braucht kein Python und kann die `TFLite_Runtime (Python-Modul tflite_runtime.interpreter)` völlig ersetzen. Damit wird vermieden, für Trixie ein älteres Python und Numpy zusätzlich auf dem Raspberry installieren zu müssen.
+
 **Gewinn durch Annis KI_Modell**
 
 All die Vogelmodelle demonstrieren, dass TFLite-Runtime-Modelle auf dem Raspberry4 technisch einfach und gut funktionieren. 'Full Tensorflow' ist nur für das Training, nicht aber für die Anwendung des Modells nötig. Die TFLite-Runtime ist klein in der Installation und schnell bei der Klassifizierung. Bei fehlender Vorauswahl nach deutschen Vogelhaus-Vögeln sind solche Modelle aber inhaltlich kaum brauchbar.
