@@ -1,4 +1,4 @@
-<!--keywords[Bash,Bookworm,crontab,FFMPEG,iio,GPIO,lgpio,libgpiod, pigpio,logrotate,Markdown,mDNS,Network,Ramdisk,Startup,service,Systembuild,Trixie,venv,WLAN]-->
+<!--keywords[Bash,Bookworm,crontab,FFMPEG,iio,GPIO,lgpio,libgpiod, pigpio,logrotate,Markdown,mDNS,Network,Ramdisk,Startup,service,Systembuild,tflite-C-API,Trixie,venv,WLAN]-->
 
 ### Installation von betzBirdiary auf Bookworm & Trixie
 
@@ -48,7 +48,9 @@
 - C-Module:
 	- 'sudo apt install libcamera-apps libcamera-apps-lite libcamera-dev python3-libcamera python3-kms++'
 	- teste libcamera: `rpicam-still --list-cameras`, `rpicam-still -o test_image.jpg -t 2000 --shutter 10000 --gain 4.0 --awbgains 1.5,1.2`
-	
+	- lgpio C Treiber (hx711, dht22): `sudo apt install liblgpio-dev`
+	- Tensorflow Lite C API: `sudo apt install libtensorflow-lite-dev libjpeg62-turbo-dev`	
+
 - python:
 	- 'sudo apt install libcap-dev python3-dev' nötig zur pip-Installation von Pythonmodulen mit C-Komponenten. Diese Buildtools können später wieder weg: 'sudo apt remove libcap-dev python3-dev' und 'sudo apt autoremove'.
 	- `sudo apt install python3-picamera2`.

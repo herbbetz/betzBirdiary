@@ -1,4 +1,4 @@
-<!--keywords[daywatch,KI-Model,ramdisk]-->
+<!--keywords[daywatch,KI-Model,ramdisk,Tensorflow_Lite_C_API]-->
 
 **Doku zu daywatch**
 
@@ -18,6 +18,6 @@
 
 - Die Geschwindigkeit der `tflite runtime` wäre auf dem Raspberry durch verschiedene Maßnahmen sogar noch steigerbar, z.B. Python threads (`interpreter = Interpreter(model_path=MODEL_PATH, num_threads=4)`= XNNPACK delegate, PIL decoder buffer, input tensor preallocation.
 
-- *Tensorflow Light C API* ermöglicht die Anwendung trainierter Modelle in C ohne Umweg über Python. Auch diese API wäre noch beschleunigbar durch *NEON acceleration* und *libjpeg*.
+- *Tensorflow Lite C API* ermöglicht die Anwendung trainierter Modelle in C ohne Umweg über Python. Auch diese API wäre noch beschleunigbar durch *NEON acceleration /XNNPACK threads /zero-copy tensors*.
 
   Näheres siehe im [Blog](https://herbbetz.github.io/betzBirdiary/posts/2026-02-10-tflite/).
