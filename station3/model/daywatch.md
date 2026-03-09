@@ -20,4 +20,6 @@
 
 - *Tensorflow Lite C API* ermöglicht die Anwendung trainierter Modelle in C ohne Umweg über Python. Auch diese API wäre noch beschleunigbar durch *NEON acceleration /XNNPACK threads /zero-copy tensors*.
 
+- `run_classify.sh` ist ein Softlink, der auf `run_classify_C.sh` = *Tensorflow_Lite_C_API* oder auf `run_classify_orig.sh` = *Python_tflite_runtime* (pyenv python 3.11) ausgerichtet werden kann.
+
   Näheres siehe im [Blog](https://herbbetz.github.io/betzBirdiary/posts/2026-02-10-tflite/).

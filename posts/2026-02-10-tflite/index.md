@@ -15,6 +15,15 @@ Auf Bilder trainierte Modelle bestehen aus einem Input-Knoten für das Bild, ein
 - seltener: Farbmodell (RGB) kann geändert werden. Verschiedene Image-Bibliotheken (Pillow vs. cv2).
 - Wird beim Anwenden ein anderes Preprocessing verwendet als beim Training, verblasst die Sicherheit (alle Outputs haben gleich niedrige confidence) oder jedes Bild fällt in dieselbe Gruppe (wie 'none').
 
+Außerdem kann das *Memory Layout* von .tflite Modellen differieren, besonders wenn sie aus anderen Modellen (wie PyTorch) hergeleitet wurden: 
+````
+layout = NHWC / NCHW
+width
+height
+channels
+dtype
+````
+
 ````
 Ein Model funktioniert immer so am besten, wie es trainiert wurde, am besten also auf demselben Device und mit demselben Image Preprocessing. Trainingsdaten von der ESP-Cam mit Fischaugenperspektive (OV2640) sind zu trennen von solchen aus der RaspiCam v1.3 . Wurde centercrop und 224x224px beim Training nicht eingesetzt, dann auch nicht bei der Anwendung.
 ````

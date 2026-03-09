@@ -1,10 +1,11 @@
 '''
-python3 bird_tflite_example.py test/8.jpg model0/classify.tflite model0/bird_labels_de_latin.txt
+python3 bird_tflite_model2.py test/8.jpg model2/birdiary_v5_mobilenetv3.tflite model2/labels.txt
 '''
 import ctypes
 import sys
 import numpy as np
 from PIL import Image
+
 
 
 def load_labels(path):
@@ -13,20 +14,34 @@ def load_labels(path):
         return [line.strip() for line in f]
 
 
+
+def softmax(x):
+
+    e = np.exp(x - np.max(x))
+    return e / e.sum()
+
+
+
 def main():
 
     if len(sys.argv) != 4:
+
         print("Usage:")
-        print("bird_tflite_example.py image model.tflite labels.txt")
+        print("bird_tflite_model2.py image model.tflite labels.txt")
         sys.exit(1)
 
-    image_path = sys.argv[1]
-    model_path = sys.argv[2]
+
+    image_path  = sys.argv[1]
+    model_path  = sys.argv[2]
     labels_path = sys.argv[3]
+
 
     labels = load_labels(labels_path)
 
+
     lib = ctypes.CDLL("./libbird_tflite.so")
+
+
 
     # --------------------------------------------------
     # function signatures
@@ -39,18 +54,17 @@ def main():
     lib.bird_model_load.restype = ctypes.c_void_p
 
 
-    lib.bird_model_input_size.argtypes = [
+    lib.bird_model_input_info.argtypes = [
+
         ctypes.c_void_p,
+
         ctypes.POINTER(ctypes.c_int),
+        ctypes.POINTER(ctypes.c_int),
+        ctypes.POINTER(ctypes.c_int),
+
         ctypes.POINTER(ctypes.c_int),
         ctypes.POINTER(ctypes.c_int)
     ]
-
-
-    lib.bird_model_output_size.argtypes = [
-        ctypes.c_void_p
-    ]
-    lib.bird_model_output_size.restype = ctypes.c_int
 
 
     lib.bird_model_input_buffer.argtypes = [
@@ -59,16 +73,22 @@ def main():
     lib.bird_model_input_buffer.restype = ctypes.c_void_p
 
 
+    lib.bird_model_output_size.argtypes = [
+        ctypes.c_void_p
+    ]
+    lib.bird_model_output_size.restype = ctypes.c_int
+
+
     lib.bird_model_infer.argtypes = [
         ctypes.c_void_p,
         ctypes.c_void_p
     ]
-    lib.bird_model_infer.restype = ctypes.c_int
 
 
     lib.bird_model_free.argtypes = [
         ctypes.c_void_p
     ]
+
 
 
     # --------------------------------------------------
@@ -81,23 +101,32 @@ def main():
     )
 
     if not model:
+
         print("model load failed")
         sys.exit(1)
 
 
+
     # --------------------------------------------------
-    # query input shape
+    # query input info
     # --------------------------------------------------
 
     w = ctypes.c_int()
     h = ctypes.c_int()
     c = ctypes.c_int()
+    layout = ctypes.c_int()
+    dtype  = ctypes.c_int()
 
-    lib.bird_model_input_size(
+    lib.bird_model_input_info(
+
         model,
+
         ctypes.byref(w),
         ctypes.byref(h),
-        ctypes.byref(c)
+        ctypes.byref(c),
+
+        ctypes.byref(layout),
+        ctypes.byref(dtype)
     )
 
     width  = w.value
@@ -105,48 +134,87 @@ def main():
     channels = c.value
 
 
+    print()
+    print("INPUT")
+    print("-----")
+
+    print("width:",width)
+    print("height:",height)
+    print("channels:",channels)
+
+    print("layout:", "NCHW" if layout.value else "NHWC")
+    print("dtype:",  "float32" if dtype.value else "uint8")
+
+
+
     # --------------------------------------------------
-    # get tensor memory pointer
+    # get tensor pointer
     # --------------------------------------------------
 
     ptr = lib.bird_model_input_buffer(model)
 
-    size = width * height * channels
+    size = width*height*channels
 
     input_array = np.ctypeslib.as_array(
-        (ctypes.c_uint8 * size).from_address(ptr)
+        (ctypes.c_float * size).from_address(ptr)
     )
 
-    input_array = input_array.reshape(
-        (height, width, channels)
-    )
 
 
     # --------------------------------------------------
-    # load image directly into tensor
+    # load image
     # --------------------------------------------------
 
     img = Image.open(image_path).convert("RGB")
     img = img.resize((width,height))
 
-    np.copyto(
-        input_array,
-        np.array(img,dtype=np.uint8)
-    )
+    arr = np.array(img,dtype=np.float32)/255.0
+
+
+    # normalization (PyTorch)
+
+    mean = np.array([0.485,0.456,0.406],dtype=np.float32)
+    std  = np.array([0.229,0.224,0.225],dtype=np.float32)
+
+    arr = (arr - mean) / std
+
 
 
     # --------------------------------------------------
-    # allocate output buffer
+    # layout conversion
+    # --------------------------------------------------
+
+    if layout.value == 1:
+
+        # NCHW
+
+        input_array = input_array.reshape(
+            (channels,height,width)
+        )
+
+        arr = arr.transpose((2,0,1))
+
+        np.copyto(input_array,arr)
+
+    else:
+
+        # NHWC
+
+        input_array = input_array.reshape(
+            (height,width,channels)
+        )
+
+        np.copyto(input_array,arr)
+
+
+
+    # --------------------------------------------------
+    # inference
     # --------------------------------------------------
 
     num_classes = lib.bird_model_output_size(model)
 
     output = np.zeros(num_classes,dtype=np.float32)
-
-
-    # --------------------------------------------------
-    # run inference
-    # --------------------------------------------------
 
     lib.bird_model_infer(
         model,
@@ -154,24 +222,29 @@ def main():
     )
 
 
-    # --------------------------------------------------
-    # prediction
-    # --------------------------------------------------
 
-    idx = int(np.argmax(output))
-    conf = float(output[idx])*100
+    probs = softmax(output)
 
-    label = labels[idx] if idx < len(labels) else f"class {idx}"
+
+    idx = np.argsort(probs)[-5:][::-1]
+
 
     print()
-    print("Number of classes:",num_classes)
-    print("Prediction")
-    print("----------")
-    print(label)
-    print(f"{conf:.2f}%")
+    print("TOP5")
+    print("----")
+
+    for i in idx:
+
+        label = labels[i] if i < len(labels) else f"class {i}"
+
+        print(
+            f"{label:30s}",
+            f"{probs[i]*100:6.2f}%"
+        )
 
 
     lib.bird_model_free(model)
+
 
 
 if __name__ == "__main__":

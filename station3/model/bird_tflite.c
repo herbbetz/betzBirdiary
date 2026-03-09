@@ -14,18 +14,12 @@
  -------
  gcc -O3 -fPIC -shared bird_tflite.c -o libbird_tflite.so -ltensorflow-lite
 */
-
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
 #include <string.h>
 
-#include <tensorflow/lite/c/c_api.h>
+#include "tensorflow/lite/c/c_api.h"
 
-
-/* --------------------------------------------------
-   internal model structure
-   -------------------------------------------------- */
 
 typedef struct
 {
@@ -33,40 +27,25 @@ typedef struct
     TfLiteInterpreterOptions* options;
     TfLiteInterpreter* interpreter;
 
-    TfLiteTensor* input;
-    const TfLiteTensor* output;
-
-    int input_width;
-    int input_height;
-    int input_channels;
-
-    int output_size;
-
-    TfLiteType input_type;
-    TfLiteType output_type;
-
 } BirdModel;
 
 
-/* --------------------------------------------------
-   load model
-   -------------------------------------------------- */
 
-void* bird_model_load(const char* model_path, int threads)
+// ----------------------------------------------------------
+// load model
+// ----------------------------------------------------------
+
+void* bird_model_load(
+    const char* path,
+    int threads
+)
 {
     BirdModel* m = calloc(1,sizeof(BirdModel));
 
-    if(!m)
-        return NULL;
-
-    /* load model file */
-
-    m->model = TfLiteModelCreateFromFile(model_path);
+    m->model = TfLiteModelCreateFromFile(path);
 
     if(!m->model)
         return NULL;
-
-    /* create interpreter options */
 
     m->options = TfLiteInterpreterOptionsCreate();
 
@@ -74,8 +53,6 @@ void* bird_model_load(const char* model_path, int threads)
         m->options,
         threads
     );
-
-    /* create interpreter */
 
     m->interpreter =
         TfLiteInterpreterCreate(
@@ -86,191 +63,170 @@ void* bird_model_load(const char* model_path, int threads)
     if(!m->interpreter)
         return NULL;
 
-    /* allocate tensors */
-
-    if(TfLiteInterpreterAllocateTensors(
-        m->interpreter
-    ) != kTfLiteOk)
+    if(TfLiteInterpreterAllocateTensors(m->interpreter)
+        != kTfLiteOk)
         return NULL;
-
-    /* obtain tensors */
-
-    m->input =
-        TfLiteInterpreterGetInputTensor(
-            m->interpreter,
-            0
-        );
-
-    m->output =
-        TfLiteInterpreterGetOutputTensor(
-            m->interpreter,
-            0
-        );
-
-    /* store tensor types */
-
-    m->input_type  = TfLiteTensorType(m->input);
-    m->output_type = TfLiteTensorType(m->output);
-
-    /* read input dimensions */
-
-    m->input_height =
-        TfLiteTensorDim(m->input,1);
-
-    m->input_width =
-        TfLiteTensorDim(m->input,2);
-
-    m->input_channels =
-        TfLiteTensorDim(m->input,3);
-
-    /* read output vector size */
-
-    m->output_size =
-        TfLiteTensorDim(m->output,1);
 
     return m;
 }
 
 
-/* --------------------------------------------------
-   query input tensor shape
-   -------------------------------------------------- */
 
-int bird_model_input_size(
+ // ----------------------------------------------------------
+ // get tensor information
+ // ----------------------------------------------------------
+
+int bird_model_input_info(
     void* handle,
     int* width,
     int* height,
-    int* channels)
+    int* channels,
+    int* layout,
+    int* dtype
+)
 {
     BirdModel* m = (BirdModel*)handle;
 
-    *width  = m->input_width;
-    *height = m->input_height;
-    *channels = m->input_channels;
+    TfLiteTensor* t =
+        TfLiteInterpreterGetInputTensor(
+            m->interpreter,
+            0
+        );
+
+    int dims = TfLiteTensorNumDims(t);
+
+    if(dims != 4)
+        return 0;
+
+    int d0 = TfLiteTensorDim(t,0);
+    int d1 = TfLiteTensorDim(t,1);
+    int d2 = TfLiteTensorDim(t,2);
+    int d3 = TfLiteTensorDim(t,3);
+
+    /*
+    Detect layout
+
+    NHWC = [1,H,W,C]
+    NCHW = [1,C,H,W]
+    */
+
+    if(d1 <= 4)
+    {
+        // NCHW
+
+        *layout   = 1;
+        *channels = d1;
+        *height   = d2;
+        *width    = d3;
+    }
+    else
+    {
+        // NHWC
+
+        *layout   = 0;
+        *height   = d1;
+        *width    = d2;
+        *channels = d3;
+    }
+
+    TfLiteType type = TfLiteTensorType(t);
+
+    if(type == kTfLiteUInt8)
+        *dtype = 0;
+    else
+        *dtype = 1;
 
     return 1;
 }
 
 
-/* --------------------------------------------------
-   return output vector size
-   -------------------------------------------------- */
 
-int bird_model_output_size(void* handle)
-{
-    BirdModel* m = (BirdModel*)handle;
-
-    return m->output_size;
-}
-
-
-/* --------------------------------------------------
-   return pointer to input tensor memory
-
-   Python can write image data directly here
-   -------------------------------------------------- */
+ // ----------------------------------------------------------
+ // return direct input buffer
+ // ----------------------------------------------------------
 
 void* bird_model_input_buffer(void* handle)
 {
     BirdModel* m = (BirdModel*)handle;
 
-    return TfLiteTensorData(m->input);
+    TfLiteTensor* t =
+        TfLiteInterpreterGetInputTensor(
+            m->interpreter,
+            0
+        );
+
+    return TfLiteTensorData(t);
 }
 
 
-/* --------------------------------------------------
-   run inference
-   -------------------------------------------------- */
 
-int bird_model_infer(
-    void* handle,
-    float* output_buffer)
+ // ----------------------------------------------------------
+ // output classes
+ // ----------------------------------------------------------
+
+int bird_model_output_size(void* handle)
 {
     BirdModel* m = (BirdModel*)handle;
 
-    /* run interpreter */
+    const TfLiteTensor* t =
+        TfLiteInterpreterGetOutputTensor(
+            m->interpreter,
+            0
+        );
 
-    if(TfLiteInterpreterInvoke(
-        m->interpreter
-    ) != kTfLiteOk)
-        return 0;
-
-    /* read output tensor */
-
-    size_t bytes =
-        TfLiteTensorByteSize(m->output);
-
-    void* tmp = malloc(bytes);
-
-    if(!tmp)
-        return 0;
-
-    if(TfLiteTensorCopyToBuffer(
-        m->output,
-        tmp,
-        bytes
-    ) != kTfLiteOk)
-    {
-        free(tmp);
-        return 0;
-    }
-
-    /* convert output to float */
-
-    if(m->output_type == kTfLiteFloat32)
-    {
-        memcpy(output_buffer,tmp,bytes);
-    }
-
-    else if(m->output_type == kTfLiteUInt8)
-    {
-        uint8_t* p = (uint8_t*)tmp;
-
-        for(int i=0;i<m->output_size;i++)
-            output_buffer[i] =
-                p[i] / 255.0f;
-    }
-
-    else if(m->output_type == kTfLiteInt8)
-    {
-        int8_t* p = (int8_t*)tmp;
-
-        for(int i=0;i<m->output_size;i++)
-            output_buffer[i] =
-                (p[i] + 128) / 255.0f;
-    }
-
-    free(tmp);
-
-    return m->output_size;
+    return TfLiteTensorDim(t,1);
 }
 
 
-/* --------------------------------------------------
-   free model
-   -------------------------------------------------- */
+
+ // ----------------------------------------------------------
+ // inference
+ // ----------------------------------------------------------
+
+int bird_model_infer(
+    void* handle,
+    void* output
+)
+{
+    BirdModel* m = (BirdModel*)handle;
+
+    if(TfLiteInterpreterInvoke(m->interpreter)
+        != kTfLiteOk)
+        return 0;
+
+    const TfLiteTensor* out =
+        TfLiteInterpreterGetOutputTensor(
+            m->interpreter,
+            0
+        );
+
+    int size =
+        TfLiteTensorByteSize(out);
+
+    memcpy(
+        output,
+        TfLiteTensorData(out),
+        size
+    );
+
+    return 1;
+}
+
+
+
+ // ----------------------------------------------------------
+ // free
+ // ----------------------------------------------------------
 
 void bird_model_free(void* handle)
 {
     BirdModel* m = (BirdModel*)handle;
 
-    if(!m)
-        return;
+    if(!m) return;
 
-    if(m->interpreter)
-        TfLiteInterpreterDelete(
-            m->interpreter
-        );
-
-    if(m->options)
-        TfLiteInterpreterOptionsDelete(
-            m->options
-        );
-
-    if(m->model)
-        TfLiteModelDelete(
-            m->model
-        );
+    TfLiteInterpreterDelete(m->interpreter);
+    TfLiteInterpreterOptionsDelete(m->options);
+    TfLiteModelDelete(m->model);
 
     free(m);
 }
