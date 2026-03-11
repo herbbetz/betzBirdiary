@@ -1,7 +1,8 @@
 #!/bin/bash
 
-# Define the remote repository URL
-REMOTE_URL="https://github.com/herbbetz/betzBirdiary.git"
+# Define the remote repository URL, not really needed with ssh-key:
+# REMOTE_URL="https://github.com/herbbetz/betzBirdiary.git"
+REMOTE_URL="git@github.com:herbbetz/betzBirdiary.git"
 
 # Generate a commit message based on the current date and time
 COMMIT_MESSAGE=$(date +"%y%m%d-%H%M")"-betzUbuntu"
