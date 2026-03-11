@@ -17,6 +17,7 @@ Advantages
 • works with modern Python versions
 • faster inference on Raspberry Pi
 • writes image directly into TFLite tensor memory
+• uses universal tensor info API
 
 Input images follow the naming format
 
@@ -83,7 +84,7 @@ def load_labels(path):
 # filter out "none"
 # --------------------------------------------------
 
-def is_recognized(label: str) -> bool:
+def is_recognized(label: str):
 
     label = label.strip().lower()
 
@@ -97,12 +98,14 @@ def is_recognized(label: str) -> bool:
 def main():
 
     if len(sys.argv) < 2:
+
         ms.log("Usage: python birdclassify0C.py <filename_prefix>")
         sys.exit(1)
 
     prefix = sys.argv[1]
 
     if "/" in prefix:
+
         ms.log(f"must not contain '/': {prefix}")
         sys.exit(1)
 
@@ -118,6 +121,7 @@ def main():
     ms.log(f"AI classify {len(image_files)} images")
 
     if not image_files:
+
         ms.log("No matching JPG files found.")
         sys.exit(1)
 
@@ -147,18 +151,14 @@ def main():
     lib.bird_model_load.restype = ctypes.c_void_p
 
 
-    lib.bird_model_input_size.argtypes = [
+    lib.bird_model_input_info.argtypes = [
         ctypes.c_void_p,
+        ctypes.POINTER(ctypes.c_int),
+        ctypes.POINTER(ctypes.c_int),
         ctypes.POINTER(ctypes.c_int),
         ctypes.POINTER(ctypes.c_int),
         ctypes.POINTER(ctypes.c_int)
     ]
-
-
-    lib.bird_model_output_size.argtypes = [
-        ctypes.c_void_p
-    ]
-    lib.bird_model_output_size.restype = ctypes.c_int
 
 
     lib.bird_model_input_buffer.argtypes = [
@@ -167,11 +167,16 @@ def main():
     lib.bird_model_input_buffer.restype = ctypes.c_void_p
 
 
+    lib.bird_model_output_size.argtypes = [
+        ctypes.c_void_p
+    ]
+    lib.bird_model_output_size.restype = ctypes.c_int
+
+
     lib.bird_model_infer.argtypes = [
         ctypes.c_void_p,
         ctypes.c_void_p
     ]
-    lib.bird_model_infer.restype = ctypes.c_int
 
 
     lib.bird_model_free.argtypes = [
@@ -189,28 +194,48 @@ def main():
     )
 
     if not model:
+
         ms.log("model load failed")
         sys.exit(1)
 
 
     # --------------------------------------------------
-    # query input tensor shape
+    # query input tensor information
     # --------------------------------------------------
 
     w = ctypes.c_int()
     h = ctypes.c_int()
     c = ctypes.c_int()
+    layout = ctypes.c_int()
+    dtype = ctypes.c_int()
 
-    lib.bird_model_input_size(
+    lib.bird_model_input_info(
         model,
         ctypes.byref(w),
         ctypes.byref(h),
-        ctypes.byref(c)
+        ctypes.byref(c),
+        ctypes.byref(layout),
+        ctypes.byref(dtype)
     )
 
     width = w.value
     height = h.value
     channels = c.value
+
+
+    # --------------------------------------------------
+    # verify tensor format
+    # --------------------------------------------------
+
+    if layout.value != 0:
+
+        ms.log("ERROR: model0 expects NHWC layout")
+        sys.exit(1)
+
+    if dtype.value != 0:
+
+        ms.log("ERROR: model0 expects uint8 input")
+        sys.exit(1)
 
 
     # --------------------------------------------------
@@ -238,7 +263,6 @@ def main():
 
     output = np.zeros(num_classes, dtype=np.float32)
 
-
     results = []
 
 
@@ -252,14 +276,17 @@ def main():
 
         img = Image.open(image_path).convert("RGB")
 
+        # resize to model input size
+
         img = img.resize((width, height), Image.BILINEAR)
+
+        # convert to numpy uint8
+
+        arr = np.array(img, dtype=np.uint8)
 
         # write directly into tensor memory
 
-        np.copyto(
-            input_array,
-            np.array(img, dtype=np.uint8)
-        )
+        np.copyto(input_array, arr)
 
         # run inference
 
@@ -293,12 +320,15 @@ def main():
     ]
 
     if recognized:
+
         keep = sorted(
             recognized,
             key=lambda r: r["confidence"],
             reverse=True
         )[:2]
+
     else:
+
         keep = []
 
 

@@ -9,21 +9,23 @@ Features
 • Uses TensorFlow Lite C API via ctypes
 • No Python tflite_runtime dependency
 • Direct write into TFLite tensor memory
-• Supports float32 input models
+• Uses universal tensor info API
+• Supports NHWC float32 models
 
-Image naming format:
+Image naming format
+-------------------
 
     yyyy-mm-dd_hhMMss.msecs.X.jpg
 
-Example:
+Example
 
     2026-02-02_083949.283901.0.jpg
 
-Common prefix:
+Common prefix
 
     yyyy-mm-dd_hhMMss.msecs
 
-Usage:
+Usage
 
     python birdclassify1C.py <filename_prefix>
 
@@ -72,7 +74,7 @@ def load_labels(path):
 # filter recognized birds
 # --------------------------------------------------
 
-def is_recognized(label: str) -> bool:
+def is_recognized(label: str):
 
     label = label.strip().lower()
 
@@ -84,10 +86,21 @@ def is_recognized(label: str) -> bool:
 # --------------------------------------------------
 
 def preprocess_image(image_path, width, height):
+    """
+    Preprocessing used by model1.
+
+    Steps
+    -----
+    1. Load RGB image
+    2. Scale while preserving aspect ratio
+    3. Center crop to model input size
+    4. Convert to float32
+    5. Normalize to [-1,1]
+    """
 
     image = Image.open(image_path).convert("RGB")
 
-    # --- keep aspect ratio ---
+    # --- preserve aspect ratio ---
 
     src_w, src_h = image.size
 
@@ -108,11 +121,11 @@ def preprocess_image(image_path, width, height):
 
     image = image.crop((left, top, right, bottom))
 
-    # convert to float32
+    # --- convert to float32 array ---
 
     arr = np.array(image, dtype=np.float32)
 
-    # normalization required by model
+    # --- normalization expected by model1 ---
 
     arr = (arr - 127.5) / 127.5
 
@@ -126,12 +139,14 @@ def preprocess_image(image_path, width, height):
 def main():
 
     if len(sys.argv) < 2:
+
         ms.log("Usage: python birdclassify1C.py <filename_prefix>")
         sys.exit(1)
 
     prefix = sys.argv[1]
 
     if "/" in prefix:
+
         ms.log(f"must not contain '/': {prefix}")
         sys.exit(1)
 
@@ -147,6 +162,7 @@ def main():
     ms.log(f"AI classify {len(image_files)} images")
 
     if not image_files:
+
         ms.log("No matching JPG files found.")
         sys.exit(1)
 
@@ -166,7 +182,7 @@ def main():
 
 
     # --------------------------------------------------
-    # define ctypes signatures
+    # ctypes signatures
     # --------------------------------------------------
 
     lib.bird_model_load.argtypes = [
@@ -176,18 +192,14 @@ def main():
     lib.bird_model_load.restype = ctypes.c_void_p
 
 
-    lib.bird_model_input_size.argtypes = [
+    lib.bird_model_input_info.argtypes = [
         ctypes.c_void_p,
+        ctypes.POINTER(ctypes.c_int),
+        ctypes.POINTER(ctypes.c_int),
         ctypes.POINTER(ctypes.c_int),
         ctypes.POINTER(ctypes.c_int),
         ctypes.POINTER(ctypes.c_int)
     ]
-
-
-    lib.bird_model_output_size.argtypes = [
-        ctypes.c_void_p
-    ]
-    lib.bird_model_output_size.restype = ctypes.c_int
 
 
     lib.bird_model_input_buffer.argtypes = [
@@ -196,11 +208,16 @@ def main():
     lib.bird_model_input_buffer.restype = ctypes.c_void_p
 
 
+    lib.bird_model_output_size.argtypes = [
+        ctypes.c_void_p
+    ]
+    lib.bird_model_output_size.restype = ctypes.c_int
+
+
     lib.bird_model_infer.argtypes = [
         ctypes.c_void_p,
         ctypes.c_void_p
     ]
-    lib.bird_model_infer.restype = ctypes.c_int
 
 
     lib.bird_model_free.argtypes = [
@@ -218,28 +235,46 @@ def main():
     )
 
     if not model:
+
         ms.log("model load failed")
         sys.exit(1)
 
 
     # --------------------------------------------------
-    # query input tensor shape
+    # query input tensor information
     # --------------------------------------------------
 
     w = ctypes.c_int()
     h = ctypes.c_int()
     c = ctypes.c_int()
+    layout = ctypes.c_int()
+    dtype = ctypes.c_int()
 
-    lib.bird_model_input_size(
+    lib.bird_model_input_info(
         model,
         ctypes.byref(w),
         ctypes.byref(h),
-        ctypes.byref(c)
+        ctypes.byref(c),
+        ctypes.byref(layout),
+        ctypes.byref(dtype)
     )
 
     width = w.value
     height = h.value
     channels = c.value
+
+
+    # --- verify expected tensor format ---
+
+    if layout.value != 0:
+
+        ms.log("ERROR: model1 expects NHWC layout")
+        sys.exit(1)
+
+    if dtype.value != 1:
+
+        ms.log("ERROR: model1 expects float32 input")
+        sys.exit(1)
 
 
     # --------------------------------------------------
@@ -282,7 +317,7 @@ def main():
             height
         )
 
-        # write directly into tensor memory
+        # write image directly into tensor memory
 
         np.copyto(input_array, img)
 
@@ -292,6 +327,8 @@ def main():
             model,
             output.ctypes.data
         )
+
+        # prediction
 
         idx = int(np.argmax(output))
 
