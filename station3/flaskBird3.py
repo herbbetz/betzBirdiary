@@ -25,6 +25,16 @@ timeout = 5  # seconds
 last_activity = time.time()
 client_active = 1
 
+# for timeseries_svg():
+LABELS = {
+"temperature": "Temperature (°C)",
+"humidity": "Relative Humidity (%)",
+"humid_abs": "Absolute Humidity (g/m³)",
+"metaLux": "Lux",
+"exposure": "Exposure",
+"gain": "Gain"
+}
+
 def monitor_inactivity():
    global last_activity, client_active
    while True:
@@ -103,9 +113,9 @@ def timeseries_svg(json_file, key_param, time_field="timestamp"):
         ax.set_xlim(0, 1439)
 
         ax.set_xlabel("Time of Day")
-        ax.set_ylabel(key_param)
-        ax.set_title(f"{key_param} Curves for Each Day")
-
+        ylabel = LABELS.get(key_param, key_param) # get label if there is, else key_param
+        ax.set_ylabel(ylabel)
+        ax.set_title(f"{ylabel} – Daily Curves")
         ax.legend(title="Date")
         ax.grid(True)
 
