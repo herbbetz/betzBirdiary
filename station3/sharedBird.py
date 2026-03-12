@@ -8,9 +8,9 @@ PIDdir = app_dir + 'ramdisk/'
 keep_dir = app_dir + 'keep/'
 
 def roundFlt(flt):
-     # round float down to 2 decimal
+     # round float down to 0 decimal
      # return (math.floor(flt * 100)/100.0)
-    return (round(flt, 2))
+    return (round(flt, 0))
 
 def fifoExists(pipefile):
 # os.path.exists() only working on regular files

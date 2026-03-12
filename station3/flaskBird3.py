@@ -48,6 +48,78 @@ def _svg_error(msg):
         f'</svg>'
     )
 
+def timeseries_svg(json_file, key_param, time_field="timestamp"):
+    # deploy svg graph for /camdata and /tempdata
+    # Load data
+    try:
+        with open(json_file, "r") as f:
+            data = json.load(f)
+    except Exception as e:
+        return Response(_svg_error(f"Data load error: {e}"), mimetype="image/svg+xml")
+
+    # Check if key exists
+    if not data or all(key_param not in entry for entry in data):
+        return Response(_svg_error(f"No data for {key_param}"), mimetype="image/svg+xml")
+
+    # Parse data into day-wise curves
+    curves = defaultdict(list)
+
+    for entry in data:
+        if key_param not in entry:
+            continue # skip entries missing this field
+
+        timestamp = entry[time_field]
+        year, month, day, hour, minute = map(int, timestamp.split(':'))
+
+        dt = datetime(year, month, day, hour, minute)
+        day_key = (year, month, day)
+
+        curves[day_key].append((dt, entry[key_param]))
+        # example: curves[(2025, 7, 28)] = [(datetime(2025,7,28,6,12), 90), ...]
+
+    for day_key in curves:
+        curves[day_key].sort(key=lambda x: x[0])
+
+    with mpl_lock:
+        fig, ax = plt.subplots(figsize=(10, 5))
+        colors = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red']
+
+        for idx, (day_key, points) in enumerate(curves.items()):
+            x_vals = [dt.hour * 60 + dt.minute for dt, _ in points]
+            values = [v for _, v in points]
+
+            label = f"{day_key[1]:02d}-{day_key[2]:02d}"
+
+            ax.plot(
+                x_vals,
+                values,
+                label=label,
+                color=colors[idx % len(colors)],
+                marker='o'
+            )
+
+        ax.set_xticks([i * 60 for i in range(0, 24, 2)])
+        ax.set_xticklabels([f"{i:02d}:00" for i in range(0, 24, 2)])
+        ax.set_xlim(0, 1439)
+
+        ax.set_xlabel("Time of Day")
+        ax.set_ylabel(key_param)
+        ax.set_title(f"{key_param} Curves for Each Day")
+
+        ax.legend(title="Date")
+        ax.grid(True)
+
+        plt.tight_layout()
+
+        buf = io.StringIO()
+        plt.savefig(buf, format="svg")
+        plt.close(fig)
+
+        svg = buf.getvalue()
+        buf.close()
+
+        return Response(svg, mimetype="image/svg+xml")
+    
 def render_csv_block(basedir, prefix):
     csv_path = f"{birdpath['appdir']}/{basedir}/{prefix}.csv" #os.path.join(basedir, f"{prefix}.csv")
     if not os.path.exists(csv_path):
@@ -174,57 +246,25 @@ def msgJSON2():
 
 @app.route("/camdata")
 def camdata_svg():
-   keyParam = request.args.get("target", "brightness") # defaults to "brightness" if only "/camdata" is asked for, but request should be like "/camdata?target=brightness" or "/camdata?target=metaLux"
-   # Load data from file
-   try:
-      with open("camdata/camdata.json", "r") as f:
-         data = json.load(f)
-   except Exception as e:
-      return Response(_svg_error(f"Data load error: {e}"), mimetype="image/svg+xml")
-   # example data: [{"timestamp": "2025:07:28:06:12", "brightness": 90, "metaLux": 1400, "luxcategory": 3}, ...]
-   # Check if keyParam exists in at least one entry
-   if not data or all(keyParam not in entry for entry in data):
-      return Response(_svg_error(f"No data for {keyParam}"), mimetype="image/svg+xml")
+    # defaults to "brightness" if only "/camdata" is asked for, but request should be like "/camdata?target=brightness" or "http://server/camdata?target=metaLux"
+    key_param = request.args.get("target", "brightness")
+    # example camdata.json: [{"timestamp": "2025:07:28:06:12", "brightness": 90, "metaLux": 1400, "luxcategory": 3}, ...]
+    return timeseries_svg(
+        "camdata/camdata.json",
+        key_param,
+        time_field="timestamp"
+    )
 
-   # Parse data into day-wise curves
-   curves = defaultdict(list)
-   for entry in data:
-      if keyParam not in entry:
-         continue  # skip entries missing this field
-      year, month, day, hour, minute = map(int, entry['timestamp'].split(':'))
-      dt = datetime(year=year, month=month, day=day, hour=hour, minute=minute)
-      day_key = (year, month, day)
-      curves[day_key].append((dt, entry[keyParam]))
-      # example: curves[(2025, 7, 28)] = [(datetime(2025,7,28,6,12), 90), ...]
-   for day_key in curves:
-      curves[day_key].sort(key=lambda x: x[0])
-
-   with mpl_lock: # thread safety for multiple requests
-      fig, ax = plt.subplots(figsize=(10, 5))
-      colors = ['tab:blue', 'tab:orange', 'tab:green', 'tab:red']
-      for idx, (day_key, points) in enumerate(curves.items()):
-         times = [dt.time() for dt, _ in points]
-         brightness = [b for _, b in points]
-         x_vals = [t.hour * 60 + t.minute for t in times]
-         label = f"{day_key[1]:02d}-{day_key[2]:02d}"
-         ax.plot(x_vals, brightness, label=label, color=colors[idx % len(colors)], marker='o')
-      ax.set_xticks([i * 60 for i in range(0, 24, 2)])
-      ax.set_xticklabels([f"{i:02d}:00" for i in range(0, 24, 2)])
-      ax.set_xlim(0, 1439)
-      ax.set_xlabel("Time of Day")
-      ax.set_ylabel(keyParam)
-      ax.set_title(f"{keyParam} Curves for Each Day")
-      ax.legend(title="Date")
-      ax.grid(True)
-      plt.tight_layout()
-
-      buf = io.StringIO()
-      plt.savefig(buf, format="svg")
-      plt.close(fig)
-      svg = buf.getvalue()
-      buf.close()
-
-      return Response(svg, mimetype="image/svg+xml")
+@app.route("/tempdata")
+def tempdata_svg():
+    key_param = request.args.get("target", "temperature")
+    # "tempdata?target=temperature" or "tempdata?target=humidity" or "http://server/tempdata?target=humid_abs", targets must correspond to keys in tempdata.json
+    # example tempdata.json: [{"date": "2025:07:28:06:12", "temperature": 20, "humidity": 70, "humid_abs": 12}, ...]
+    return timeseries_svg(
+        "tempdata/tempdata.json",
+        key_param,
+        time_field="date"
+    )
 
 @app.route("/daywatch")
 def daygallery():
