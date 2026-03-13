@@ -62,7 +62,7 @@ def get_brightness(picam, now):
     exposure = round(metadata.get("ExposureTime"))
     gain = round(metadata.get("AnalogueGain"))
     luxdata = {
-        "timestamp": f"{now.year:04d}:{now.month:02d}:{now.day:02d}:{now.hour:02d}:{now.minute:02d}",
+        "date": f"{now.year:04d}:{now.month:02d}:{now.day:02d}:{now.hour:02d}:{now.minute:02d}", # key "date" like for dhtBird protocol
         "metaLux": metalux,
         "exposure": exposure,
         "gain": gain
@@ -105,7 +105,7 @@ def get_brightness(picam, now):
 get_brightness.last_logged_minute = -1 #static var
 
 def luxProtocol(lData):
-    camdatafile = "camdata/camdata.json" # not suited for ramdisk/ to spare SD card, because data of several days/sessions
+    camdatafile = f"{birdpath['appdir']}/camdata/camdata.json" # not suited for ramdisk/ to spare SD card, because data of several days/sessions
     data = []
     maxdata = 100
     if os.path.exists(camdatafile):

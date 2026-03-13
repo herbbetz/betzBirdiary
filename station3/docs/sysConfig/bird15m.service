@@ -12,6 +12,9 @@ Group=pi
 # The scripts to execute
 ExecStart=/usr/bin/bash /home/pi/station3/sysmon2.sh
 ExecStart=/usr/bin/python3 /home/pi/station3/dhtBirdCt.py
+# logging will not work by >> redirection, but instead:
+StandardOutput=append:/home/pi/station3/logs/15mservice.log
+StandardError=append:/home/pi/station3/logs/15mservice.log
 
 [Install]
 WantedBy=multi-user.target

@@ -58,8 +58,9 @@ def _svg_error(msg):
         f'</svg>'
     )
 
-def timeseries_svg(json_file, key_param, time_field="timestamp"):
-    # deploy svg graph for /camdata and /tempdata
+def timeseries_svg(json_file, key_param):
+    # deploy svg graph for /camdata and /tempdata, for both timestamp has key "date":
+    time_field="date"
     # Load data
     try:
         with open(json_file, "r") as f:
@@ -257,12 +258,11 @@ def msgJSON2():
 @app.route("/camdata")
 def camdata_svg():
     # defaults to "brightness" if only "/camdata" is asked for, but request should be like "/camdata?target=brightness" or "http://server/camdata?target=metaLux"
-    key_param = request.args.get("target", "brightness")
-    # example camdata.json: [{"timestamp": "2025:07:28:06:12", "brightness": 90, "metaLux": 1400, "luxcategory": 3}, ...]
+    key_param = request.args.get("target", "metaLux")
+    # example camdata.json: [{"date": "2025:07:28:06:12", "metaLux": 1400,..., "luxcategory": 3}, ...]
     return timeseries_svg(
-        "camdata/camdata.json",
-        key_param,
-        time_field="timestamp"
+        f"{birdpath['appdir']}/camdata/camdata.json",
+        key_param
     )
 
 @app.route("/tempdata")
@@ -271,9 +271,8 @@ def tempdata_svg():
     # "tempdata?target=temperature" or "tempdata?target=humidity" or "http://server/tempdata?target=humid_abs", targets must correspond to keys in tempdata.json
     # example tempdata.json: [{"date": "2025:07:28:06:12", "temperature": 20, "humidity": 70, "humid_abs": 12}, ...]
     return timeseries_svg(
-        "tempdata/tempdata.json",
-        key_param,
-        time_field="date"
+        f"{birdpath['appdir']}/tempdata/tempdata.json",
+        key_param
     )
 
 @app.route("/daywatch")

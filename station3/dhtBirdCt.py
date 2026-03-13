@@ -1,7 +1,7 @@
 # dhtBirdCt.py
 # -------------------------------
 # Upload environmental data from a DHT22 sensor to the Birdiary platform
-# This version uses a ctypes wrapper for the C driver libdht22.so
+# Uses ctypes wrapper for the stable polling C driver libdht22.so
 # Automatically retries on timeouts/checksum errors until valid readings are obtained
 # -------------------------------
 
@@ -14,8 +14,8 @@ import os
 import math
 
 # Own modules
-from sharedBird import roundFlt  # shared utility function for rounding floats
-import msgBird as ms              # logging and event functions
+from sharedBird import roundFlt        # utility function for rounding floats
+import msgBird as ms                    # logging and event functions
 from configBird3 import birdpath, serverUrl, boxId, dhtPin  # configuration
 
 # -------------------------------
@@ -23,7 +23,7 @@ from configBird3 import birdpath, serverUrl, boxId, dhtPin  # configuration
 # -------------------------------
 class DHT22_CT:
     """
-    DHT22 sensor interface using the C driver libdht22.so via ctypes.
+    DHT22 sensor interface using the C polling driver libdht22.so via ctypes.
     Provides init, read, and cleanup methods similar to previous Python driver.
     """
 
@@ -33,8 +33,6 @@ class DHT22_CT:
         :param gpio_pin: BCM GPIO number where DHT22 data pin is connected
         """
         self.gpio_pin = gpio_pin
-
-        # Load the shared library from station3/c/
         libpath = f"{birdpath['appdir']}/c/libdht22.so"
         self.lib = ctypes.CDLL(libpath)
 
@@ -56,22 +54,22 @@ class DHT22_CT:
         """
         Perform a single reading from the DHT22 sensor.
         Retries internally until a valid reading is obtained.
-        :return: tuple(temperature, humidity)
+        :return: tuple(timestamp, temperature, humidity)
         :raises RuntimeError: if a read attempt fails (timeout or checksum error)
         """
         temp = ctypes.c_double()
         hum  = ctypes.c_double()
-
         ret = self.lib.dht22_read(ctypes.byref(temp), ctypes.byref(hum))
 
         if ret == 0:
-            # Successful read
-            return temp.value, hum.value
+            # Successful read, capture timestamp
+            ts = time.time()
+            return ts, temp.value, hum.value
         elif ret == -2:
-            # Checksum error, transient, caller may retry
+            # Checksum error
             raise RuntimeError("Checksum error during DHT22 read")
         else:
-            # Timeout, transient, caller may retry
+            # Timeout
             raise RuntimeError("DHT22 read timeout")
 
     def cancel(self):
@@ -86,21 +84,22 @@ class DHT22_CT:
 def humid_abs(temperature, humidity_rel):
     """
     Calculate absolute humidity (g/m³) from temperature (°C) and relative humidity (%).
-    Uses the formula: AH = 6.112 * e^(17.67*T/(T+243.5)) * RH * 2.1674 / (273.15 + T)
+    AH = 6.112 * e^(17.67*T/(T+243.5)) * RH * 2.1674 / (273.15 + T)
     """
-    if temperature < -40 or temperature > 80:
-        return 0.0  # DHT22 operating range, return 0 for out-of-range values
+    if temperature < -40 or temperature > 80:  # DHT22 operating range
+        return 0.0
     if humidity_rel < 0 or humidity_rel > 100:
         return 0.0
 
-    # Calculate saturation vapor pressure (in hPa)
     svp = 6.112 * math.exp(17.67 * temperature / (temperature + 243.5))
-    # Calculate absolute humidity (in g/m³)
     ah = svp * humidity_rel * 2.1674 / (273.15 + temperature)
     return roundFlt(ah)
 
 def tempProtocol(env_data):
-    datafile = "tempdata/tempdata.json" # not suited for ramdisk/ to spare SD card, because data of several days/sessions
+    """
+    Append environment data to local tempdata.json (limited to maxdata entries).
+    """
+    datafile = f"{birdpath['appdir']}/tempdata/tempdata.json"
     data = []
     maxdata = 160
     if os.path.exists(datafile):
@@ -109,9 +108,8 @@ def tempProtocol(env_data):
                 data = json.load(infile)
             except json.JSONDecodeError:
                 ms.log(f"Error decoding JSON from {datafile}")
-                pass
 
-    env_data["date"] = env_data["date"].strftime("%Y:%m:%d:%H:%M")  # format timestamp without milliseconds
+    env_data["date"] = datetime.fromtimestamp(env_data["timestamp"]).strftime("%Y:%m:%d:%H:%M")
     env_data["humid_abs"] = humid_abs(env_data["temperature"], env_data["humidity"])
 
     data.append(env_data)
@@ -124,29 +122,27 @@ def tempProtocol(env_data):
 def write_env_webserv(env_data):
     """
     Write environment data to a local JSON file on the ramdisk.
-    Removes milliseconds from timestamp for consistency.
     """
     filename = f"{birdpath['ramdisk']}/env.json"
-    env_data["date"] = str(env_data["date"]).split('.')[0]  # remove milliseconds
+    env_data["date"] = str(datetime.fromtimestamp(env_data["timestamp"]))  # convert to human-readable
     with open(filename, 'w') as wfile:
         json.dump(env_data, wfile)
 
 def send_realtime_environment(envData):
     """
     Upload environment data to Birdiary platform via REST API.
-    Skips upload if humidity reading is zero (possible sensor disconnect).
-    Logs success or failure.
+    Skips upload if humidity reading is zero.
     """
     if envData['humidity'] == 0:
         ms.log('humidity=0% -> possible sensor disconnect?')
         return
 
-    envData['date'] = str(envData['date']) # Convert datetime to string for JSON serialization
+    envData['date'] = str(datetime.fromtimestamp(envData['timestamp']))
     try:
         r = requests.post(serverUrl + 'environment/' + boxId, json=envData, timeout=20)
         ms.log('Environment data sent: ' + str(envData))
         ms.log('Corresponding environment_id: ' + r.text)
-        ms.setEnvirEvt()  # Notify web browser event
+        ms.setEnvirEvt()  # notify web browser event
     except (requests.ConnectionError, requests.Timeout) as exception:
         ms.log('Failed environment upload - ' + str(exception))
 
@@ -157,12 +153,12 @@ def main():
     ms.init()
     ms.log(f"Start dhtBirdCt {datetime.now()}")
 
-    sleepTime = 3      # seconds between each read (DHT22 limit ~2 sec)
+    sleepTime = 3      # seconds between reads (DHT22 limit ~2 s)
     samples = 3        # number of reads to average
     tempSum, humSum = 0.0, 0.0
     successful_reads = 0
     max_retries = 10
-    sensor = None # Initialize sensor variable for cleanup in finally block
+    sensor = None
 
     try:
         sensor = DHT22_CT(gpio_pin=dhtPin)
@@ -171,11 +167,9 @@ def main():
             reads = 0
             while reads < max_retries:
                 reads += 1
-                # Keep trying until a valid reading is obtained
                 try:
-                    temperature, humidity = sensor.read()
+                    ts, temperature, humidity = sensor.read()
                     if humidity > 0:
-                        # Valid reading, add to sums
                         tempSum += temperature
                         humSum  += humidity
                         successful_reads += 1
@@ -188,7 +182,6 @@ def main():
             if reads == max_retries:
                 ms.log(f"Sample {s+1} failed after {max_retries} attempts")
 
-        # Compute mean values
         tempMean = roundFlt(tempSum / successful_reads) if successful_reads else 0.0
         humMean  = roundFlt(humSum  / successful_reads) if successful_reads else 0.0
 
@@ -196,18 +189,15 @@ def main():
         ms.log(f"Unexpected error during sampling: {e}")
 
     finally:
-        # Cleanup sensor resources
         if sensor:
             sensor.cancel()
 
-    # If we got valid data, upload and save locally
     if successful_reads > 0:
         environment = {
-            "date": datetime.now(),
+            "timestamp": time.time(),
             "temperature": tempMean,
             "humidity": humMean
         }
-        # environment without .copy() is passed by reference, so each function would change it
         write_env_webserv(environment.copy())
         tempProtocol(environment.copy())
         send_realtime_environment(environment.copy())

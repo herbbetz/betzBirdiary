@@ -63,12 +63,12 @@ sleep 8 # the child process takes time to establish
 #    bash hxFiBirdStart.sh
 #    sleep 2
 # done
-setsid $PYTHON "$APPDIR/hxFiBirdStateCt.py" >> logs/hxFiBird.log 2>&1 & # first birdpipe FIFO writer
+setsid $PYTHON "$APPDIR/hxFiBirdStateCt.py" > /dev/null 2>&1 # >> logs/hxFiBird.log 2>&1 & # first birdpipe FIFO writer
 # setsid $PYTHON "$APPDIR/hxFiBirdStateC.py" >> logs/hxFiBird.log 2>&1 & # first birdpipe FIFO writer and hxfifo reader
 sleep 1
 # setsid bash "$APPDIR/hx711d.sh" & # hxfifo writer -> $APPDIR/hx711d.sh reads in "17 23" from config.json and starts ..c/hx711d with it, has own log()
 # widgets for wayfire desktop will not work here, because wayfire or vnc/X11 env not yet ready! Moreover no use running it, when no desktop shown.
 # setsid $PYTHON widgets.py &
-bash "$APPDIR/statist/getStats.sh" >> /dev/null # $APPDIR/logs/statist.log 2>&1 # only once at boot, fst contact with birdiary platform
+bash "$APPDIR/statist/getStats.sh" > /dev/null # >> $APPDIR/logs/statist.log 2>&1 # only once at boot, fst contact with birdiary platform
 echo "startup2stage.sh ended at $(date)" > /dev/null 2>&1 # >> /home/pi/station3/logs/startup.log 2>&1
 exit # status reflects last cmds success

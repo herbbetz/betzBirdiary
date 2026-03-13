@@ -1,8 +1,9 @@
 [
   {
-    "timestamp": "2025:07:30:18:14",
-    "metaLux": 1620,
-    "exposure": 3,
-    "gain": 1.5
+    "date": "2026:03:13:13:00",
+    "metaLux": 6689,
+    "exposure": 5503,
+    "gain": 1,
+    "luxcategory": 4
   }
 ]
