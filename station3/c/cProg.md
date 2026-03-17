@@ -17,4 +17,4 @@
   oder Makefile
   ````
 - anders als python3-lgpio 0.2.2 braucht der C-Daemon auf Trixie keine veraltete Syntax.
-- 
+- für DHT22 sollte man dennoch die lgpio version checken mit `dpkg -l | grep lgpio` und die [neueste](https://github.com/joan2937/lg) lgpio [installieren](https://pimylifeup.com/raspberry-pi-install-lgpio/), da ein *polling* Treiber viele *read & checksum errors* bedingt.

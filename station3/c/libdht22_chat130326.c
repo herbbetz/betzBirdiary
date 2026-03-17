@@ -68,18 +68,18 @@ int dht22_read(double *temperature, double *humidity)
     lgGpioClaimInput(chip, 0, pin);
 
     // sensor response
-    if (wait_level(0, 100) < 0) return -1;
-    if (wait_level(1, 100) < 0) return -1;
-    if (wait_level(0, 100) < 0) return -1;
+    if (wait_level(0, 200) < 0) return -1;
+    if (wait_level(1, 200) < 0) return -1;
+    if (wait_level(0, 200) < 0) return -1;
 
     // read 40 bits
     for (int i = 0; i < 40; i++)
     {
-        if (wait_level(1, 100) < 0) return -1;
+        if (wait_level(1, 200) < 0) return -1;
         int width = measure_high();
-        if (width > 50)
+        if (width > 55)
             data[i/8] |= (1 << (7 - (i % 8)));
-        if (wait_level(0, 100) < 0) return -1;
+        if (wait_level(0, 200) < 0) return -1;
     }
 
     // checksum

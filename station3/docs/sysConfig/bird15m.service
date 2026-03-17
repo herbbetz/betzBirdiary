@@ -9,9 +9,9 @@ Type=oneshot
 # Run as the 'pi' user so it has access to /home/pi/
 User=pi
 Group=pi
-# The scripts to execute
-ExecStart=/usr/bin/bash /home/pi/station3/sysmon2.sh
-ExecStart=/usr/bin/python3 /home/pi/station3/dhtBirdCt.py
+WorkingDirectory=/home/pi/station3
+# The scripts to execute at boot and every 15 min:
+ExecStart=/usr/bin/bash /home/pi/station3/start15m.sh
 # logging will not work by >> redirection, but instead:
 StandardOutput=append:/home/pi/station3/logs/15mservice.log
 StandardError=append:/home/pi/station3/logs/15mservice.log
