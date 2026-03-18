@@ -56,6 +56,13 @@ else
     msg=$1
 fi
 
+# second cmdline arg: "w" for wapp active
+if [[ -z $2 ]];then
+    select="none"
+else
+    select="$2"
+fi
+
 log "$(date) message: $msg"
 
 check4speed check_google "curl -> google" # check connection to google.com
@@ -71,8 +78,8 @@ if [[ -n "$mdroid_key" && "$mdroid_key" != "null" && ! "$mdroid_key" =~ X$ ]]; t
 else
     log "mdroid_key not set: *$mdroid_key*"
 fi
-# whatsapp callmebot api:
-if [[ -n "$wapp_key" && "$wapp_key" != "null" && ! "$wapp_key" =~ X$ ]]; then
+# whatsapp callmebot api, only active with 'w' as 2nd cmdline arg:
+if [[ -n "$wapp_key" && "$wapp_key" != "null" && ! "$wapp_key" =~ X$ && "$select" == "w" ]]; then
     check4speed check_wapp "curl -> wapp callmebot"
 else
     log "wapp_key not set: *$wapp_key*"

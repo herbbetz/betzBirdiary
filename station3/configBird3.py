@@ -109,6 +109,7 @@ try:
     dhtPin           = _config['dhtPin']
     hxDataPin        = _config['hxDataPin']
     hxClckPin        = _config['hxClckPin']
+    recordstep       = _config['recordstep']
     mdroid_key       = _config['mdroid_key']
     wapp_key         = _config['wapp_key']
     wapp_phone       = _config['wapp_phone']
@@ -120,3 +121,5 @@ try:
 except KeyError as e:
     # ms.log(f"Missing config key: {e}")
     raise RuntimeError(f"Missing key in config.json: {e}")
+
+if recordstep < 1: recordstep = 1   # must not be 0 as modulus, 1 means wapp record on each new video

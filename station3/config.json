@@ -1,47 +1,48 @@
 {
-    "serverUrl": "https://wiediversistmeingarten.org/api/",
-    "boxId": "87bab185-7630-461c-85e6-c04cf5bab180",
-    "upmaxcnt": 0,
-    "videodurate": 8,
-    "hflip_val": 1,
-    "vflip_val": 1,
-    "vidsize": [
-        800,
-        600
-    ],
-    "losize": [
-        320,
-        240
-    ],
-    "luxThreshold": [
-        1500,
-        3000,
-        5000
-    ],
-    "luxLimit": [
-        400,
-        20000
-    ],
-    "weightlimit": 300,
-    "weightThreshold": 5,
-    "hxScale": 533,
-    "hxOffset": -178757,
-    "dhtPin": 16,
-    "hxDataPin": 17,
-    "hxClckPin": 23,
-    "mdroid_key": "f9d9d0d0-f205-4ce2-a2d6-58752613c975",
-    "wapp_key": "2524734",
-    "wapp_phone": "4987163678",
-    "tasmota_ip": "192.168.178.81",
-    "mqtt_broker": "X",
-    "geoloc": [
-        "48.533509",
-        "12.137590"
-    ],
-    "sun": [
-        "20260223",
-        "07:02",
-        "17:45"
-    ],
-    "version": "2026-02-23"
+  "serverUrl": "https://wiediversistmeingarten.org/api/",
+  "boxId": "87bab185-7630-461c-85e6-c04cXXXXXXXX",
+  "upmaxcnt": 0,
+  "videodurate": 8,
+  "hflip_val": 1,
+  "vflip_val": 1,
+  "vidsize": [
+    800,
+    600
+  ],
+  "losize": [
+    320,
+    240
+  ],
+  "luxThreshold": [
+    1500,
+    3000,
+    5000
+  ],
+  "luxLimit": [
+    400,
+    20000
+  ],
+  "weightlimit": 300,
+  "weightThreshold": 5,
+  "hxScale": 533,
+  "hxOffset": -179109.0,
+  "dhtPin": 16,
+  "hxDataPin": 17,
+  "hxClckPin": 23,
+  "recordstep": 3,
+  "mdroid_key": "f9d9d0d0-f205-4ce2-a2d6-XXXXXXXX",
+  "wapp_key": "XXXXXXXX",
+  "wapp_phone": "49XXXXXXXX",
+  "tasmota_ip": "192.168.X.X",
+  "mqtt_broker": "X",
+  "geoloc": [
+    "48.533509",
+    "12.137590"
+  ],
+  "sun": [
+    "20260318",
+    "06:16",
+    "18:21"
+  ],
+  "version": "2026-03-18"
 }
