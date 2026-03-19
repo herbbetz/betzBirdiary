@@ -260,10 +260,10 @@ def send_movement(circ_output, picam, wght, stop_event): # first parameter is ei
     else:
         if upmaxcnt>0: ms.setVidDateStr(f"video#{send_movement.vid_cnt} of {upmaxcnt} at {movementStart}")
         else: ms.setVidDateStr(f"video#{send_movement.vid_cnt} at {movementStart}")
-        if send_movement.vid_cnt % reportstep == 0: # send wapp message 'w' only on multiples of reportstep
-            subprocess.call(f"bash {birdpath['appdir']}/mdroid.sh newVideo{send_movement.vid_cnt} w", shell=True)
-        else: # call mdroid.sh without 2nd arg 'w', which sets wapp message active
+        if send_movement.vid_cnt % recordstep == 0: # send wapp message only on multiples of reportstep
             subprocess.call(f"bash {birdpath['appdir']}/mdroid.sh newVideo{send_movement.vid_cnt}", shell=True)
+        else: # call mdroid.sh with 2nd arg 'w', which skips wapp message
+            subprocess.call(f"bash {birdpath['appdir']}/mdroid.sh newVideo{send_movement.vid_cnt} w", shell=True)
 
     # On Feb.2026 module 'imp' is not available in tensorflow wheel for python 3.13 on arm64
     # ... so the following subprocess runs inside birdvenv, using python 3.11.8

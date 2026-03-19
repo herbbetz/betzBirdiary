@@ -56,14 +56,15 @@ else
     msg=$1
 fi
 
-# second cmdline arg: "w" for wapp active
+# second cmdline arg: "w" for skipping wapp
 if [[ -z $2 ]];then
-    select="none"
+    select="0"
 else
     select="$2"
 fi
 
 log "$(date) message: $msg"
+log "select: $select"
 
 check4speed check_google "curl -> google" # check connection to google.com
 
@@ -71,21 +72,32 @@ mdroid_key=$(jq -r '.mdroid_key' "$config_file")
 wapp_phone=$(jq -r '.wapp_phone' "$config_file")
 wapp_key=$(jq -r '.wapp_key' "$config_file")
 mqtt_broker=$(jq -r '.mqtt_broker' "$config_file")
+
+is_valid_key() {
+    local key="$1"
+    [[ -n "$key" && "$key" != "null" && ! "$key" =~ X$ ]]
+}
 # MacroDroid APP, sh. whooktest.macro:
 # curl could hang without --connect-timeout 3 --max-time 5
-if [[ -n "$mdroid_key" && "$mdroid_key" != "null" && ! "$mdroid_key" =~ X$ ]]; then # field empty or not existing or ends with X
+if is_valid_key "$mdroid_key"; then # field empty or not existing or ends with X
     check4speed check_mdroid "curl -> mdroid.com"
 else
     log "mdroid_key not set: *$mdroid_key*"
 fi
-# whatsapp callmebot api, only active with 'w' as 2nd cmdline arg:
-if [[ -n "$wapp_key" && "$wapp_key" != "null" && ! "$wapp_key" =~ X$ && "$select" == "w" ]]; then
+
+# whatsapp callmebot api, skipping with 'w' as 2nd cmdline arg:
+# globbing (any-w-any), regex alternative: "$select" =~ w
+# DO NOT quote globbing or regex pattern, as this makes them into strings!
+if [[ "$select" == *w* ]]; then
+    log "skipping wapp due to select flag"
+elif is_valid_key "$wapp_key"; then
     check4speed check_wapp "curl -> wapp callmebot"
 else
     log "wapp_key not set: *$wapp_key*"
 fi
+
 # MQTT:
-if [[ -n "$mqtt_broker" && "$mqtt_broker" != "null" && ! "$mqtt_broker" =~ X$ ]]; then
+if is_valid_key "$mqtt_broker"; then
     check4speed check_mqtt "pub -> MQTT broker"
 else
     log "mqtt_broker not set: *$mqtt_broker*"
