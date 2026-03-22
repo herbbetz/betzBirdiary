@@ -25,7 +25,7 @@ dtype
 ````
 
 ````
-Ein Model funktioniert immer so am besten, wie es trainiert wurde, am besten also auf demselben Device und mit demselben Image Preprocessing. Trainingsdaten von der ESP-Cam mit Fischaugenperspektive (OV2640) sind zu trennen von solchen aus der RaspiCam v1.3 . Wurde centercrop und 224x224px beim Training nicht eingesetzt, dann auch nicht bei der Anwendung.
+Ein Model funktioniert immer so am besten, wie es trainiert wurde, am besten also auf demselben Device und mit demselben Image Preprocessing. Trainingsdaten von der ESP-Cam mit Fischaugenperspektive (OV2640) sind zu trennen von solchen aus der RaspiCam v1.3 . Wurde centercrop und 224x224px beim Training nicht eingesetzt, dann auch nicht bei der Anwendung. Die Modelle liefern keine systematischen Vogelmerkmale wie Schnabelform oder -länge und lassen unklar, wie dies in ihre Bewertung einfließt.
 ````
 
 
