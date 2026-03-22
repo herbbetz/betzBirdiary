@@ -25,7 +25,7 @@ dtype
 ````
 
 ````
-Ein Model funktioniert immer so am besten, wie es trainiert wurde, am besten also auf demselben Device und mit demselben Image Preprocessing. Trainingsdaten von der ESP-Cam mit Fischaugenperspektive (OV2640) sind zu trennen von solchen aus der RaspiCam v1.3 . Wurde centercrop und 224x224px beim Training nicht eingesetzt, dann auch nicht bei der Anwendung. Die Modelle liefern keine systematischen Vogelmerkmale wie Schnabelform oder -länge und lassen unklar, wie dies in ihre Bewertung einfließt.
+Ein Model funktioniert immer so am besten, wie es trainiert wurde, am besten also auf demselben Device und mit demselben Image Preprocessing. Trainingsdaten von der ESP-Cam mit Fischaugenperspektive (OV2640) sind zu trennen von solchen aus der RaspiCam v1.3 . Wurde centercrop und 224x224px beim Training nicht eingesetzt, dann auch nicht bei der Anwendung. Die label-basierten Modelle liefern keine systematischen Vogelmerkmale wie Schnabelform oder -länge und lassen unklar, wie dies in ihre Bewertung einfließt.
 ````
 
 
@@ -59,5 +59,9 @@ Anni Kurkela hat an der Uni Münster im Nov.2025 in ihrer [Masterarbeit](https:/
 Anni's Vorselektion der Vögel und ihr Finetuning des Modells haben sich sicher gelohnt, auch wenn die KI hier immer noch nicht ganz mit der menschlichen Beurteilung mithält. Schließlich ist ja eine Klasse "unknown bird" nicht trainierbar, und ein exotischer Vogel wird ebenfalls einer der 16 Trainingsklassen zugeordnet.
 
 Anni's Modell auf noch mehr Vögel zu trainieren, würde ein attraktives Sichtungs- und Labelling-Tool für Vogelbilder voraussetzen, das gern und unkompliziert von allen Vogelhausbetreibern bedient wird. Ein erster Schritt dazu wäre vielleicht eine Erweiterung der birdiary Plattform zum Hochladen klassifizierter Vogelbilder statt oder mit dem Hochladen der immer schwerer zu sichtenden Masse von Videos.
+
+**Wissenschaftliche morphometrische Vogelklassifizierung**
+
+Neben unseren einfachen *label-basierten* Vogelmodellen gibt es tatsächlich auch eine systematischere KI-Klassifizierung von Vögeln, die auf die Erkennung ihrer *morphometrischen* Unterschiede (Schnabelform, Körperbau) trainiert ist. Die kalifornische Universität San Diego veröffentlichte dazu den Datensatz [CUB-200-2011](https://www.vision.caltech.edu/datasets/cub_200_2011/). Der Datensatz beinhaltet 200 nordamerikanische Vogelarten (keine europäischen Kohlmeisen = Great Tit). Seine Eigenschaften:  ~ 60 Bilder/Art = 11788 Bilder,  500*400px. Auf jedem Bild ist der Vogel vom Hintergrund freigestellt ("segmentation masks")  und durch *bounding boxes* unterteilt in 15 Körperbereiche ("back-beak-belly-..."). Statt dem Label "Spatz" hat das Modell also Körperteil-Klassen "Spatzrücken- Spatzschnabel-..." und andererseits pro Körperteil diskrete Attribut-Klassen definiert. Insgesamt gibt es 312 Attributklassen, z.B. für den Schnabel "has-bill-color: red-black-..." oder "has-bill-shape: curved-needle-cone-...". Das erhöht natürlich die nötige Anzahl an Trainings- und Testbildern und den menschlichen Markierungsaufwand entsprechend. Konkrete Vogelmodelle, die auf dem *CUB-200-2011* Datensatz beruhen, habe ich bisher nicht gefunden (auf Github, Huggingface). Auch scheint niemand daran interessiert, dem Datensatz europäische Vogelarten hinzuzufügen.
 
 Feedback an herber7be7z@gmail.com
