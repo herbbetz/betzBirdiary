@@ -8,7 +8,7 @@ permalink: /posts/2026-02-10-tflite/
 
 **KI-Modelle**
 
-Auf Bilder trainierte Modelle bestehen aus einem Input-Knoten für das Bild, einem Knotennetzwerk, deren Verbindungen in ihren Gewichten das Training enthalten, und so vielen Output-Knoten, wie sie Dinge klassifizieren können. Jeder Output-Knoten wirft eine Wahrscheinlichkeit (confidence in %) aus. Entsprechend den Output-Knoten braucht man auch eine sortierte Liste von Labels, die benennen, für welche Vogelart jeder Output-Knoten steht. Die Labels sind im Format `txt` oder `json` oder auch eingebettet auf verschiedene Arten in das `model.tflite`. Vor dem Input muss das Bild (hier RGB 320x240) in das Farb- und Pixelformat (z.B. RGB 224x224) umgewandelt werden, mit dem das Modell trainiert wurde. So erfahren die Bilder beim Einspeisen zum Training und später Anwenden des Modells eventuell folgende Umwandlungen (= *Preprocessing*):
+Auf Bilder trainierte Modelle bestehen aus einem Input-Knoten für das Bild, einem Knotennetzwerk, deren Verbindungen in ihren Gewichten das Training enthalten, und so vielen Output-Knoten, wie sie Dinge klassifizieren können. Jeder Output-Knoten wirft eine Wahrscheinlichkeit (*softmax* -> confidence in % oder *logits*) aus. Entsprechend den Output-Knoten braucht man auch eine sortierte Liste von Labels, die benennen, für welche Vogelart jeder Output-Knoten steht. Die Labels sind im Format `txt` oder `json` oder auch eingebettet auf verschiedene Arten in das `model.tflite`. Vor dem Input muss das Bild (hier RGB 320x240) in das Farb- und Pixelformat (z.B. RGB 224x224) umgewandelt werden, mit dem das Modell trainiert wurde. So erfahren die Bilder beim Einspeisen zum Training und später Anwenden des Modells eventuell folgende Umwandlungen (= *Preprocessing*):
 
 - Einspeisung   'centercrop' (aspect ratio erhalten) oder verzerrtes Bild (stretched).
 - Pixelwerte [0..255] (*uint8*) pro Farbkanal werden in *floats* umgewandelt zwischen [0..1] oder [-1..1], weil Modelle damit effektiver lernen. Dieses Verfahren heißt *Normalisation*. Das häufige *MobileNetV2* von Google verwendet [-1..1] Normalization von 224x224 px Images. Daneben kann später im Modell noch eine *Quantization* (float32 → int8) als weitere Transformation stattfinden, um die Verarbeitung (*inference*) zu beschleunigen und Speicher zu sparen (edge-KI).
@@ -23,6 +23,7 @@ height
 channels
 dtype
 ````
+- bei einem .tflite mit unbekannter Vorgeschichte wird von *NHWC* ausgegangen (evtl. konvertiert bei Ableitung aus PyTorch)  und *Shape, Dtype, Quantization* aus den Tflite Metadaten (Python -> `input_details, output_details`) abgelesen. *Preprocessing, Normalis ation und Softmax/Logit Output* muss ohne zusätzliche Dokumentation durch Testbilder neu ausgetestet werden.
 
 ````
 Ein Model funktioniert immer so am besten, wie es trainiert wurde, am besten also auf demselben Device und mit demselben Image Preprocessing. Trainingsdaten von der ESP-Cam mit Fischaugenperspektive (OV2640) sind zu trennen von solchen aus der RaspiCam v1.3 . Wurde centercrop und 224x224px beim Training nicht eingesetzt, dann auch nicht bei der Anwendung. Die label-basierten Modelle liefern keine systematischen Vogelmerkmale wie Schnabelform oder -länge und lassen unklar, wie dies in ihre Bewertung einfließt.

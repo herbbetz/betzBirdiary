@@ -2,7 +2,7 @@
 # do not rely on sourced path variables during boot!
 appdir=/home/pi/station3
 msgfile=$appdir/ramdisk/vidmsg.json
-LOGFILE=$appdir/logs/startup.log
+LOGFILE=/dev/null # $appdir/logs/startup.log
 config_file="$appdir/config.json"
 
 log() {

@@ -47,6 +47,14 @@ def load_labels(path):
         return [line.strip() for line in f]
 
 
+def softmax(x: np.ndarray) -> np.ndarray:
+
+    # Stable softmax for converting logits to probabilities.
+    x = x - np.max(x)
+    e = np.exp(x)
+    return e / np.sum(e)
+
+
 def is_recognized(label: str) -> bool:
 
     label = label.strip().lower()
@@ -310,10 +318,10 @@ def main():
             output.ctypes.data
         )
 
-        # fast prediction (no softmax)
+        probs = softmax(output)
 
-        idx = int(np.argmax(output))
-        confidence = float(output[idx]) * 100.0
+        idx = int(np.argmax(probs))
+        confidence = float(probs[idx]) * 100.0
 
         label = labels[idx] if idx < len(labels) else "unknown"
 
