@@ -17,4 +17,5 @@ ctl.!default {
 ````
 
 - Sox recording: `sudo apt install sox` kann mit oder ohne `arecord` die Stille am Anfang und Ende trimmen, ist aber letzendlich genauso überfordert mit dem ALSA buffering wie `python3-pyaudio, python3-soundfile und wave`.
-- Zielführend ist eine C-Lösung mit `libasound2-dev`.
+- Zielführend ist eine C-Lösung `wavseries.c` mit `libasound2-dev`. Um sie auf *Librosa Mel Spektrogramme* und *BirdNET KI* abzustimmen erzeugt sie folgende .wav Files: 48000 Hz, normalized.
+-  Für die Mel Spektrogramme: `apt install python3-librosa` noch nicht für Trixie verfügbar, wie oft bei wissenschaftlichen Libraries.  => `pyenv activate birdvenv` (Python 3.11) und `pip install librosa`. Leider kann `matplotlib` mit seiner engen Kopplung an `numpy` nicht aus dem System-Python verwendet werden und wird hier noch mal installiert. Grundsätzlich ist es nicht gut, Python Versionen zu mischen, also meide `python3 -m venv --system-site-packages birdvenv`(auch für pyenv) . Wir brauchen ja numpy < 2 auch für python tflite_runtime. Generate mel spectrograms in C (librosa?) and view with system matplotlib?
