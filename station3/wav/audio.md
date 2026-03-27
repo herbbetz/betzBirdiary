@@ -1,4 +1,4 @@
-<!--keywords[Audiodatei,Audiolinks]-->
+<!--keywords[Audiodatei,Audiolinks,ffmpeg,RIFF_metadata]-->
 
 'wav/min.wav' ist eine minimale Audiodatei, deren Upload die Birdiary Plattform immer noch obligatorisch fordert.
 
