@@ -1,0 +1,10 @@
+(herbvenv) hbetz@Captiva:/mnt/d/birdiary/githubMirror/betzBirdiary/station3/audio/sndmodel$ python3 showInputs.py
+INFO: Created TensorFlow Lite XNNPACK delegate for CPU.
+INPUT name: INPUT
+INPUT shape: [     1 144000]
+INPUT dtype: <class 'numpy.float32'>
+INPUT quant params: {'scales': array([], dtype=float32), 'zero_points': array([], dtype=int32), 'quantized_dimension': 0}
+OUTPUT name: Identity
+OUTPUT shape: [   1 6362]
+OUTPUT dtype: <class 'numpy.float32'>
+OUTPUT quant params: {'scales': array([], dtype=float32), 'zero_points': array([], dtype=int32), 'quantized_dimension': 0}

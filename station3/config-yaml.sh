@@ -64,5 +64,5 @@ printf '%s\n' "$json_data" > "$tmp_json"
 flock "$JSON_FILE" ./update_config.sh "$tmp_json" # lock file as long as child script runs in subshell
 echo "$JSON_FILE updated from $YAML_FILE."
 
-versiontxt="betzBird$today_date"
-./wavMeta.sh "$versiontxt"
+# versiontxt="betzBird$today_date"
+# ./wavMeta.sh "$versiontxt"
