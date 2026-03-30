@@ -23,7 +23,7 @@ height
 channels
 dtype
 ````
-- bei einem .tflite mit unbekannter Vorgeschichte wird von *NHWC* ausgegangen (evtl. konvertiert bei Ableitung aus PyTorch)  und *Shape, Dtype, Quantization* aus den Tflite Metadaten (Python -> `input_details, output_details`) abgelesen. *Preprocessing, Normalis ation und Softmax/Logit Output* muss ohne zusätzliche Dokumentation durch Testbilder neu ausgetestet werden.
+- bei einem .tflite mit unbekannter Vorgeschichte wird von *NHWC* ausgegangen (evtl. konvertiert bei Ableitung aus PyTorch)  und *Shape, Dtype, Quantization* aus den Tflite Metadaten (Python -> `input_details, output_details`) abgelesen. *Preprocessing, Normalisation und Softmax/Logit Output* muss ohne zusätzliche Dokumentation durch Testbilder neu ausgetestet werden.
 
 ````
 Ein Model funktioniert immer so am besten, wie es trainiert wurde, am besten also auf demselben Device und mit demselben Image Preprocessing. Trainingsdaten von der ESP-Cam mit Fischaugenperspektive (OV2640) sind zu trennen von solchen aus der RaspiCam v1.3 . Wurde centercrop und 224x224px beim Training nicht eingesetzt, dann auch nicht bei der Anwendung. Die label-basierten Modelle liefern keine systematischen Vogelmerkmale wie Schnabelform oder -länge und lassen unklar, wie dies in ihre Bewertung einfließt.
