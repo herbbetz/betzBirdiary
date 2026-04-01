@@ -8,14 +8,30 @@ log() {
     echo "$*" >> "$LOGFILE" 2>&1
 }
 
-tasmota_ip=$(jq -r '.tasmota_ip' "$config_file")
-
 if [[ -z $1 ]];then
     msg="anyshutdown"
 else
     msg=$1
 fi
 
+# Check for active WayVNC sessions
+# the kind of '...vnc' is shown by 'ps aux | grep -i vnc'
+# the VNC port 5900 is found out by 'sudo lsof -iTCP -sTCP:LISTEN -P -n | grep wayvnc'
+if ss -tn state established | grep -q ':5900'; then
+    msg="$(date): VNC active, skipping shutdown."
+    log "$msg"
+    echo "$msg"
+    exit 0
+fi
+# no shutdown on active ssh (sftp, scp) session:
+if who | grep -q "pts/"; then
+    msg="$(date): SSH active, skipping shutdown."
+    log "$msg"
+    echo "$msg"
+    exit 0
+fi
+
+tasmota_ip=$(jq -r '.tasmota_ip' "$config_file")
 bash "$APPDIR/mdroid.sh" "$msg"
 sleep 10
 # https://tasmota.github.io/docs/Commands/
