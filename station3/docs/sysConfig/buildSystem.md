@@ -1,15 +1,33 @@
-<!--keywords[Bash,Bookworm,crontab,FFMPEG,iio,GPIO,lgpio,libgpiod, pigpio,logrotate,Markdown,mDNS,Network,Ramdisk,Startup,service,Systembuild,tflite-C-API,Trixie,venv,WLAN]-->
+<!--keywords[Bash,Bookworm,crontab,FFMPEG,iio,GPIO,lgpio,libgpiod, pigpio,logrotate,Markdown,mDNS,Network,Ramdisk,Startup,service,Swap,Systembuild,tflite-C-API,Trixie,venv,WLAN]-->
 
 ### Installation von betzBirdiary auf Bookworm & Trixie
 
 - Raspian OS "Bookworm" (Debian 12) bzw. "Trixie" (Debian 13) verspricht die aktuellste Unterstützung von Pythonmodul "picamera2". Version siehe 'apt show python3-picamera2', oder 'pip show picamera2'.
+
 - Installation von "bookworm light 64bit" mit "Raspberry Pi Imager" (*pi/bird24* Passwort, Fat32 Bootpartition mit ssh und wpa_supplicant.conf versehen), hochfahren und im Heimnetz suchen (DHCP). Sollte zumindest im LAN konnektieren.
+
 - Login von `public-key` auf Passwort umstellen in `etc/ssh/sshd.conf` und `rm .ssh/autorized_keys`. (Trixie)
+
 - putty/ssh bzw. WinSCP/Filezilla, 'sudo passwd root' ("*bird24root*""), 'sudo apt update && sudo apt full-upgrade' 🕦= *takes time*
+
 - static IP (192.168.178.210), mit **NetworkManager** (default on fst boot, nmtui/nmcli, wpa_supplicant service) **oder** 'systemd-networkd' **oder** '/etc/network/interfaces (dhcdcp.conf)'. 'rpibird' als hostname. IPv6 can be disabled for wlan0. In nmtui benannte ich meine statische IP configuration mit 'bird-static210' ('nmcli connection show'). Later reset to DHCP Hotspot, before you produce an OS image for distribution to others (and remove credentials from config.json), see [buildimg](../buildimg/buildimg.md).
+
 - prevent wlan0 sleeping mode: 'sudo nmcli connection modify static210 802-11-wireless.powersave 2' oder in '/etc/NetworkManager/conf.d/disable-powersave.conf', verifiziere mit 'iw wlan0 get power_save'
+
 - I also disable bluetooth by blacklisting its modules from loading. Or `systemctl disable bluetooth`.
+
 - mDNS (avahi, bonjour): 'ping rpibird' statt 'ping 192.168.178.210' zeigt den Erfolg. 'rpibird' eintragen in /etc/hosts und /etc/hostname.
+
+- Swap to disk (Service `zramswap`) bei aufgebrauchtem Memory könnte die SD-Karte abnützen, was ein memory monitoring (bei Raspberry 2GB) empfiehlt mit `vmstat 1` oder minütlich durch Systemd Timer auszuführendes Script:
+
+  ````
+  #!/bin/bash
+  if swapon --show | grep -v zram | grep -q "/"; then
+      logger -t mem_guard -p warning "WARNING: Disk swap is active!" # find with 'journalctl -t mem_guard'
+  fi
+  ````
+  oder komplexer siehe `mem_guard.sh`. `Read` beim Laden des Skripts alle 15 sec bedeutet keine SD-Kartenbelastung.
+  Analog kann auch SD-Kartenabnützung gecheckt werden durch `dmesg | grep -i error` oder siehe `sd_guard.sh`.
 - für user 'pi':
 	- mail for 'local only'(rpibird.local): 'sudo apt install mailutils -y', 'sudo dpkg-reconfigure exim4-config', 'sudo usermod -a -G mail pi' ('groups pi' then includes group 'mail')
 	- crontab: 'crontab yourcrontab.txt' . Siehe auch 'test_crontab.sh'.

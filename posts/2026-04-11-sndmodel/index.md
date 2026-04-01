@@ -26,7 +26,8 @@ Download des bird songs: 1) Audacity: recording source to system audio 2) Mit Br
 - Erfassung und Preprocessing der WAV Dateien.
 
 - Ein zeitgleicher Run mehrerer Modelle (Sound- und Image-Klassifikation) wird verhindert durch einen File-Lock (`flock /tmp/model.lock python run_model.py`) oder durch Queueing (`run_birdnet(); wait_until_done; run_image_model()`). Andernfalls geht das Memory aus (`htop`, `watch -n 1 free -h`, `cat /proc/meminfo`). Swap sollte abgestellt werden, weil zu langsam und die SD-Karte schädigend (`CONF_SWAPSIZE=0` in `/etc/dphys-swapfile`).
-- flask endpoint to watch todaysnd.csv via browser: daily time| wav clip| diagnoses . Hochladen zu birdweather?
+- flask endpoint to watch todaysnd.csv via browser: daily time| wav clip| diagnoses .
+- Hochladen auf [Birdweather](https://www.birdweather.com/birdnetpi) oder [DawnChorus](https://dawn-chorus.org/mitmachen/)
 
 **Trixie Probleme**
 
