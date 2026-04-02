@@ -2,7 +2,7 @@
 """
 Example usage (Raspberry Pi / Linux, after building libsndclass.so):
 
-    gcc -O3 -fPIC -shared sndclass.c -o libsndclass.so -ltensorflow-lite -lm
+    gcc -O3 -fPIC -shared sndclass.c -o libsndclass.so -Wl,--no-as-needed -ltensorflow-lite -ltensorflowlite_flex -lm
 
     python3 sndclassify.py testsnd/great-tit.wav sndmodel/BirdNET_6K_GLOBAL_MODEL.tflite sndmodel/labels.txt
 
@@ -28,13 +28,9 @@ def softmax(x: np.ndarray) -> np.ndarray:
     return e / np.sum(e)
 
 
-def find_libsndclass():
-    base = os.path.abspath(os.path.dirname(__file__))
-    for name in ("libsndclass.so", "libsndclass.dll"):
-        p = os.path.join(base, name)
-        if os.path.isfile(p):
-            return p
-    return os.path.join(base, "libsndclass.so")
+def libsndclass_path():
+    """libsndclass.so next to this script (Raspberry Pi / Trixie)."""
+    return os.path.join(os.path.abspath(os.path.dirname(__file__)), "libsndclass.so")
 
 
 def main():
@@ -56,7 +52,7 @@ def main():
 
     labels = load_labels(labels_path)
 
-    lib_path = find_libsndclass()
+    lib_path = libsndclass_path()
     try:
         lib = ctypes.CDLL(lib_path)
     except OSError as e:

@@ -20,6 +20,30 @@
 
 - *Tensorflow Lite C API* ermöglicht die Anwendung trainierter Modelle in C ohne Umweg über Python. Auch diese API wäre noch beschleunigbar durch *NEON acceleration /XNNPACK threads /zero-copy tensors*.
 
+- Tensorflow Lite C API Install on Trixie: `sudo apt install libtensorflow-lite-dev`, checke mit `ldconfig -p | grep tensorflow`. Damit wird `gcc -ltensorflow-lite`verfügbar. Das hat ein paar wenige *Core TFLite operators* eingebaut, die aber für unsere Bild-Modelle genügen.
+
+  - jedoch brauchen die BirdNET .tflite Modelle zur Audio-WAV-Klassifizierung zusätzlich ein `gcc -ltensorflowlite_flex` für ihren eingebauten *TF Op* `FlexRFFT`. Man kann dann entweder Python mit [full tensorflow](https://github.com/tensorflow/tensorflow) nehmen (`pip install tensorflow-cpu`) oder `ltensorflowlite_flex`bauen, wozu man statt `cmake` aber `bazel` braucht. Nur *TFLite* geht mit *CMake*, größere *TensorFlow* Projekte immer mit *Bazel*.
+
+````
+cd ~
+sudo apt install bazel -> geht nicht
+=> curl -L -o bazelisk https://github.com/bazelbuild/bazelisk/releases/latest/download/bazelisk-linux-arm64
+	chmod +x bazelisk
+	sudo mv bazelisk /usr/local/bin/bazel
+	bazel version
+git clone --depth 1 https://github.com/tensorflow/tensorflow.git
+cd tensorflow
+bazel build //tensorflow/lite/delegates/flex:tensorflowlite_flex
+
+oder zeitsparender (30 min, 3 GB):
+yes "" | ./configure (skips interactive shortcut)
+bazel build --config=opt --copt=-O3 --define=tflite_with_select_tf_ops=true //tensorflow/lite/delegates/flex:tensorflowlite_flex
+
+-> output: bazel-bin/tensorflow/lite/delegates/flex/libtensorflowlite_flex.so
+sudo cp bazel-bin/tensorflow/lite/delegates/flex/libtensorflowlite_flex.so /usr/local/lib/
+sudo ldconfig
+ldconfig -p | grep flex
+````
 - `run_classify.sh` ist ein Softlink, der auf `run_classify_C.sh` = *Tensorflow_Lite_C_API* oder auf `run_classify_orig.sh` = *Python_tflite_runtime* (pyenv python 3.11) ausgerichtet werden kann.
 
   Näheres siehe im [Blog](https://herbbetz.github.io/betzBirdiary/posts/2026-02-10-tflite/).

@@ -7,9 +7,17 @@
 
  Fills input from WAV: mono, PCM s16le, 48000 Hz (typical ffmpeg export).
 
- Compile (Linux / Raspberry Pi OS)
+ BirdNET_6K_GLOBAL_MODEL.tflite uses Select TF ops (e.g. FlexRFFT). You must
+ link the TensorFlow Lite Flex delegate alongside the core runtime.
+
+ Compile (Linux / Raspberry Pi OS) — example; adjust -L if TF is not in default paths.
  ---------------------------------
- gcc -O3 -fPIC -shared sndclass.c -o libsndclass.so -ltensorflow-lite -lm
+ gcc -O3 -fPIC -shared sndclass.c -o libsndclass.so -Wl,--no-as-needed -ltensorflow-lite -ltensorflowlite_flex -lm
+
+ If -ltensorflowlite_flex is not found, build or share the .so from the same
+ TensorFlow source tree as libtensorflow-lite (Bazel:
+ //tensorflow/lite/delegates/flex:tensorflowlite_flex), or see:
+ https://www.tensorflow.org/lite/guide/ops_select
 */
 
 #include <stdio.h>
@@ -18,12 +26,14 @@
 #include <stdint.h>
 
 #include <tensorflow/lite/c/c_api.h>
+#include <tensorflow/lite/delegates/flex/delegate.h>
 
 typedef struct {
 
     TfLiteModel* model;
     TfLiteInterpreterOptions* options;
     TfLiteInterpreter* interpreter;
+    TfLiteDelegate* flex_delegate;
 
     TfLiteTensor* input_tensor;
     const TfLiteTensor* output_tensor;
@@ -56,6 +66,19 @@ void* snd_model_load(const char* model_path, int threads)
     if (!m->options)
         goto fail;
     TfLiteInterpreterOptionsSetNumThreads(m->options, threads);
+
+    {
+        TfLiteFlexDelegateOptions flex_opts;
+        memset(&flex_opts, 0, sizeof(flex_opts));
+        m->flex_delegate = TfLiteFlexDelegateCreate(&flex_opts);
+        if (!m->flex_delegate) {
+            fprintf(stderr,
+                    "snd_model_load: TfLiteFlexDelegateCreate failed. BirdNET needs Flex "
+                    "(-ltensorflowlite_flex).\n");
+            goto fail;
+        }
+        TfLiteInterpreterOptionsAddDelegate(m->options, m->flex_delegate);
+    }
 
     m->interpreter = TfLiteInterpreterCreate(m->model, m->options);
     if (!m->interpreter)
@@ -99,6 +122,8 @@ void* snd_model_load(const char* model_path, int threads)
 fail:
     if (m->interpreter)
         TfLiteInterpreterDelete(m->interpreter);
+    if (m->flex_delegate)
+        TfLiteFlexDelegateDelete(m->flex_delegate);
     if (m->options)
         TfLiteInterpreterOptionsDelete(m->options);
     if (m->model)
@@ -181,6 +206,8 @@ void snd_model_free(void* handle)
         return;
     if (m->interpreter)
         TfLiteInterpreterDelete(m->interpreter);
+    if (m->flex_delegate)
+        TfLiteFlexDelegateDelete(m->flex_delegate);
     if (m->options)
         TfLiteInterpreterOptionsDelete(m->options);
     if (m->model)
