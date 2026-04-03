@@ -34,6 +34,9 @@ sudo apt install bazel -> geht nicht
 git clone --depth 1 https://github.com/tensorflow/tensorflow.git
 cd tensorflow
 bazel build //tensorflow/lite/delegates/flex:tensorflowlite_flex
+(or with ending ssh:
+nohup bazel build //tensorflow/lite/delegates/flex:tensorflowlite_flex > build.log 2>&1 &
+tail -f build.log)
 
 oder zeitsparender (30 min, 3 GB):
 yes "" | ./configure (skips interactive shortcut)
