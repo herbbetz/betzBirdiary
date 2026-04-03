@@ -22,7 +22,7 @@
 
 - Tensorflow Lite C API Install on Trixie: `sudo apt install libtensorflow-lite-dev`, checke mit `ldconfig -p | grep tensorflow`. Damit wird `gcc -ltensorflow-lite`verfügbar. Das hat ein paar wenige *Core TFLite operators* eingebaut, die aber für unsere Bild-Modelle genügen.
 
-  - jedoch brauchen die BirdNET .tflite Modelle zur Audio-WAV-Klassifizierung zusätzlich ein `gcc -ltensorflowlite_flex` für ihren eingebauten *TF Op* `FlexRFFT`. Man kann dann entweder Python mit [full tensorflow](https://github.com/tensorflow/tensorflow) nehmen (`pip install tensorflow-cpu`) oder `ltensorflowlite_flex`bauen, wozu man statt `cmake` aber `bazel` braucht. Nur *TFLite* geht mit *CMake*, größere *TensorFlow* Projekte immer mit *Bazel*.
+  - jedoch brauchen die BirdNET .tflite Modelle zur Audio-WAV-Klassifizierung zusätzlich ein `gcc -ltensorflowlite_flex` für ihren eingebauten *TF Op* `FlexRFFT`. Dieses Tensorflow Model hat nämlich `fast fourier transformation` und `MEL spectrogram processing` intern. Man kann dann entweder Python mit [full tensorflow](https://github.com/tensorflow/tensorflow) nehmen (`pip install tensorflow-cpu`) oder `ltensorflowlite_flex`bauen, wozu man statt `cmake` aber `bazel` braucht. Nur *TFLite* geht mit *CMake*, größere *TensorFlow* Projekte immer mit *Bazel*.
 
 ````
 cd ~
@@ -43,6 +43,7 @@ yes "" | ./configure (skips interactive shortcut)
 bazel build --config=opt --copt=-O3 --define=tflite_with_select_tf_ops=true //tensorflow/lite/delegates/flex:tensorflowlite_flex
 
 -> output: bazel-bin/tensorflow/lite/delegates/flex/libtensorflowlite_flex.so
+(or search by: find $(bazel info output_base) -name "*tensorflowlite_flex*.so" 2>/dev/null)
 sudo cp bazel-bin/tensorflow/lite/delegates/flex/libtensorflowlite_flex.so /usr/local/lib/
 sudo ldconfig
 ldconfig -p | grep flex
