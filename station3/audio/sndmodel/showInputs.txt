@@ -8,3 +8,6 @@ OUTPUT name: Identity
 OUTPUT shape: [   1 6362]
 OUTPUT dtype: <class 'numpy.float32'>
 OUTPUT quant params: {'scales': array([], dtype=float32), 'zero_points': array([], dtype=int32), 'quantized_dimension': 0}
+
+
+Uploaded BirdNET_6K_GLOBAL_MODEL.tflite (55MB) to chatGPT for analysis:

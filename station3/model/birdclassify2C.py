@@ -17,6 +17,8 @@ import sys
 import os
 import glob
 import ctypes
+import datetime
+import json
 import numpy as np
 from PIL import Image
 
@@ -384,6 +386,28 @@ def main():
             f.write(f"{MODEL_NAME}, None\n")
 
 
+    # --------------------------------------------------
+    # write ramdisk/model2.json for bird statistics
+    # --------------------------------------------------
+
+    top_label = keep[0]["label"] if len(keep) > 0 and keep[0]["confidence"] > 60 else None
+
+    if top_label:
+        top_label_idx = labels.index(top_label)
+        date_str = datetime.datetime.now().strftime("%y-%m-%d-%H-%M")
+        new_entry = [date_str, top_label_idx]
+
+        # Keep file as one valid JSON array: [[date, idx], ...]
+        statfname = os.path.join(IMG_DIR, f"{MODEL_NAME}.json")
+        stats = []
+        if os.path.exists(statfname):
+            with open(statfname, "r", encoding="utf-8") as f:
+                stats = json.load(f)
+
+        stats.append(new_entry)
+
+        with open(statfname, "w", encoding="utf-8") as f:
+            json.dump(stats, f)    
     # --------------------------------------------------
     # cleanup
     # --------------------------------------------------
