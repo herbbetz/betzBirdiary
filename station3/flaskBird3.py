@@ -302,7 +302,7 @@ def daygallery():
     """
     stat_frame = f"{dayimg_dir}/model2.html"
     if os.path.exists(stat_frame):
-       html += f"<iframe src='{stat_frame}'></iframe>\n"
+       html += f"<div><iframe src='{stat_frame}' class='stats-iframe'></iframe></div><hr>\n"
     # append each image row-wise, grouped by common prefix before "."
     currentprefix = None
     current_comb_prefix = None  # track the comb_prefix for the CURRENT group

@@ -20,6 +20,13 @@ hr{
     font-style: italic;
     color: #0056b3;
 }
+.stats-iframe {
+    width: 80%;       /* Or a fixed width like 600px */
+    height: 300px;    /* You must set a height! */
+    border: 1px solid aqua;
+    border-radius: 8px;
+    background-color: #a79999;
+}
 h2{
     font-size: 18px;
 }

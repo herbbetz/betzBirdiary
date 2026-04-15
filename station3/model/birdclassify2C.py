@@ -425,9 +425,9 @@ def main():
 
         # html output (iframe):
         html = "<!doctype html>\n<html>\n<head><meta http-equiv='refresh' content='60'></head>\n<body>\n" # refresh every 60 secs to avoid iframe browser cacheing
-        html += f"<h2>Statistics of {MODEL_NAME}</h2>\n<table style='margin: 0 auto; border-collapse: collapse; width: 90%;'>\n"
+        html += f"<h2>Statistics of {MODEL_NAME}</h2>\n<table style='display: block; margin: 0 auto; border-collapse: collapse; width: 60%;'>\n"
         for idx, count in sorted_counts:
-            bird_name = labels[idx][:6] # 6 leftmost chars
+            bird_name = labels[idx][:15] # 15 leftmost chars
             relcnt = round(count/len(stats) * 100)
             html += f"<tr style='border-bottom: 1px solid #ddd;'><td style='padding: 4px;'>{bird_name}</td><td>{count}</td><td>{relcnt} %</td></tr>\n"
         html += "</table></body></html>"
