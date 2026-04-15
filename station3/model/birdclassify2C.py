@@ -330,7 +330,7 @@ def main():
 
         results.append({
             "path": image_path,
-            "label": label,
+            "label_idx": idx,
             "confidence": confidence
         })
 
@@ -338,12 +338,10 @@ def main():
     # --------------------------------------------------
     # decision phase
     # --------------------------------------------------
-
     recognized = [
         r for r in results
-        if is_recognized(r["label"])
+        if is_recognized(labels[r["label_idx"]])  # Look up string for the check
     ]
-
 
     keep = []
 
@@ -378,7 +376,7 @@ def main():
                 f.write(
                     f"{MODEL_NAME}, {idx_part}, "
                     f"{r['confidence']:.2f}, "
-                    f"{r['label']}\n"
+                    f"{labels[r['label_idx']]}\n"
                 )
 
         else:
@@ -390,10 +388,9 @@ def main():
     # write ramdisk/model2.json for bird statistics
     # --------------------------------------------------
 
-    top_label = keep[0]["label"] if len(keep) > 0 and keep[0]["confidence"] > 60 else None
+    top_label_idx = keep[0]["label_idx"] if len(keep) > 0 and keep[0]["confidence"] > 60 else None
 
-    if top_label:
-        top_label_idx = labels.index(top_label)
+    if top_label_idx is not None:
         date_str = datetime.datetime.now().strftime("%y-%m-%d-%H-%M")
         new_entry = [date_str, top_label_idx]
 
@@ -401,13 +398,44 @@ def main():
         statfname = os.path.join(IMG_DIR, f"{MODEL_NAME}.json")
         stats = []
         if os.path.exists(statfname):
-            with open(statfname, "r", encoding="utf-8") as f:
-                stats = json.load(f)
-
+            try:
+                with open(statfname, "r", encoding="utf-8") as f:
+                    stats = json.load(f)
+            except json.JSONDecodeError:
+                stats = [] # Handle corrupted/empty files
+ 
         stats.append(new_entry)
+
+        # Keep only the last 1000 entries to prevent ramdisk bloat
+        if len(stats) > 1000:
+            stats = stats[-1000:]
 
         with open(statfname, "w", encoding="utf-8") as f:
             json.dump(stats, f)    
+
+        # count absolute counts to a dictionary counts = {label_idx0: count0, ...}
+        counts = {}
+        for entry in stats:
+            idx = entry[1]
+            if idx in counts: counts[idx] += 1 
+            else: counts[idx] = 1  # same as: 'counts[idx] = counts.get(idx, 0) + 1'
+
+        # counts.items() gives [(idx, count), (idx, count), ...]
+        sorted_counts = sorted(counts.items(), key=lambda item: item[1], reverse=True)
+
+        # html output (iframe):
+        html = "<!doctype html>\n<html>\n<head><meta http-equiv='refresh' content='60'></head>\n<body>\n" # refresh every 60 secs to avoid iframe browser cacheing
+        html += f"<h2>Statistics of {MODEL_NAME}</h2>\n<table style='margin: 0 auto; border-collapse: collapse; width: 90%;'>\n"
+        for idx, count in sorted_counts:
+            bird_name = labels[idx][:6] # 6 leftmost chars
+            relcnt = round(count/len(stats) * 100)
+            html += f"<tr style='border-bottom: 1px solid #ddd;'><td style='padding: 4px;'>{bird_name}</td><td>{count}</td><td>{relcnt} %</td></tr>\n"
+        html += "</table></body></html>"
+
+        html_path = os.path.join(IMG_DIR,f"{MODEL_NAME}.html")
+        # overwrite:
+        with open(html_path, "w", encoding="utf-8") as f:
+            f.write(html)       
     # --------------------------------------------------
     # cleanup
     # --------------------------------------------------
