@@ -429,7 +429,7 @@ def main():
         for idx, count in sorted_counts:
             bird_name = labels[idx][:15] # 15 leftmost chars
             relcnt = round(count/len(stats) * 100)
-            html += f"<tr style='border-bottom: 1px solid #ddd;'><td style='padding: 4px;'>{bird_name}</td><td>{count}</td><td>{relcnt} %</td></tr>\n"
+            html += f"<tr style='border-bottom: 1px solid #ddd;'><td style='padding: 12px;'>{bird_name}</td><td>{count}</td><td>= {relcnt}%</td></tr>\n"
         html += "</table></body></html>"
 
         html_path = os.path.join(IMG_DIR,f"{MODEL_NAME}.html")
