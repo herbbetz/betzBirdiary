@@ -1,0 +1,12 @@
+Apple MAC (high sierra) Terminal ssh client sends wrong locale: LC_CTYPE=UTF-8
+Raspbian does not recognize this locale, so:
+	in sudo nano /etc/ssh/sshd_config
+	`AcceptEnv LANG` instead of `AcceptEnv LANG LC_*`
+	sudo systemctl restart ssh
+
+Cyberduck auf dem alten MacOS "High Sierra" (von 2010), voll funktional bei Download von cyberduck.io auch ohne Registrierung (nicht Download von Apple App Store kostet Euro 25.-)
+    Protokoll umstellen von FTP auf SFTP und mit dem RPi verbinden (z.B. 192.168.178.210)
+    Dateien zwischen "Finder" und "Cyberduck" hin- und herziehen.
+
+Testweise im MacOS Terminal mal probieren `ssh pi@<IP4>` und `sftp pi@<IP4>`.
+
