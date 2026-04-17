@@ -33,6 +33,7 @@ BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 IMG_DIR = "/home/pi/station3/ramdisk"
 
 MODEL_NAME = "model2"
+MIN_CONFIDENCE = 60
 MODEL_PATH = f"{BASE_DIR}/{MODEL_NAME}/birdiary_v5_mobilenetv3.tflite"
 LABELS_PATH = f"{BASE_DIR}/{MODEL_NAME}/labels.txt"
 
@@ -388,7 +389,7 @@ def main():
     # write ramdisk/model2.json for bird statistics
     # --------------------------------------------------
 
-    top_label_idx = keep[0]["label_idx"] if len(keep) > 0 and keep[0]["confidence"] > 60 else None
+    top_label_idx = keep[0]["label_idx"] if len(keep) > 0 and keep[0]["confidence"] > MIN_CONFIDENCE else None
 
     if top_label_idx is not None:
         date_str = datetime.datetime.now().strftime("%y-%m-%d-%H-%M")
@@ -424,13 +425,45 @@ def main():
         sorted_counts = sorted(counts.items(), key=lambda item: item[1], reverse=True)
 
         # html output (iframe):
-        html = "<!doctype html>\n<html>\n<head><meta http-equiv='refresh' content='60'></head>\n<body>\n" # refresh every 60 secs to avoid iframe browser cacheing
-        html += f"<h2>Statistics of {MODEL_NAME}</h2>\n<table style='display: block; margin: 0 auto; border-collapse: collapse; width: 60%;'>\n"
+        html = "<!doctype html>\n<html>\n<head><meta http-equiv='refresh' content='60'>\n" # refresh every 60 secs to avoid iframe browser cacheing
+        html += """
+        <style>
+        body {
+            margin: 0;
+        }
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+        .sidebar {
+            width: 25%;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+        .content {
+            width: 75%;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+        table {
+            border-collapse: collapse;
+            width: 60%;
+        }
+        td {
+            margin: 10px;
+        }
+        tr {
+            border-bottom: 1px solid #ddd;
+        }
+        </style>
+        """
+        html += "</head>\n<body><div class='container'><div class='sidebar'>\n" 
+        html += f"<h2>{MODEL_NAME}</h2>Statistics\n<p>confidence &gt;{MIN_CONFIDENCE}%</p></div><div class='content'>\n<table>\n"
         for idx, count in sorted_counts:
             bird_name = labels[idx][:15] # 15 leftmost chars
             relcnt = round(count/len(stats) * 100)
-            html += f"<tr style='border-bottom: 1px solid #ddd;'><td style='padding: 12px;'>{bird_name}</td><td>{count}</td><td>= {relcnt}%</td></tr>\n"
-        html += "</table></body></html>"
+            html += f"<tr><td>{bird_name}</td><td>{count}</td><td>= {relcnt}%</td></tr>\n"
+        html += "</table></div></div></body></html>"
 
         html_path = os.path.join(IMG_DIR,f"{MODEL_NAME}.html")
         # overwrite:

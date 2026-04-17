@@ -16,7 +16,7 @@
 
 - I also disable bluetooth by blacklisting its modules from loading. Or `systemctl disable bluetooth`.
 
-- mDNS (avahi, bonjour): 'ping rpibird' statt 'ping 192.168.178.210' zeigt den Erfolg. 'rpibird' eintragen in /etc/hosts und /etc/hostname.
+- mDNS (avahi, bonjour): 'ping rpibird' statt 'ping 192.168.178.210' zeigt den Erfolg. 'rpibird' eintragen in /etc/hosts und /etc/hostname. In `/etc/avahi/avahi-daemon.conf` setze `use-ipv6=no`, um die Namensauflösung aus dem Desktop Browser zu beschleunigen. Noch schneller wird es mit einem Eintrag in `C:\Windows\System32\drivers\etc\hosts`. Achte im Router auch auf als `rpibird` gleichbenannte, aber verschiedene *statische DHCP Leases*  und benenne diese um !
 
 - Swap to disk (Service `zramswap`) bei aufgebrauchtem Memory könnte die SD-Karte abnützen, was ein memory monitoring (bei Raspberry 2GB) empfiehlt mit `vmstat 1` oder minütlich durch Systemd Timer auszuführendes Script:
 
