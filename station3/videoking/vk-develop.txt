@@ -1,0 +1,180 @@
+Use simple python code with preferable the following modules: json, requests
+Suppose, today is "2026-04-20". I need from "https://wiediversistmeingarten.org/api/station" all stations, where "lastMovement.start_date" was since the previous month ('last_month'='2026-03', i.e. since "2026-03-01" or "2026-03* plus 2026-04*").
+From these stations I need the base properties "station_id, location.lat, location.lng, name".
+My own station_id is e.g. "87bab185-7630-461c-85e6-c04cf5bab180". The formats of the apis follow below.
+These base properties need to be supplemented by a property named "cnt" from "https://wiediversistmeingarten.org/api/movement/<station_id>".
+The first part of this "cnt" property added to the base properties from ".../api/movement..." should be the count named "cnt.move" of all movements within the previous month, i.e. all json elements of ".../api/movement..." with "start_date": "2026-03*" in our example.
+The second part of this "cnt" property from ".../api/movement..." is a count named "cnt.validated", which counts, how many movements of the previous month (e.g. "start_date": "2026-03*") contain the property "validation" (i.e. human classification of bird species).
+Then all the properties "station_id, location.lat, location.lng, name, cnt.move, cnt.validated" should be sorted descendingly by cnt.move .
+The display of these results should be in a HTML file like "vk2026-03.html" (stands for video-king of month 2026-03) in the following form:
+<h2>Videoking of last month {'last_month'}</h2>
+<table>
+<tr><td><a href="https://maps.google.com/maps?q={'location.lat'},{'location.lng'}" target="_blank">{'name'}</a></td><td>{'cnt.move'}</td><td>{'cnt.validated'}</td></tr>
+</table>
+Please evaluate this concept, if it all makes sense for you, before you code.
+
+
+Example from https://wiediversistmeingarten.org/api/station :
+
+[
+  {
+    "station_id": "916c48da-19f6-4af4-80f3-8bf0abef02c7",
+    "location": {
+      "lat": 52.2563375562688,
+      "lng": 7.90534973144531
+    },
+    "name": "Landsitz Lotte",
+    "sensebox_id": "",
+    "lastEnvironment": {
+      "date": "2026-04-20 17:45:21.082641",
+      "temperature": 6.8,
+      "humidity": 83,
+      "env_id": "d61712a0-ade6-4f47-b237-3cd24503b3f9"
+    },
+    "lastMovement": {
+      "station_id": "916c48da-19f6-4af4-80f3-8bf0abef02c7",
+      "mov_id": "3e4a0e12-419c-4f13-898e-49cb3b307bdc",
+      "start_date": "2026-04-20 12:53:57.588306",
+      "end_date": "2026-04-20 12:54:21.736369",
+      "weight": 5.07920333469649,
+      "detections": [],
+      "audio": "https://wiediversistmeingarten.org/api/uploads/audios/audio_2026-04-2010:54:26.864226.wav",
+      "video": "https://wiediversistmeingarten.org/api/uploads/videos/2026-04-20_125357.588306.mp4",
+      "environment": {
+        "date": "2026-04-20 12:53:55.598291",
+        "temperature": 7.6,
+        "humidity": 78.7,
+        "env_id": "cd6cb965-cfd5-4caf-bb76-6c976ee74c16"
+      },
+      "createdAt": "Mon, 20 Apr 2026 10:54:26 GMT"
+    },
+    "type": "observer"
+  },
+  {
+    "station_id": "87bab185-7630-461c-85e6-c04cf5bab180",
+    "location": {
+      "lat": 48.5334147181626,
+      "lng": 12.1375054121017
+    },
+    "name": "Betzbirdiary",
+    "sensebox_id": "6979002ebd5b9f0007f24fd9",
+    "type": "observer",
+    "advancedSettings": {
+
+    },
+    "lastMovement": {
+      "station_id": "87bab185-7630-461c-85e6-c04cf5bab180",
+      "mov_id": "179b6de2-8fad-4643-9478-cd69e760e91d",
+      "start_date": "2026-04-20 17:20:35.564404",
+      "end_date": "2026-04-20 17:20:37.957380",
+      "weight": 19,
+      "detections": [
+        {
+          "latinName": "Cyanistes caeruleus",
+          "germanName": "Blaumeise",
+          "score": 0.882352941176471
+        },
+        {
+          "latinName": "Spinus psaltria",
+          "germanName": "",
+          "score": 0.43921568627451
+        },
+        {
+          "latinName": "Baeolophus bicolor",
+          "germanName": "",
+          "score": 0.333333333333333
+        }
+      ],
+      "audio": "https://wiediversistmeingarten.org/api/uploads/audios/audio_2026-04-2015:20:38.731181.wav",
+      "video": "https://wiediversistmeingarten.org/api/uploads/videos/2026-04-20_172035.564404.mp4",
+      "environment": {
+        "env_id": "e584402d-e869-40c8-9e14-ab08920a6cb2"
+      },
+      "createdAt": "Mon, 20 Apr 2026 15:20:38 GMT"
+    },
+    "lastEnvironment": {
+      "date": "2026-04-20 19:43:56.840587",
+      "temperature": 18,
+      "humidity": 51,
+      "env_id": "909f0576-fa33-40eb-bf2e-01054393f319"
+    },
+    "ownerId": "6976653e4d166ef0f6385ff9",
+    "stationSoftware": "birdiary"
+  },
+...]
+
+
+Example from https://wiediversistmeingarten.org/api/movement/87bab185-7630-461c-85e6-c04cf5bab180 :
+
+[
+  {
+    "station_id": "87bab185-7630-461c-85e6-c04cf5bab180",
+    "mov_id": "2177f719-d11a-4238-8fe9-e87db8876652",
+    "start_date": "2026-04-20 09:06:58.863742",
+    "end_date": "2026-04-20 09:07:07.193855",
+    "weight": 21,
+    "detections": [
+      {
+        "latinName": "Nycticorax nycticorax",
+        "germanName": "Nachtreiher",
+        "score": 0.509803921568627
+      },
+      {
+        "latinName": "Hemiphaga novaeseelandiae",
+        "germanName": "",
+        "score": 0.505882352941176
+      }
+    ],
+    "audio": "https://wiediversistmeingarten.org/api/uploads/audios/audio_2026-04-2007:07:08.534156.wav",
+    "video": "https://wiediversistmeingarten.org/api/uploads/videos/2026-04-20_090658.863742.mp4",
+    "environment": {
+      "env_id": "55511eb1-2125-4dcf-b670-8860264ca996"
+    },
+    "createdAt": "Mon, 20 Apr 2026 07:07:08 GMT",
+    "validation": {
+      "validations": [
+        {
+          "latinName": "Sitta europaea",
+          "germanName": "Kleiber",
+          "timestamp": "2026-04-20 17:54:44.743939"
+        }
+      ],
+      "summary": {
+        "Sitta europaea": {
+          "latinName": "Sitta europaea",
+          "amount": 1
+        }
+      }
+    }
+  },
+  {
+    "station_id": "87bab185-7630-461c-85e6-c04cf5bab180",
+    "mov_id": "70d53139-33bf-4d8c-8686-b50e799c61fd",
+    "start_date": "2026-04-20 09:05:23.867016",
+    "end_date": "2026-04-20 09:05:29.343197",
+    "weight": 21,
+    "detections": [
+      {
+        "latinName": "Zenaida macroura",
+        "germanName": "Carolinataube",
+        "score": 0.403921568627451
+      },
+      {
+        "latinName": "Nycticorax nycticorax",
+        "germanName": "Nachtreiher",
+        "score": 0.392156862745098
+      },
+      {
+        "latinName": "Hemiphaga novaeseelandiae",
+        "germanName": "",
+        "score": 0.325490196078431
+      }
+    ],
+    "audio": "https://wiediversistmeingarten.org/api/uploads/audios/audio_2026-04-2007:05:30.599809.wav",
+    "video": "https://wiediversistmeingarten.org/api/uploads/videos/2026-04-20_090523.867016.mp4",
+    "environment": {
+      "env_id": "cfb5f89f-7037-4eb9-932f-b6a9bf4c2f96"
+    },
+    "createdAt": "Mon, 20 Apr 2026 07:05:30 GMT"
+  },
+...]

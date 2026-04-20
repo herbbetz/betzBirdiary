@@ -6,6 +6,7 @@ Die Birdiary Website bietet ein API, das pro Station hochgeladene Videos und Umw
 
 - Videos: https://wiediversistmeingarten.org/api/movement/87bab185-7630-461c-85e6-c04cf5bab180
 - Umweltdaten: https://wiediversistmeingarten.org/api/environment/87bab185-7630-461c-85e6-c04cf5bab180
+- https://wiediversistmeingarten.org/api/station zeigt alle Stationen.
 - eine Übersicht: https://wiediversistmeingarten.org/api/station/87bab185-7630-461c-85e6-c04cf5bab180 , siehe auch Wilfried's `count.py`.
 
 Voraussetzung ist ein installiertes Modul 'matplotlib' für Python3: sudo apt-get install python3-matplotlib. Dies erzeugt SVG Grafiken.
