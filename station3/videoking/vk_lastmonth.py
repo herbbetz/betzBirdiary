@@ -1,4 +1,4 @@
-# script to show last month's "video king" from exploring api statistics
+# script to show last month's "video king" from exploring api statistics, standalone version
 # created Apr 2026 with the aid of gemini
 # results in "vk2026-03.html" for the videoking of 2026-03 = March of 2026
 # may only be run once a month, so when requested, flask looks if previous month's stats.html has already been calculated.

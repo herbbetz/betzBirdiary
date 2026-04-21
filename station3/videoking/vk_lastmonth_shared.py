@@ -1,4 +1,4 @@
-# script to show last month's "video king" from exploring api statistics
+# script to show last month's "video king" from exploring api statistics, version integrated into station3 (called on boot by startup2stage.sh, used by flaskBird3, using sharedBird)
 # created Apr 2026 with the aid of gemini
 # results in "vk2026-03.html" for the videoking of 2026-03 = March of 2026
 # may only be run once a month, so when requested, flask looks if previous month's stats.html has already been calculated.
@@ -8,6 +8,8 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from datetime import datetime
 import time
+import os
+from pathlib import Path # to delete old reports
 from sharedBird import prev_month
 
 # Configuration
@@ -18,6 +20,8 @@ today = datetime.today()
 CURRENT_MONTH = today.strftime("%Y-%m")
 TARGET_MONTH = prev_month(CURRENT_MONTH)
 OUTPUT_FILE = f"vk{TARGET_MONTH}.html"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+OUTPUT_PATH = f"{BASE_DIR}/{OUTPUT_FILE}"
 
 def get_data():
     # Configure retry strategy: 3 retries, wait 1 second between attempts
@@ -112,6 +116,14 @@ def generate_html(data):
     print(f"Successfully generated {OUTPUT_FILE}")
 
 if __name__ == "__main__":
+    if os.path.exists(OUTPUT_PATH):
+        print(f"{OUTPUT_FILE} already there")
+        exit(0)
+
+    # 1. Clean up old reports first
+    for f in Path(BASE_DIR).glob("vk*.html"):
+        f.unlink()
+
     start_time = time.time()
     aggregated_data = get_data()
     if aggregated_data:

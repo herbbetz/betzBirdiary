@@ -359,28 +359,21 @@ def monthlyking():
     CURRENT_MONTH = today.strftime("%Y-%m")
     TARGET_MONTH = prev_month(CURRENT_MONTH)
     OUTPUT_FILE = f"vk{TARGET_MONTH}.html"
-    
-    # Keep your absolute path logic
     OUT_PATH = f"{BASE_DIR}/videoking/{OUTPUT_FILE}"
-    SCRIPT_PATH = f"{BASE_DIR}/videoking/vk_lastmonth_shared.py"
-
+    # SCRIPT_PATH = f"{BASE_DIR}/videoking/vk_lastmonth_shared.py"
     if os.path.exists(OUT_PATH):
-        # send_from_directory is already imported. 
-        # This sends the file content to the browser correctly.
         return send_from_directory(os.path.dirname(OUT_PATH), os.path.basename(OUT_PATH))
     else:
-        # Keep your existing subprocess logic. 
-        # Since you use this style elsewhere (reboot/shutdown), stick with it.
-        cmd = f"python3 {SCRIPT_PATH}"
-        subprocess.Popen(cmd, shell=True) 
-        
+        # to run the script from here would entail e.g. PID locking to avoid running the script twice at the same time
+        # cmd = f"python3 {SCRIPT_PATH}"
+        # subprocess.Popen(cmd, shell=True) 
         return """
         <!doctype html>
         <html>
             <head><meta http-equiv="refresh" content="30"></head>
             <body>
-                The first time collecting info for the Video-King takes time... <br>
-                Please wait some minutes for this page to refresh automatically!
+                You have not yet run Video-King script for this month (takes some minutes) <br>
+                This page refreshes automatically!
             </body>
         </html>
         """        

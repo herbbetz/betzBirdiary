@@ -69,5 +69,6 @@ sleep 1
 # setsid $PYTHON widgets.py &
 bash "$APPDIR/statist/getStats.sh" >> "$APPDIR/logs/statist.log" 2>&1 # only once at boot, fst contact with birdiary platform
 sleep 1
+$PYTHON "$APPDIR/videoking/vk_lastmonth_shared.py" >> "$APPDIR/logs/videoking.log" 2>&1 # once a month takes several minutes to contact all station apis and produce html report for last month's video uploads
 echo "startup2stage.sh ended at $(date)" >> "$APPDIR/logs/startup.log" 2>&1
 exit # status reflects last cmds success
