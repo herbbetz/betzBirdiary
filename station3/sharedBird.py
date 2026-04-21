@@ -82,6 +82,19 @@ def delFromGallery(recnum):
         for i in range(len(lines)):
             if i != line2delete: newfile.write(lines[i])
 
+# videoking calculation:
+def prev_month(month_str): # e.g. month_str = '2026-04'
+    # Split and convert to integers
+    year, month = map(int, month_str.split('-'))
+    # Calculate previous month
+    if month > 1:
+        month -= 1
+    else:
+        year -= 1
+        month = 12
+    # Return formatted string with zero-padding (:02d)
+    return f"{year}-{month:02d}"
+
 ''' for the old /acknowledge version:
 def copy2mp4(movesaved):
     h264name = app_dir + 'movements/' + movesaved + '.h264'

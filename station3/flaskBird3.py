@@ -11,7 +11,7 @@ from datetime import datetime
 import markdown
 import msgBird as ms
 from configBird3 import birdpath, update_config_json
-from sharedBird import delFromGallery
+from sharedBird import delFromGallery, prev_month
 # for camdata plotting:
 import matplotlib.pyplot as plt
 from collections import defaultdict
@@ -353,6 +353,37 @@ def daygallery():
     """
     return html
 
+@app.route("/videoking")
+def monthlyking():
+    today = datetime.today()
+    CURRENT_MONTH = today.strftime("%Y-%m")
+    TARGET_MONTH = prev_month(CURRENT_MONTH)
+    OUTPUT_FILE = f"vk{TARGET_MONTH}.html"
+    
+    # Keep your absolute path logic
+    OUT_PATH = f"{BASE_DIR}/videoking/{OUTPUT_FILE}"
+    SCRIPT_PATH = f"{BASE_DIR}/videoking/vk_lastmonth_shared.py"
+
+    if os.path.exists(OUT_PATH):
+        # send_from_directory is already imported. 
+        # This sends the file content to the browser correctly.
+        return send_from_directory(os.path.dirname(OUT_PATH), os.path.basename(OUT_PATH))
+    else:
+        # Keep your existing subprocess logic. 
+        # Since you use this style elsewhere (reboot/shutdown), stick with it.
+        cmd = f"python3 {SCRIPT_PATH}"
+        subprocess.Popen(cmd, shell=True) 
+        
+        return """
+        <!doctype html>
+        <html>
+            <head><meta http-equiv="refresh" content="30"></head>
+            <body>
+                The first time collecting info for the Video-King takes time... <br>
+                Please wait some minutes for this page to refresh automatically!
+            </body>
+        </html>
+        """        
 
 # remove mp4 and record from gallery.js, 'del' button in gallery3.html handled by it's sendDelRec(recId):
 @app.route('/delrecord', methods=['POST'])

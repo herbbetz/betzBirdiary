@@ -8,25 +8,13 @@ from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
 from datetime import datetime
 import time
-
-def prev_month(month_str): # e.g. month_str = '2026-04'
-    # Split and convert to integers
-    year, month = map(int, month_str.split('-'))
-    # Calculate previous month
-    if month > 1:
-        month -= 1
-    else:
-        year -= 1
-        month = 12
-    # Return formatted string with zero-padding (:02d)
-    return f"{year}-{month:02d}"
+from sharedBird import prev_month
 
 # Configuration
 STATION_API = "https://wiediversistmeingarten.org/api/station"
 MOVEMENT_API_BASE = "https://wiediversistmeingarten.org/api/movement/"
 
 today = datetime.today()
-
 CURRENT_MONTH = today.strftime("%Y-%m")
 TARGET_MONTH = prev_month(CURRENT_MONTH)
 OUTPUT_FILE = f"vk{TARGET_MONTH}.html"
