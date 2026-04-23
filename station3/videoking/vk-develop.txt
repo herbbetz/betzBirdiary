@@ -1,3 +1,77 @@
+Die Übereinstimmung der Plattform KI mit der menschlichen Validierung auf einer Plattform, wo häufig validiert wird
+(Rheingarten -> https://wiediversistmeingarten.org/api/movement/f4f61b9b-4390-4de1-987d-bf72220158e4):
+    Vergleiche
+        detections[0].germanName
+    mit
+        validation.validations[0].germanName
+----
+[
+  {
+    "station_id": "f4f61b9b-4390-4de1-987d-bf72220158e4",
+    "mov_id": "ea4ca443-a817-43d6-95d6-83651d3ac18c",
+    "start_date": "2026-04-23 20:41:14",
+    "end_date": "2026-04-23 20:41:30",
+    "weight": 19.55,
+    "detections": [
+      {
+        "latinName": "Erithacus rubecula",
+        "germanName": "Rotkehlchen",
+        "score": 0.913725490196078
+      },
+      {
+        "latinName": "Cardinalis cardinalis",
+        "germanName": "",
+        "score": 0.701960784313725
+      },
+      {
+        "latinName": "Turdus migratorius",
+        "germanName": "Wanderdrossel",
+        "score": 0.313725490196078
+      }
+    ],
+    "audio": "https://wiediversistmeingarten.org/api/uploads/audios/audio_2026-04-2318:43:05.987600.wav",
+    "video": "https://wiediversistmeingarten.org/api/uploads/videos/20260423_20260423_204114_SVGA_14_16_224.mp4",
+    "environment": {
+      "date": "2026-04-23 20:41:30",
+      "temperature": 14.85,
+      "humidity": 49.3,
+      "airpressure": 1024.21,
+      "illuminance": 13000,
+      "env_id": "97d40082-85b8-4eeb-b25a-18067d9d93bb"
+    },
+    "createdAt": "Thu, 23 Apr 2026 18:43:06 GMT",
+    "validation": {
+      "validations": [
+        {
+          "latinName": "Erithacus rubecula",
+          "germanName": "Rotkehlchen",
+          "amount": 2,
+          "timestamp": "2026-04-23 19:25:04.308842"
+        }
+      ],
+      "summary": {
+        "Erithacus rubecula": {
+          "latinName": "Erithacus rubecula",
+          "amount": 1
+        }
+      }
+    }
+  },
+...]
+----
+das Python Script "human-ki-match.py" ergibt z.B. für den Validierungs-Spitzenreiter "Rheingarten" folgende Werte:
+```
+Station: Rheingarten (f4f61b9b-4390-4de1-987d-bf72220158e4)
+Total videos in 2026-03: 1135
+Human Validations found: 444
+Validations with identical KI matches found: 162
+Match rate: 36.49%
+```
+also nur rund 1/3 der menschlichen Validierungen sah die birdiary KI genauso, in 2/3 seiner Validierungen korrigierte der Mensch die KI.
+
+Menschliche Validierung macht aus Vogelvideos erst Daten. Aber wenn die Daten nicht zum Weitertrainieren der KI verwendet werden, war das Validieren dennoch nutzlos, oder? :person_shrugging:
+====
+
 Use simple python code with preferable the following modules: json, requests
 Suppose, today is "2026-04-20". I need from "https://wiediversistmeingarten.org/api/station" all stations, where "lastMovement.start_date" was since the previous month ('last_month'='2026-03', i.e. since "2026-03-01" or "2026-03* plus 2026-04*").
 From these stations I need the base properties "station_id, location.lat, location.lng, name".
