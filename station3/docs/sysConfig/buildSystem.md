@@ -122,3 +122,10 @@
 	- https://randomnerdtutorials.com/raspberry-pi-dht11-dht22-python/
 
 - **dezidierter Microcontroller**: HX711  →  RP2040/microPython  →  USB Serial  →  Your Linux app (pyserial within hxFiBirdState)
+
+##Entfernen nicht benötigter Software##
+Da für leichtere Konfiguration die Vollversion (mit Desktop) von Trixie grundgelegt wird, wird das endgültige Image ziemlich groß, ebenso das Update/Upgrade. Folgende Maßnahmen entfernen unnötige Packages nachträglich:
+
+- Suchen großer Pakete: `dpkg-query -Wf '${Installed-Size}\t${Package}\n' | sort -n | tail -n 20`
+- Ausschließen nötiger Abhängigkeiten: `apt-cache rdepends --installed <package>`
+- `sudo apt purge <package>`, `sudo apt autoremove`
