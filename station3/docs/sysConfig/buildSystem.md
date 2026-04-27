@@ -130,8 +130,9 @@
 Da für leichtere Konfiguration die Vollversion (mit Desktop) von Trixie grundgelegt wird, wird das endgültige Image ziemlich groß, ebenso das Update/Upgrade. Folgende Maßnahmen entfernen unnötige Packages nachträglich:
 
 - Suchen großer Pakete: `dpkg-query -Wf '${Installed-Size}\t${Package}\n' | sort -n | tail -n 20`
-- Ausschließen nötiger Abhängigkeiten: `apt-cache rdepends --installed <package>`
+- Ausschließen nötiger Abhängigkeiten: `apt-cache rdepends --installed <package>` oder `sudo apt remove --dry-run vlc` zum Ausschluss gefährlicher Deinstallation.
 - `sudo apt purge <package>`, `sudo apt autoremove`
-- einige GUI-Programme deinstallieren (am besten schon vor Installation von betzBirdiary)
+- einige GUI-Programme deinstallieren (am besten schon vor Installation von betzBirdiary innerhalb von *Desktop-Preferences-Remove software*)
+- `debloat.sh`: `sudo apt purge --autoremove -y chrome* firefox*`, dann `sudo apt clean`
 - Beispiele für große Packages zur Deinstallation: chrome, firefox, vlc , llvm-19-dev (compiler),
-	jedoch **nicht**: libllvm19 (enthält way-vnc, graphics stack)
+	jedoch **nicht**: libllvm19 (enthält way-vnc, graphics stack), raspberrypi-ui-mods, desktop-base, xdg-desktop-portal, lxde/labwc/mutter/wayland.
