@@ -6,4 +6,4 @@
 
 *Youtube*:
 
-- [52 Gartenvögel](https://www.youtube.com/watch?v=_L3QHbVgzHo)
+- Kalle Nibbenhagen: [52 Gartenvögel](https://www.youtube.com/watch?v=_L3QHbVgzHo), [36 Gartenvögel](https://www.youtube.com/watch?v=LpxdS3kb24A), [Vogelstimmen im Garten](https://www.youtube.com/watch?v=A311lvGa88g)

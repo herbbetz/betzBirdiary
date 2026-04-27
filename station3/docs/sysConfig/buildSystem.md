@@ -64,11 +64,14 @@
 	- das Systemmonitoring mit Anbindung an WebInterface: sysMon.sh, cpu5sec.sh, updateSysmonEvt.sh .
 	
 - C-Module:
+	
+	- generell: compilieren der C-Module ausserhalb der Verteil-Distribution, dann in diese die `*.so` Libraries kopieren.
+	
 	- 'sudo apt install libcamera-apps libcamera-apps-lite libcamera-dev python3-libcamera python3-kms++'
 	- teste libcamera: `rpicam-still --list-cameras`, `rpicam-still -o test_image.jpg -t 2000 --shutter 10000 --gain 4.0 --awbgains 1.5,1.2`
 	- lgpio C Treiber (hx711, dht22): `sudo apt install liblgpio-dev`
 	- Tensorflow Lite C API: `sudo apt install libtensorflow-lite-dev libjpeg62-turbo-dev`	
-
+	
 - python:
 	- 'sudo apt install libcap-dev python3-dev' nötig zur pip-Installation von Pythonmodulen mit C-Komponenten. Diese Buildtools können später wieder weg: 'sudo apt remove libcap-dev python3-dev' und 'sudo apt autoremove'.
 	- `sudo apt install python3-picamera2`.
@@ -123,9 +126,12 @@
 
 - **dezidierter Microcontroller**: HX711  →  RP2040/microPython  →  USB Serial  →  Your Linux app (pyserial within hxFiBirdState)
 
-##Entfernen nicht benötigter Software##
+### Entfernen nicht benötigter Software
 Da für leichtere Konfiguration die Vollversion (mit Desktop) von Trixie grundgelegt wird, wird das endgültige Image ziemlich groß, ebenso das Update/Upgrade. Folgende Maßnahmen entfernen unnötige Packages nachträglich:
 
 - Suchen großer Pakete: `dpkg-query -Wf '${Installed-Size}\t${Package}\n' | sort -n | tail -n 20`
 - Ausschließen nötiger Abhängigkeiten: `apt-cache rdepends --installed <package>`
 - `sudo apt purge <package>`, `sudo apt autoremove`
+- einige GUI-Programme deinstallieren (am besten schon vor Installation von betzBirdiary)
+- Beispiele für große Packages zur Deinstallation: chrome, firefox, vlc , llvm-19-dev (compiler),
+	jedoch **nicht**: libllvm19 (enthält way-vnc, graphics stack)
