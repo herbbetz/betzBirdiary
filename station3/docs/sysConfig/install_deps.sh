@@ -1,15 +1,15 @@
 #!/bin/bash
 # run using: sudo bash install_deps.sh
-# Check if script is running as root
+
 if [ "$EUID" -ne 0 ]; then 
   echo "Please run as root (use sudo)"
   exit 1
 fi
 
+# KEEP THIS: Trixie is a moving target; you need fresh URLs
 echo "--- Updating package lists ---"
 apt update
 
-# List of required dependencies
 DEPENDENCIES=(
     python3
     python3-requests
@@ -23,6 +23,7 @@ DEPENDENCIES=(
     screen
     ffmpeg
     mosquitto-clients
+    mailutils
     python3-ephem
     python3-flask
     python3-markdown
@@ -32,7 +33,8 @@ DEPENDENCIES=(
 echo "--- Checking and installing dependencies ---"
 
 for package in "${DEPENDENCIES[@]}"; do
-    if dpkg -l | grep -qw "$package"; then
+    # This is confusing packages with similar names: if dpkg -l | grep -qw "$package"; then
+    if dpkg-query -W -f='${Status}' "$package" 2>/dev/null | grep -q "ok installed"; then
         echo "[INSTALLED] $package is already present."
     else
         echo "[MISSING] $package. Installing..."

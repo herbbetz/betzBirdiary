@@ -130,9 +130,21 @@
 Da für leichtere Konfiguration die Vollversion (mit Desktop) von Trixie grundgelegt wird, wird das endgültige Image ziemlich groß, ebenso das Update/Upgrade. Folgende Maßnahmen entfernen unnötige Packages nachträglich:
 
 - Suchen großer Pakete: `dpkg-query -Wf '${Installed-Size}\t${Package}\n' | sort -n | tail -n 20`
-- Ausschließen nötiger Abhängigkeiten: `apt-cache rdepends --installed <package>` oder `sudo apt remove --dry-run vlc` zum Ausschluss gefährlicher Deinstallation.
+
+- Ausschließen nötiger Abhängigkeiten: `apt-cache rdepends --installed <package>` oder `sudo apt remove --dry-run vlc` zum Ausschluss gefährlicher Deinstallation (*Debian Desktop Dependency Trap*).
+
 - `sudo apt purge <package>`, `sudo apt autoremove`
+
 - einige GUI-Programme deinstallieren (am besten schon vor Installation von betzBirdiary innerhalb von *Desktop-Preferences-Remove software*)
+
 - `debloat.sh`: `sudo apt purge --autoremove -y chrome* firefox*`, dann `sudo apt clean`
+
+- entferne alles zu `cups`gehörige (mehr als über die GUI), was aber wiederum den Desktop ruiniert: `apt purge $(dpkg -l | grep cups | awk '{print $2}')`, dann `apt autoremove --purge`.
+
 - Beispiele für große Packages zur Deinstallation: chrome, firefox, vlc , llvm-19-dev (compiler),
 	jedoch **nicht**: libllvm19 (enthält way-vnc, graphics stack), raspberrypi-ui-mods, desktop-base, xdg-desktop-portal, lxde/labwc/mutter/wayland.
+
+**Transfer mit Erhaltung der Unix-Metadaten (Permissions, Owner, Symlinks)**
+-  Packen: `tar -cvf stat3.tar station3/` oder mit gzip `tar -czvf stat3.tar.gz station3/`
+-  Entpacken: `tar -xvf archive.tar` (`-xzvf` oder auto-detects compression). Das Entpacken muss aber in einer Linux-Partition (ext4) stattfinden. Bei differenten Usern (kein user `pi`) eventuell `sudo chown -R $USER:$USER .`
+-  nur Sichten: `tar -tvf archive.tar`
