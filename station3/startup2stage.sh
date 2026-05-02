@@ -5,7 +5,7 @@
 # log to /dev/null for sparing the sd-card
 APPDIR="$HOME/station3"
 PYTHON="/usr/bin/python3"
-LOGFILE="/dev/null" # "/home/pi/station3/logs/startup.log"
+LOGFILE="/home/pi/station3/logs/startup.log" #"/dev/null"
 log() {
     echo "$*" >> "$LOGFILE" 2>&1
 }
@@ -17,6 +17,7 @@ if [ -z "${PYTHONPATH:-}" ] || [ ! -d "$PYTHONPATH" ]; then
     log "PYTHONPATH missing or invalid — exiting"
     exit 1
 fi
+cd "$APPDIR" || { log "$APPDIR missing"; exit 1; } # {space ... ;space}
 # waits for internet, even /etc/systemd/system/bird-startup.service does not guarantee for this, despite 'After=network-online.target, Wants=network-online.target'
 # Wait for DNS to resolve webhook target
 dnshost=trigger.macrodroid.com # or cloudfare.com (1.1.1.1)
@@ -67,8 +68,13 @@ setsid $PYTHON "$APPDIR/hxFiBirdStateCt.py" > /dev/null 2>&1 & # >> "$APPDIR/log
 sleep 1
 # widgets for wayfire desktop will not work here, because wayfire or vnc/X11 env not yet ready! Moreover no use running it, when no desktop shown.
 # setsid $PYTHON widgets.py &
-bash "$APPDIR/statist/getStats.sh" >> "$APPDIR/logs/statist.log" 2>&1 # only once at boot, fst contact with birdiary platform
+STATDIR="$APPDIR/statist"
+cd "$STATDIR" || { log "$STATDIR missing"; exit 1; } # avoids output into wrong path
+bash "$STATDIR/getStats.sh" >> "$APPDIR/logs/statist.log" 2>&1 # only once at boot, fst contact with birdiary platform
 sleep 1
-$PYTHON "$APPDIR/videoking/vk_lastmonth_shared.py" >> "$APPDIR/logs/videoking.log" 2>&1 # once a month takes several minutes to contact all station apis and produce html report for last month's video uploads
+KINGDIR="$APPDIR/videoking"
+cd "$KINGDIR" || { log "$KINGDIR missing"; exit 1; } # avoids output into wrong path
+$PYTHON "$KINGDIR/vk_lastmonth_shared.py" >> "$APPDIR/logs/videoking.log" 2>&1 # once a month takes several minutes to contact all station apis and produce html report for last month's video uploads
+cd "$APPDIR"
 echo "startup2stage.sh ended at $(date)" >> "$APPDIR/logs/startup.log" 2>&1
 exit # status reflects last cmds success

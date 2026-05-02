@@ -1,8 +1,8 @@
 #!/bin/bash
 # run using: sudo bash install_deps.sh
-
+ME=$(basename "$0")
 if [ "$EUID" -ne 0 ]; then 
-  echo "Please run as root (use sudo)"
+  echo "Run as root (sudo bash $ME)"
   exit 1
 fi
 

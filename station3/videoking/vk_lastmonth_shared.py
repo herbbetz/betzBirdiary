@@ -111,7 +111,7 @@ def generate_html(data):
     </tr>
 """
     html_content += "</table>"
-    with open(OUTPUT_FILE, "w", encoding="utf-8") as f:
+    with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
         f.write(html_content)
     print(f"Successfully generated {OUTPUT_FILE}")
 

@@ -145,6 +145,13 @@ Da für leichtere Konfiguration die Vollversion (mit Desktop) von Trixie grundge
 	jedoch **nicht**: libllvm19 (enthält way-vnc, graphics stack), raspberrypi-ui-mods, desktop-base, xdg-desktop-portal, lxde/labwc/mutter/wayland.
 
 **Transfer mit Erhaltung der Unix-Metadaten (Permissions, Owner, Symlinks)**
--  Packen: `tar -cvf stat3.tar station3/` oder mit gzip `tar -czvf stat3.tar.gz station3/`
+-  Packen: `tar -cvf stat3.tar station3/` oder mit gzip `tar -cvzf stat3.tar.gz --exclude='*/__pycache__' station3/`. Ohne `__pycache__` ist es portabler.
 -  Entpacken: `tar -xvf archive.tar` (`-xzvf` oder auto-detects compression). Das Entpacken muss aber in einer Linux-Partition (ext4) stattfinden. Bei differenten Usern (kein user `pi`) eventuell `sudo chown -R $USER:$USER .`
 -  nur Sichten: `tar -tvf archive.tar`
+-  Damit reduziert sich die Installation von betzBirdiary auf:
+   - Flashen des Datei-Images wie `desktop20260429.img`.
+   - Übertragen von `stat3.tar.gz` auf die SD-Card und `tar -xzvf stat3.tar.gz`
+   - Ausführen der Scripte `station3/docs/sysConfig/install_deps.sh` und `setup_system.sh` in dieser Reihenfolge.
+   - Deanonymisierung: eigene Werte in `config.json` und `crontab crontab.txt`.
+   - Im Betrieb verbessern, dann wiederum `anonimize.sh` und neues `tar -cvzf stat3.tar.gz --exclude='*/__pycache__' station3/`.
+   - `stat3.tar.gz` ist unter 80MB groß und benötigt zur Verteilung oder Portabilität auf andere Basissysteme für Raspberry das Wissen um seine Installation via `ssh`. Dieses Wissen wird nicht benötigt, wenn es gleich insgesamt als Datei-Image ausgeliefert wird.

@@ -2,7 +2,6 @@
 echo
 echo " ----------------------------------------"
 echo "| Important scripts for birdiary wlan:"
-echo "|"
 echo "| > /etc/netplan/"
 echo "| > /etc/NetworkManager/system-connections"
 echo "|" 

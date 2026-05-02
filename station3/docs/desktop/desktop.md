@@ -2,6 +2,10 @@
 
 - Trotz größerem Dateiimage bewährt sich der Desktop in Trixie durch eine schmerzlose WLAN-Einstellung, sowohl bei Erstinstallation über HDMI & Keyboard als auch später für die Einstellung der statischen Adresse via VNC.
 
+- Der Desktop Background könnte auch periodisch gewechselt werden durch `pcmanfm --set-wallpaper /usr/share/rpd-wallpaper/image.jpg`.
+
+- Deinstallation unnötiger Packages (wie `cups`) am besten nur über den Packetmanager der GUI, da Deinstallationen auf der Kommandozeile oft grundlegende Desktop-Dateien mit beseitigen (*dependency trap*).
+
 - Firefox als Default Browser durch `xdg-settings set default-web-browser firefox.desktop`, verifiziert durch `xdg-settings get default-web-browser`.
 
 - Wenn Browser `chromium` ein `keyring password` möchte, kann das deaktiviert werden, indem mit `seahorse (sudo apt install seahorse), Apps-Accessories-Passwords&Keys` für den `default keyring` ein leeres Passwort gesetzt wird.
