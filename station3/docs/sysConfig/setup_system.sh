@@ -105,6 +105,7 @@ fi
 
 echo "--- 6. Reconfiguring Exim4 (Local Only) ---"
 # This non-interactive command sets exim4 to local delivery only
+# the line 'root:pi' in /etc/aliases forwards system mail for root also to pi .
 DEBCONF_DB_FALLBACK='File{/var/cache/debconf/config.dat}' \
 debconf-set-selections <<EOF
 exim4-config exim4/dc_eximconfig_configtype string local delivery only; not on a network
@@ -125,9 +126,19 @@ if [ ! -f /var/mail/pi ]; then
     chmod 660 /var/mail/pi
     echo "[SUCCESS] Mailbox for pi initialized."
 fi
-
 # Send a test mail to trigger the system
 echo "Station3 setup complete on $(date)" | mail -s "System Ready" pi
+
+echo "--- 8. Configuring Passwordless Sudo for Pi ---"
+SUDO_FILE="/etc/sudoers.d/010_pi-nopasswd"
+
+if [ ! -f "$SUDO_FILE" ]; then
+    echo "pi ALL=(ALL) NOPASSWD: ALL" > "$SUDO_FILE"
+    chmod 0440 "$SUDO_FILE"
+    echo "[SUCCESS] Passwordless sudo configured in $SUDO_FILE"
+else
+    echo "[SKIP] Sudo override already exists."
+fi
 
 # Run this script only from inside its own directory:
 cd /home/pi/station3 && python3 build_md_contents.py

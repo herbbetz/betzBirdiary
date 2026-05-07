@@ -425,35 +425,61 @@ def main():
         sorted_counts = sorted(counts.items(), key=lambda item: item[1], reverse=True)
 
         # html output (iframe):
-        html = "<!doctype html>\n<html>\n<head><meta http-equiv='refresh' content='60'>\n" # refresh every 60 secs to avoid iframe browser cacheing
+        # refresh every 60 secs to avoid iframe browser cacheing:
+        html = """<!doctype html>
+        <html>\
+        <head><meta http-equiv='refresh' content='60'>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        """ 
         html += """
         <style>
         body {
             margin: 0;
         }
+
         .container {
             display: flex;
-            height: 100vh;
         }
+
         .sidebar {
             width: 25%;
             padding: 10px;
             box-sizing: border-box;
         }
+
         .content {
             width: 75%;
             padding: 10px;
             box-sizing: border-box;
         }
+
         table {
             border-collapse: collapse;
-            width: 60%;
+            width: 100%;
+            max-width: 700px;
         }
+
         td {
-            margin: 10px;
+            padding: 10px;
         }
+
         tr {
             border-bottom: 1px solid #ddd;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                display: none;
+            }
+
+            .content {
+                width: 100%;
+            }
+
+            table {
+                width: 100%;
+            }
         }
         </style>
         """

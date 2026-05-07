@@ -289,14 +289,16 @@ def daygallery():
     <!DOCTYPE html>
     <html>
     <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
         <title>Daywatch</title>
-        <link rel="stylesheet" href="bird.css">
+        <link rel="stylesheet" href="/bird.css">
     </head>
     <body>
         <h1>Daily Images</h1>
         <div class="indented">
         <div class="rowed"><a href="vidshot3.html" class="button">back</a> <a href="https://www.wiediversistmeingarten.org/view" class="button" target="_blank">Birdiary Karte</a></div>
-        <div class='csv-line'>model0 = Birdiary, model1 = LogChirpy, model2 = Anni's Model</div>
+        <div class='csv-line'>model0 = Birdiary, model2 = Anni's Model</div>
         <a href='./model/daywatch.md'>Erklärung</a>
         </div><hr>
     """
@@ -408,17 +410,19 @@ def serve_file(filename):
     if filename.endswith('.md'):
         with open(absolute_path, encoding='utf-8') as f:
             md_content = f.read()
-            html_body = markdown.markdown(md_content)
+            html_body = markdown.markdown(md_content, extensions=["fenced_code", "tables"]) # md extensions for code window, tables
         base = os.path.splitext(os.path.basename(filename))[0]
         html_template = f"""<!doctype html>
 <html>
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{base}</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/birdmd.css">
 </head>
 <body>
-{html_body}
+<main>{html_body}</main>
 </body>
 </html>
 """

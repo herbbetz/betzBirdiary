@@ -146,7 +146,8 @@ class DesktopWidget(Gtk.Window):
         text += f"Date: {sysmon.get('date', '?')}\n"
         text += f"Uptime: {sysmon.get('uptime', '?')}\n"
         text += f"Wi-Fi: {sysmon.get('wlan0', '?')}\n"
-        text += f"CPU V: {sysmon.get('cpuvolt', '?')}\n"
+        text += f"WLAN_Q: {sysmon.get('WLANquality', '?')}\n"
+        # text += f"CPU V: {sysmon.get('cpuvolt', '?')}\n"
         text += f"CPU T: {sysmon.get('cputemp', '?')}\n"
         text += f"CPU Load: {sysmon.get('cpuload', '?')}\n"
 
