@@ -103,7 +103,6 @@ def get_data():
             return []
 
 def generate_html(data):
-    # ... (Keep your existing generate_html function exactly as it was) ...
     html_content = f"""<h2>Videoking of last month {TARGET_MONTH}</h2>
 <table>
     <tr><th>Rank</th><th>Station</th><th>Videos</th><th>Validated</th></tr>

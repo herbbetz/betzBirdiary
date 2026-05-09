@@ -372,7 +372,13 @@ def monthlyking():
         return """
         <!doctype html>
         <html>
-            <head><meta http-equiv="refresh" content="30"></head>
+            <head>
+                <meta http-equiv="refresh" content="60;url=/videoking">
+                <meta name="viewport" content="width=device-width, initial-scale=1">
+                <title>Wait...</title>
+                <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+                <link rel="stylesheet" href="/bird.css">
+            </head>
             <body>
                 You have not yet run Video-King script for this month (takes some minutes) <br>
                 This page refreshes automatically!

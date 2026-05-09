@@ -1,8 +1,962 @@
 [
   {
-    "date": "2025:07:30:18:14",
-    "temp": 25.5,
-    "humid_rel": 60.0,
-    "humid_abs": 15.0
+    "date": "2026:05:06:15:55",
+    "temperature": 24.0,
+    "humidity": 48.0,
+    "humid_abs": 10.0
+  },
+  {
+    "date": "2026:05:06:16:10",
+    "temperature": 24.0,
+    "humidity": 48.0,
+    "humid_abs": 10.0
+  },
+  {
+    "date": "2026:05:06:16:26",
+    "temperature": 23.0,
+    "humidity": 47.0,
+    "humid_abs": 10.0
+  },
+  {
+    "date": "2026:05:06:16:41",
+    "temperature": 23.0,
+    "humidity": 47.0,
+    "humid_abs": 10.0
+  },
+  {
+    "date": "2026:05:06:16:56",
+    "temperature": 23.0,
+    "humidity": 47.0,
+    "humid_abs": 10.0
+  },
+  {
+    "date": "2026:05:06:17:11",
+    "temperature": 22.0,
+    "humidity": 46.0,
+    "humid_abs": 9.0
+  },
+  {
+    "date": "2026:05:06:17:27",
+    "temperature": 22.0,
+    "humidity": 47.0,
+    "humid_abs": 9.0
+  },
+  {
+    "date": "2026:05:06:17:42",
+    "temperature": 20.0,
+    "humidity": 46.0,
+    "humid_abs": 8.0
+  },
+  {
+    "date": "2026:05:06:17:57",
+    "temperature": 17.0,
+    "humidity": 46.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:06:18:12",
+    "temperature": 16.0,
+    "humidity": 47.0,
+    "humid_abs": 6.0
+  },
+  {
+    "date": "2026:05:06:18:28",
+    "temperature": 15.0,
+    "humidity": 48.0,
+    "humid_abs": 6.0
+  },
+  {
+    "date": "2026:05:06:18:43",
+    "temperature": 16.0,
+    "humidity": 48.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:06:18:58",
+    "temperature": 16.0,
+    "humidity": 48.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:06:19:13",
+    "temperature": 16.0,
+    "humidity": 48.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:06:19:29",
+    "temperature": 16.0,
+    "humidity": 48.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:06:19:44",
+    "temperature": 16.0,
+    "humidity": 48.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:06:19:59",
+    "temperature": 16.0,
+    "humidity": 48.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:06:20:14",
+    "temperature": 16.0,
+    "humidity": 49.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:07:07:01",
+    "temperature": 9.0,
+    "humidity": 47.0,
+    "humid_abs": 4.0
+  },
+  {
+    "date": "2026:05:07:07:01",
+    "temperature": 9.0,
+    "humidity": 47.0,
+    "humid_abs": 4.0
+  },
+  {
+    "date": "2026:05:07:07:17",
+    "temperature": 9.0,
+    "humidity": 47.0,
+    "humid_abs": 4.0
+  },
+  {
+    "date": "2026:05:07:07:32",
+    "temperature": 10.0,
+    "humidity": 47.0,
+    "humid_abs": 4.0
+  },
+  {
+    "date": "2026:05:07:07:47",
+    "temperature": 11.0,
+    "humidity": 48.0,
+    "humid_abs": 5.0
+  },
+  {
+    "date": "2026:05:07:08:03",
+    "temperature": 12.0,
+    "humidity": 49.0,
+    "humid_abs": 5.0
+  },
+  {
+    "date": "2026:05:07:08:18",
+    "temperature": 12.0,
+    "humidity": 49.0,
+    "humid_abs": 5.0
+  },
+  {
+    "date": "2026:05:07:08:33",
+    "temperature": 13.0,
+    "humidity": 49.0,
+    "humid_abs": 6.0
+  },
+  {
+    "date": "2026:05:07:08:48",
+    "temperature": 13.0,
+    "humidity": 50.0,
+    "humid_abs": 6.0
+  },
+  {
+    "date": "2026:05:07:09:03",
+    "temperature": 13.0,
+    "humidity": 50.0,
+    "humid_abs": 6.0
+  },
+  {
+    "date": "2026:05:07:09:19",
+    "temperature": 22.0,
+    "humidity": 42.0,
+    "humid_abs": 8.0
+  },
+  {
+    "date": "2026:05:07:09:34",
+    "temperature": 14.0,
+    "humidity": 50.0,
+    "humid_abs": 6.0
+  },
+  {
+    "date": "2026:05:07:09:49",
+    "temperature": 15.0,
+    "humidity": 51.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:07:10:05",
+    "temperature": 15.0,
+    "humidity": 51.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:07:10:20",
+    "temperature": 15.0,
+    "humidity": 51.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:07:10:35",
+    "temperature": 15.0,
+    "humidity": 52.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:07:10:50",
+    "temperature": 16.0,
+    "humidity": 52.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:07:11:05",
+    "temperature": 16.0,
+    "humidity": 52.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:07:11:20",
+    "temperature": 16.0,
+    "humidity": 51.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:07:11:36",
+    "temperature": 16.0,
+    "humidity": 51.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:07:11:51",
+    "temperature": 15.0,
+    "humidity": 52.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:07:12:06",
+    "temperature": 15.0,
+    "humidity": 52.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:07:12:21",
+    "temperature": 15.0,
+    "humidity": 52.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:07:12:37",
+    "temperature": 15.0,
+    "humidity": 52.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:07:12:52",
+    "temperature": 15.0,
+    "humidity": 52.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:07:13:07",
+    "temperature": 15.0,
+    "humidity": 52.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:07:13:22",
+    "temperature": 15.0,
+    "humidity": 52.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:07:13:38",
+    "temperature": 15.0,
+    "humidity": 53.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:07:13:53",
+    "temperature": 16.0,
+    "humidity": 53.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:07:14:08",
+    "temperature": 16.0,
+    "humidity": 52.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:07:14:24",
+    "temperature": 16.0,
+    "humidity": 52.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:07:14:39",
+    "temperature": 16.0,
+    "humidity": 53.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:07:14:55",
+    "temperature": 16.0,
+    "humidity": 52.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:07:15:10",
+    "temperature": 16.0,
+    "humidity": 53.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:07:15:25",
+    "temperature": 16.0,
+    "humidity": 53.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:07:15:41",
+    "temperature": 17.0,
+    "humidity": 53.0,
+    "humid_abs": 8.0
+  },
+  {
+    "date": "2026:05:07:15:56",
+    "temperature": 17.0,
+    "humidity": 52.0,
+    "humid_abs": 8.0
+  },
+  {
+    "date": "2026:05:07:16:12",
+    "temperature": 18.0,
+    "humidity": 53.0,
+    "humid_abs": 8.0
+  },
+  {
+    "date": "2026:05:07:16:27",
+    "temperature": 18.0,
+    "humidity": 53.0,
+    "humid_abs": 8.0
+  },
+  {
+    "date": "2026:05:07:16:43",
+    "temperature": 18.0,
+    "humidity": 52.0,
+    "humid_abs": 8.0
+  },
+  {
+    "date": "2026:05:07:16:58",
+    "temperature": 18.0,
+    "humidity": 53.0,
+    "humid_abs": 8.0
+  },
+  {
+    "date": "2026:05:07:17:13",
+    "temperature": 19.0,
+    "humidity": 52.0,
+    "humid_abs": 8.0
+  },
+  {
+    "date": "2026:05:07:17:28",
+    "temperature": 19.0,
+    "humidity": 52.0,
+    "humid_abs": 8.0
+  },
+  {
+    "date": "2026:05:07:17:44",
+    "temperature": 19.0,
+    "humidity": 52.0,
+    "humid_abs": 8.0
+  },
+  {
+    "date": "2026:05:07:17:59",
+    "temperature": 20.0,
+    "humidity": 52.0,
+    "humid_abs": 9.0
+  },
+  {
+    "date": "2026:05:07:18:14",
+    "temperature": 19.0,
+    "humidity": 50.0,
+    "humid_abs": 8.0
+  },
+  {
+    "date": "2026:05:07:18:29",
+    "temperature": 18.0,
+    "humidity": 50.0,
+    "humid_abs": 8.0
+  },
+  {
+    "date": "2026:05:07:18:45",
+    "temperature": 17.0,
+    "humidity": 50.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:07:19:00",
+    "temperature": 17.0,
+    "humidity": 51.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:07:19:15",
+    "temperature": 17.0,
+    "humidity": 51.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:07:19:30",
+    "temperature": 16.0,
+    "humidity": 51.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:07:19:46",
+    "temperature": 16.0,
+    "humidity": 51.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:07:20:01",
+    "temperature": 16.0,
+    "humidity": 51.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:07:20:16",
+    "temperature": 16.0,
+    "humidity": 51.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:07:20:31",
+    "temperature": 16.0,
+    "humidity": 51.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:07:20:47",
+    "temperature": 16.0,
+    "humidity": 51.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:07:21:02",
+    "temperature": 15.0,
+    "humidity": 51.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:07:21:18",
+    "temperature": 15.0,
+    "humidity": 51.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:07:21:33",
+    "temperature": 15.0,
+    "humidity": 51.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:07:21:48",
+    "temperature": 15.0,
+    "humidity": 51.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:08:06:15",
+    "temperature": 7.0,
+    "humidity": 47.0,
+    "humid_abs": 4.0
+  },
+  {
+    "date": "2026:05:08:06:16",
+    "temperature": 7.0,
+    "humidity": 47.0,
+    "humid_abs": 4.0
+  },
+  {
+    "date": "2026:05:08:06:31",
+    "temperature": 7.0,
+    "humidity": 46.0,
+    "humid_abs": 4.0
+  },
+  {
+    "date": "2026:05:08:06:46",
+    "temperature": 8.0,
+    "humidity": 48.0,
+    "humid_abs": 4.0
+  },
+  {
+    "date": "2026:05:08:07:01",
+    "temperature": 8.0,
+    "humidity": 47.0,
+    "humid_abs": 4.0
+  },
+  {
+    "date": "2026:05:08:07:17",
+    "temperature": 9.0,
+    "humidity": 48.0,
+    "humid_abs": 4.0
+  },
+  {
+    "date": "2026:05:08:07:32",
+    "temperature": 9.0,
+    "humidity": 48.0,
+    "humid_abs": 4.0
+  },
+  {
+    "date": "2026:05:08:07:47",
+    "temperature": 10.0,
+    "humidity": 49.0,
+    "humid_abs": 5.0
+  },
+  {
+    "date": "2026:05:08:08:02",
+    "temperature": 11.0,
+    "humidity": 49.0,
+    "humid_abs": 5.0
+  },
+  {
+    "date": "2026:05:08:08:18",
+    "temperature": 11.0,
+    "humidity": 50.0,
+    "humid_abs": 5.0
+  },
+  {
+    "date": "2026:05:08:08:33",
+    "temperature": 12.0,
+    "humidity": 51.0,
+    "humid_abs": 5.0
+  },
+  {
+    "date": "2026:05:08:08:48",
+    "temperature": 13.0,
+    "humidity": 51.0,
+    "humid_abs": 6.0
+  },
+  {
+    "date": "2026:05:08:09:04",
+    "temperature": 14.0,
+    "humidity": 52.0,
+    "humid_abs": 6.0
+  },
+  {
+    "date": "2026:05:08:09:19",
+    "temperature": 15.0,
+    "humidity": 52.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:08:09:34",
+    "temperature": 15.0,
+    "humidity": 51.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:08:09:50",
+    "temperature": 15.0,
+    "humidity": 52.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:08:10:05",
+    "temperature": 15.0,
+    "humidity": 52.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:08:10:20",
+    "temperature": 16.0,
+    "humidity": 52.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:08:10:35",
+    "temperature": 16.0,
+    "humidity": 52.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:08:10:51",
+    "temperature": 16.0,
+    "humidity": 53.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:08:11:06",
+    "temperature": 17.0,
+    "humidity": 53.0,
+    "humid_abs": 8.0
+  },
+  {
+    "date": "2026:05:08:11:21",
+    "temperature": 17.0,
+    "humidity": 54.0,
+    "humid_abs": 8.0
+  },
+  {
+    "date": "2026:05:08:11:36",
+    "temperature": 18.0,
+    "humidity": 53.0,
+    "humid_abs": 8.0
+  },
+  {
+    "date": "2026:05:08:11:51",
+    "temperature": 18.0,
+    "humidity": 53.0,
+    "humid_abs": 8.0
+  },
+  {
+    "date": "2026:05:08:12:07",
+    "temperature": 18.0,
+    "humidity": 53.0,
+    "humid_abs": 8.0
+  },
+  {
+    "date": "2026:05:08:12:22",
+    "temperature": 18.0,
+    "humidity": 52.0,
+    "humid_abs": 8.0
+  },
+  {
+    "date": "2026:05:08:12:37",
+    "temperature": 18.0,
+    "humidity": 53.0,
+    "humid_abs": 8.0
+  },
+  {
+    "date": "2026:05:08:12:52",
+    "temperature": 19.0,
+    "humidity": 53.0,
+    "humid_abs": 9.0
+  },
+  {
+    "date": "2026:05:08:13:08",
+    "temperature": 19.0,
+    "humidity": 53.0,
+    "humid_abs": 9.0
+  },
+  {
+    "date": "2026:05:08:13:23",
+    "temperature": 19.0,
+    "humidity": 53.0,
+    "humid_abs": 9.0
+  },
+  {
+    "date": "2026:05:08:13:38",
+    "temperature": 19.0,
+    "humidity": 53.0,
+    "humid_abs": 9.0
+  },
+  {
+    "date": "2026:05:08:13:53",
+    "temperature": 20.0,
+    "humidity": 53.0,
+    "humid_abs": 9.0
+  },
+  {
+    "date": "2026:05:08:14:09",
+    "temperature": 20.0,
+    "humidity": 53.0,
+    "humid_abs": 9.0
+  },
+  {
+    "date": "2026:05:08:14:24",
+    "temperature": 20.0,
+    "humidity": 52.0,
+    "humid_abs": 9.0
+  },
+  {
+    "date": "2026:05:08:14:39",
+    "temperature": 20.0,
+    "humidity": 52.0,
+    "humid_abs": 9.0
+  },
+  {
+    "date": "2026:05:08:14:55",
+    "temperature": 20.0,
+    "humidity": 53.0,
+    "humid_abs": 9.0
+  },
+  {
+    "date": "2026:05:08:15:10",
+    "temperature": 21.0,
+    "humidity": 53.0,
+    "humid_abs": 10.0
+  },
+  {
+    "date": "2026:05:08:15:25",
+    "temperature": 22.0,
+    "humidity": 52.0,
+    "humid_abs": 10.0
+  },
+  {
+    "date": "2026:05:08:15:41",
+    "temperature": 22.0,
+    "humidity": 52.0,
+    "humid_abs": 10.0
+  },
+  {
+    "date": "2026:05:08:15:56",
+    "temperature": 22.0,
+    "humidity": 52.0,
+    "humid_abs": 10.0
+  },
+  {
+    "date": "2026:05:08:16:11",
+    "temperature": 22.0,
+    "humidity": 52.0,
+    "humid_abs": 10.0
+  },
+  {
+    "date": "2026:05:08:16:27",
+    "temperature": 22.0,
+    "humidity": 51.0,
+    "humid_abs": 10.0
+  },
+  {
+    "date": "2026:05:08:16:42",
+    "temperature": 22.0,
+    "humidity": 52.0,
+    "humid_abs": 10.0
+  },
+  {
+    "date": "2026:05:08:16:57",
+    "temperature": 22.0,
+    "humidity": 52.0,
+    "humid_abs": 10.0
+  },
+  {
+    "date": "2026:05:08:17:13",
+    "temperature": 22.0,
+    "humidity": 52.0,
+    "humid_abs": 10.0
+  },
+  {
+    "date": "2026:05:08:17:28",
+    "temperature": 22.0,
+    "humidity": 52.0,
+    "humid_abs": 10.0
+  },
+  {
+    "date": "2026:05:08:17:43",
+    "temperature": 23.0,
+    "humidity": 51.0,
+    "humid_abs": 10.0
+  },
+  {
+    "date": "2026:05:08:17:58",
+    "temperature": 22.0,
+    "humidity": 51.0,
+    "humid_abs": 10.0
+  },
+  {
+    "date": "2026:05:08:18:13",
+    "temperature": 22.0,
+    "humidity": 51.0,
+    "humid_abs": 10.0
+  },
+  {
+    "date": "2026:05:08:18:29",
+    "temperature": 21.0,
+    "humidity": 50.0,
+    "humid_abs": 9.0
+  },
+  {
+    "date": "2026:05:08:18:44",
+    "temperature": 21.0,
+    "humidity": 52.0,
+    "humid_abs": 10.0
+  },
+  {
+    "date": "2026:05:08:18:59",
+    "temperature": 22.0,
+    "humidity": 51.0,
+    "humid_abs": 10.0
+  },
+  {
+    "date": "2026:05:08:19:14",
+    "temperature": 21.0,
+    "humidity": 51.0,
+    "humid_abs": 9.0
+  },
+  {
+    "date": "2026:05:08:19:29",
+    "temperature": 22.0,
+    "humidity": 51.0,
+    "humid_abs": 10.0
+  },
+  {
+    "date": "2026:05:08:19:44",
+    "temperature": 22.0,
+    "humidity": 49.0,
+    "humid_abs": 10.0
+  },
+  {
+    "date": "2026:05:08:20:00",
+    "temperature": 21.0,
+    "humidity": 49.0,
+    "humid_abs": 9.0
+  },
+  {
+    "date": "2026:05:08:20:15",
+    "temperature": 20.0,
+    "humidity": 49.0,
+    "humid_abs": 8.0
+  },
+  {
+    "date": "2026:05:09:06:01",
+    "temperature": 8.0,
+    "humidity": 46.0,
+    "humid_abs": 4.0
+  },
+  {
+    "date": "2026:05:09:06:02",
+    "temperature": 8.0,
+    "humidity": 46.0,
+    "humid_abs": 4.0
+  },
+  {
+    "date": "2026:05:09:06:17",
+    "temperature": 8.0,
+    "humidity": 46.0,
+    "humid_abs": 4.0
+  },
+  {
+    "date": "2026:05:09:06:32",
+    "temperature": 9.0,
+    "humidity": 46.0,
+    "humid_abs": 4.0
+  },
+  {
+    "date": "2026:05:09:06:47",
+    "temperature": 10.0,
+    "humidity": 47.0,
+    "humid_abs": 4.0
+  },
+  {
+    "date": "2026:05:09:07:02",
+    "temperature": 10.0,
+    "humidity": 48.0,
+    "humid_abs": 5.0
+  },
+  {
+    "date": "2026:05:09:07:17",
+    "temperature": 11.0,
+    "humidity": 48.0,
+    "humid_abs": 5.0
+  },
+  {
+    "date": "2026:05:09:07:33",
+    "temperature": 11.0,
+    "humidity": 48.0,
+    "humid_abs": 5.0
+  },
+  {
+    "date": "2026:05:09:07:48",
+    "temperature": 12.0,
+    "humidity": 49.0,
+    "humid_abs": 5.0
+  },
+  {
+    "date": "2026:05:09:08:03",
+    "temperature": 12.0,
+    "humidity": 49.0,
+    "humid_abs": 5.0
+  },
+  {
+    "date": "2026:05:09:08:19",
+    "temperature": 13.0,
+    "humidity": 50.0,
+    "humid_abs": 6.0
+  },
+  {
+    "date": "2026:05:09:08:34",
+    "temperature": 13.0,
+    "humidity": 50.0,
+    "humid_abs": 6.0
+  },
+  {
+    "date": "2026:05:09:08:49",
+    "temperature": 14.0,
+    "humidity": 50.0,
+    "humid_abs": 6.0
+  },
+  {
+    "date": "2026:05:09:09:04",
+    "temperature": 14.0,
+    "humidity": 50.0,
+    "humid_abs": 6.0
+  },
+  {
+    "date": "2026:05:09:09:20",
+    "temperature": 15.0,
+    "humidity": 51.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:09:09:35",
+    "temperature": 15.0,
+    "humidity": 51.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:09:09:50",
+    "temperature": 16.0,
+    "humidity": 51.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:09:10:05",
+    "temperature": 16.0,
+    "humidity": 51.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:09:10:21",
+    "temperature": 17.0,
+    "humidity": 52.0,
+    "humid_abs": 8.0
+  },
+  {
+    "date": "2026:05:09:10:36",
+    "temperature": 17.0,
+    "humidity": 52.0,
+    "humid_abs": 8.0
+  },
+  {
+    "date": "2026:05:09:10:51",
+    "temperature": 17.0,
+    "humidity": 51.0,
+    "humid_abs": 7.0
+  },
+  {
+    "date": "2026:05:09:11:06",
+    "temperature": 17.0,
+    "humidity": 52.0,
+    "humid_abs": 8.0
+  },
+  {
+    "date": "2026:05:09:11:22",
+    "temperature": 18.0,
+    "humidity": 52.0,
+    "humid_abs": 8.0
+  },
+  {
+    "date": "2026:05:09:11:37",
+    "temperature": 18.0,
+    "humidity": 53.0,
+    "humid_abs": 8.0
+  },
+  {
+    "date": "2026:05:09:11:52",
+    "temperature": 19.0,
+    "humidity": 52.0,
+    "humid_abs": 8.0
   }
 ]

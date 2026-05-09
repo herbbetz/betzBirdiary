@@ -95,8 +95,18 @@ def get_data():
             return []
 
 def generate_html(data):
-    # ... (Keep your existing generate_html function exactly as it was) ...
-    html_content = f"""<h2>Videoking of last month {TARGET_MONTH}</h2>
+    html_content = f"""<!DOCTYPE html>
+    <html>
+    <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{TARGET_MONTH}</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/birdmd.css">
+    </head>
+    <body>
+    """
+    html_content += f"""<h2>Videoking of last month {TARGET_MONTH}</h2>
 <table>
     <tr><th>Rank</th><th>Station</th><th>Videos</th><th>Validated</th></tr>
 """
@@ -110,7 +120,7 @@ def generate_html(data):
         <td>{entry['cnt_validated']}</td>
     </tr>
 """
-    html_content += "</table>"
+    html_content += "</table></body></html>"
     with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
         f.write(html_content)
     print(f"Successfully generated {OUTPUT_FILE}")

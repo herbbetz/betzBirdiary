@@ -54,6 +54,6 @@ root	ALL=(ALL:ALL) ALL
 @includedir /etc/sudoers.d
 
 # sudo forcing password needs this:
-pi ALL=(ALL) NOPASSWD: /usr/bin/sync
+pi ALL=(ALL) NOPASSWD: /usr/bin/sync, /usr/sbin/shutdown
 # or better allow all commands from pi without passwd:
 #  pi ALL=(ALL) NOPASSWD: ALL
