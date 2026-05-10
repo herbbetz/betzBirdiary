@@ -24,11 +24,19 @@ Folgende Werte können in *config.json* an die eigene Station angepasst werden. 
 
 - "dhtPin": 16, "hxDataPin": 17, "hxClckPin": 23, BCM GPIO Pins, der DHT22-Temperatursensor sitzt an GPIO16, der hx711-Wägezellen-ADC an Pin 17 und 23.
 
+- recordstep: 10 bedeutet, eine Whatsapp wird nur bei jedem 10ten Video verschickt.
+
 - "mdroid_key": "f9d9d0d0-f205-4ce2-a2d6-5875XXXXXXXX", API-Key (mdroid.sh) der Android App 'MacroDroid', deren Webhook hier als Messenger dient.
 
 - "wapp_key": "25XXXXXXXX", "wapp_phone": "4987163XXXXXXXX", API-Key und Telefonnummer für WhatsApp 'callmebot' (mdroid.sh).
 
 - "tasmota_ip": "192.168.178.50", die Tasmota-Smartsteckdose (Marke 'Nous') startet mit ihrem Timer die Vogelstation bzw. schaltet sie nach dem Shutdown stromlos (tasmotaDown.sh) und misst ihren Stromverbrauch.
+
+- mqtt_broker: eine IP z.B. vom *homeassistant* Server wird mit Daten aus der Vogelstation beliefert.
+
+- geoloc, sun werden vom Python Modul ephem verwendet und geliefert.
+
+- version wird bei jeder Neugenerierung eines anonymisierten Dateiimages von *betzBirdiary* aktualisiert.
 
   
 
