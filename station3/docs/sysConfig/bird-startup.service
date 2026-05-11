@@ -20,6 +20,7 @@ KillMode=none
 ExecStart=/home/pi/station3/startup.sh
 
 # Logs
+# could be set inactive by: StandardOutput=null
 StandardOutput=append:/home/pi/station3/logs/startup.service.log
 StandardError=append:/home/pi/station3/logs/startup.service.log
 
