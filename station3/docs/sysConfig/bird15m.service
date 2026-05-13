@@ -15,7 +15,9 @@ ExecStart=/usr/bin/bash /home/pi/station3/start15m.sh
 # no >> redirection, no comment on same line, see 'systemd-analyze verify /etc/systemd/system/yourservice.service'
 # compare inactive to active logging:
 StandardOutput=null
-StandardError=append:/home/pi/station3/logs/15mservice.log
+StandardError=null
+# StandardError=append:/home/pi/station3/logs/15mservice.log
+# flawless 'python dhtBird3.py' writes to StandardError from inside start15m.sh ??
 
 [Install]
 WantedBy=multi-user.target

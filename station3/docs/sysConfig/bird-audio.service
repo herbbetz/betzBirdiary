@@ -1,0 +1,15 @@
+[Unit]
+Description=Bridge Mic to headphone
+After=network.target sound.target
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+# make PipeWire socket visible (independant of desktop)
+Environment=XDG_RUNTIME_DIR=/run/user/1000
+ExecStart=/home/pi/station3/start_audio.sh
+Restart=always
+
+[Install]
+WantedBy=multi-user.target
