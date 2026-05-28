@@ -21,25 +21,39 @@
         <div class="rowed"><a href="/daywatch" class="button" id="daywatch">daywatch</a> <a href="/videoking" class="button" id="videoking">videoking</a></div>
         <div class="rowed"><a href="vidshot3.html" class="button">back</a></div>
     </div>
-    <hr><div>Version <span id="version"></span>, herber7be7z@gmail.com</div>
+    <hr>
+    <div>Version <span id="version"></span>, herber7be7z@gmail.com</div>
+    <div>last: <span id="lastDown"></span></div>
 </body>
 <script>
     //@ts-check
     'use strict';
     const versionElem = document.getElementById('version');
+    const lastdownElem = document.getElementById('lastDown');
     const stdbyElem = document.getElementById('stdby');
     const vidmsgJson = "/msgjson2"; //"ramdisk/vidmsg.json";
     
     function getVersion() {
-        fetch('/config.json', {cache: 'reload', mode: 'no-cors'})
+        fetch('/config.json', {cache: 'reload'}) //{cache: 'reload', mode: 'no-cors'} opaque-blocks?
         .then((response) => response.json())
         .then((data) => {
             let version = data['version']
             versionElem.textContent = version;
         })
     }
+    function getLastdown() {
+        fetch('/lastdown.json', {cache: 'reload'})
+        .then(res => res.ok ? res.json() : null) //returns null if no lastdown.json yet
+        .then(data => {
+            if (data) {
+                let msg = data['msg'];
+                let date = data['date'];
+                lastdownElem.textContent = msg + " at " + date;
+            }
+        })    
+    }
     function getVidmsg() {
-        fetch(vidmsgJson, {cache: 'reload', mode: 'no-cors'})
+        fetch(vidmsgJson, {cache: 'reload'})
         .then((response) => response.json())
         .then((data) => {
             let standby = data['standby']
@@ -61,6 +75,7 @@
     // Call the updateStream function when the page loads
     window.onload = function() {
         getVersion();
+        getLastdown(); // fetches last shutdown info
         updateStream(); //update loop
     };
 

@@ -29,7 +29,7 @@ while true; do
      else
        # software shutdown:
        echo "$(date) shutdown due to internet lost for $CNTLIMIT minutes" | mail -s "internet lost" pi@localhost
-       /home/pi/station2/tasmotaDown.sh internetdown # my dedicated shutdown script
+       /home/pi/station3/tasmotaDown.sh internetdown # my dedicated shutdown script
        break
      fi
   fi

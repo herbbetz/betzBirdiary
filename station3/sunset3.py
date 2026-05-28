@@ -82,7 +82,8 @@ try:
         ms.log(f"reset {now_dateStr} sun times to config.json")
         update_config_json(sun_data)
 
-    if sunset_mins - 30 < todayminutes: # 30 minutes before sunset
+    # if sunset_mins - 30 < todayminutes: # 30 minutes before sunset
+    if sunset_mins < todayminutes:
         # print("shutdown from sunset")
         # It's safer to pass a list of arguments to subprocess.run and avoid shell=True
         cmd = f"{birdpath['appdir']}/tasmotaDown.sh sunset-30Down"

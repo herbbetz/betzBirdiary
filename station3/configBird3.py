@@ -110,11 +110,13 @@ try:
     hxDataPin        = _config['hxDataPin']
     hxClckPin        = _config['hxClckPin']
     recordstep       = _config['recordstep']
+    heatdown         = _config['heatdown'] 
     mdroid_key       = _config['mdroid_key']
     wapp_key         = _config['wapp_key']
     wapp_phone       = _config['wapp_phone']
     tasmota_ip       = _config['tasmota_ip']
     mqtt_broker      = _config['mqtt_broker']
+    birdweather_token = _config['birdweather_token']
     geoloc           = _config['geoloc']
     sun              = _config['sun']
     version          = _config['version'] # set by 'config-yaml.sh ANONconfig.yml'
@@ -123,3 +125,8 @@ except KeyError as e:
     raise RuntimeError(f"Missing key in config.json: {e}")
 
 if recordstep < 1: recordstep = 1   # must not be 0 as modulus, 1 means wapp record on each new video
+
+# lat/lng only to 4 decimal digits for birdweather (or sunset)
+# this would be wrong for negative longitude: [x[:7] for x in geoloc]
+# nonetheless strings are right for ephem web coordinates (and birdweather), floats are interpreted differently
+geoloc = [str(round(float(x), 4)) for x in geoloc] 

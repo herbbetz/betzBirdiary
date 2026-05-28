@@ -30,11 +30,13 @@
   "hxDataPin": 17,
   "hxClckPin": 23,
   "recordstep": 3,
+  "heatdown": 75,
   "mdroid_key": "f9d9d0d0-f205-4ce2-a2d6-XXXXXXXX",
   "wapp_key": "XXXXXXXX",
   "wapp_phone": "49XXXXXXXX",
   "tasmota_ip": "192.168.X.X",
   "mqtt_broker": "X",
+  "birdweather_token": "X",
   "geoloc": [
     "48.533509",
     "12.137590"
