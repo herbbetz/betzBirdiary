@@ -59,7 +59,7 @@ Der **Birdiary Flaskserver**  braucht also einen anderen Port wie 8090. Er kann 
 
 - **KI**: 
 
-  - BirdNET arbeitet wohl mit einer `tflite_runtime` kompatibel zum Trixie System Python 3.13 . Seine **Venv** installiert kein älteres Python, sondern pinnt lediglich einige Versionen:
+  - BirdNET arbeitet mit einer `tflite_runtime` kompatibel zum Trixie System Python 3.13 . Seine **Venv** installiert kein älteres Python, sondern pinnt lediglich einige Versionen, siehe sein `requirements.txt`:
     ```
     streamlit==1.44.0
     apprise==1.9.5
@@ -68,8 +68,9 @@ Der **Birdiary Flaskserver**  braucht also einen anderen Port wie 8090. Er kann 
     pyarrow==20.0.0    
     
     ```
-  - The FFT / spectrogram / mel preprocessing is very likely **inside the .tflite model graph**, not in BirdNET-Pi’s Python code. The Python code only prepares waveform chunks and metadata/species filtering.
-  - There is also a separate metadata model for species range filtering. That one takes 'latitude, longitude, week' and outputs a likely-species list. That is separate from audio classification.
+  - das Wheel `tflite_runtime-2.17.1-cp313-cp313-linux_aarch64.whl` ist ein ZIP-Format mit der C++ Lib `_pywrap_tensorflow_interpreter_wrapper.so` als wesentlichem Inhalt. Die Lib enthält neben der *generic TFLite interpreter runtime* für das klassifizierende *Neurale Network* auch die *Audio- und Spectrogram-Operatoren*, die das birdNET .tflite zum internen Preprocessing benötigt.
+  - The FFT / spectrogram / mel **preprocessing**  is  **inside the .tflite model graph**, not in BirdNET-Pi’s Python code. The Python code only prepares waveform chunks.
+  - **Postprocessing** of classification data: There is also a separate metadata model for species range filtering. That one takes 'latitude, longitude, week' and outputs a likely-species list. That is separate from audio classification.
   
 
 
