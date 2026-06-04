@@ -1,6 +1,6 @@
 <!--keywords[Argon40,Cooling,Fan_Hat]-->
 
-- [Argon40 Fan Hat](https://argon40.com/en-de/products/argon-fan-hat), gekauft Mai 2026 von [BerryBase](https://www.berrybase.de/argon-fan-hat-fuer-raspberry-pi).
+- [Argon40 Fan Hat](https://argon40.com/en-de/products/argon-fan-hat), gekauft Mai 2026 von [BerryBase](https://www.berrybase.de/argon-fan-hat-fuer-raspberry-pi). Anleitung auf [argon40.com](https://argon40.com/en-de/blogs/argon-resources/argon-fan-hat-installation-guide), sh. `Argon_Fan_Hat.pdf`.
 
 - raspi-config: the fan hat is not attached to one GPIO, but to several over I2C, which needs therefore to be enabled and (after reboot) should show `1a` with `sudo i2cdetect -y 1`.
   - **I2C Communications:** **GPIO 2** (SDA) and **GPIO 3** (SCL). This is what controls the actual fan speed and the on-board LEDs.

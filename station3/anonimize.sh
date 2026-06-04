@@ -9,4 +9,4 @@ echo "write wav RIFF metadata..."
 $appdir/wavMeta.sh
 
 echo "Anonymize config.json..."
-$appdir/config-yaml.sh ANONconfig.yaml
+$appdir/config-yaml.sh ANONconfig.yml
