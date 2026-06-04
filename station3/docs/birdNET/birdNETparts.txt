@@ -1,0 +1,145 @@
+----audiorec.sh:
+#!/bin/bash
+# arecord wavs of 3 secs with a timestamp of secs:
+arecord -f S16_LE -c1 -r48000 -t wav --max-file-time 3 -D default --use-strftime /home/pi/station3/ramdisk/audio-%s.wav
+----audioclean.sh
+#!/bin/bash
+# each minute clean up wavs older than 5 mins (-> keep around 100 wavs of 3 secs):
+find /home/pi/station3/ramdisk -maxdepth 1 -type f -name 'audio-*.wav' -mmin +5 -delete
+
+
+----audio-record.service:
+[Unit]
+Description=station3 audio WAV recorder
+After=sound.target
+RequiresMountsFor=/home/pi/station3/ramdisk
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/station3
+ExecStart=/home/pi/station3/audiorec.sh
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+----audio-clean.service:
+[Unit]
+Description=station3 audio WAV cleanup
+
+[Service]
+Type=oneshot
+User=pi
+WorkingDirectory=/home/pi/station3
+ExecStart=/home/pi/station3/audioclean.sh
+----audio-clean.timer:
+[Unit]
+Description=Run station3 audio WAV cleanup every minute
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=1min
+Unit=audio-clean.service
+Persistent=false
+
+[Install]
+WantedBy=timers.target
+----
+chmod +x /home/pi/station3/audiorec.sh /home/pi/station3/audioclean.sh
+sudo cp audio-record.service audio-clean.service audio-clean.timer /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now audio-record.service
+sudo systemctl enable --now audio-clean.timer
+----
+
+cd /home/pi/station3/model
+curl -L -O https://github.com/Nachtzuster/BirdNET-Pi/releases/download/v0.1/tflite_runtime-2.17.1-cp313-cp313-linux_aarch64.whl
+#
+cd /home/pi
+python3 -m venv --system-site-packages ~/audiovenv
+source ~/audiovenv/bin/activate
+python -m pip install --upgrade pip wheel
+pip install /home/pi/station3/model/tflite_runtime-2.17.1-cp313-cp313-linux_aarch64.whl
+pip install librosa soundfile inotify
+# using numpy from system (/usr/lib/...) or from audiovenv? Test by:
+python - <<'PY'
+import numpy, librosa, soundfile, inotify, tflite_runtime.interpreter
+print("ok")
+print("numpy", numpy.__version__, numpy.__file__)
+PY
+----
+
+
+----audio-classify.service:
+[Unit]
+Description=station3 audio classifier
+After=audio-record.service
+RequiresMountsFor=/home/pi/station3/ramdisk
+
+[Service]
+Type=simple
+User=pi
+WorkingDirectory=/home/pi/station3
+Environment=PYTHONPATH=/home/pi/station3
+ExecStart=/home/pi/audiovenv/bin/python /home/pi/station3/audio-classify.py
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
+----audio-classify.py skeleton:
+#!/home/pi/audiovenv/bin/python3
+import os
+import re
+import sys
+
+import inotify.adapters
+from inotify.constants import IN_CLOSE_WRITE
+
+import msgBird as ms
+from configBird3 import birdpath
+
+WAV_RE = re.compile(r"^audio-\d+\.wav$")
+
+
+def classify_wav(wav_path):
+    # TODO: load WAV, run BirdNET/TFLite model, write result JSON/log
+    ms.log(f"audio classify {wav_path}")
+
+
+def main():
+    ms.init()
+
+    ramdisk = birdpath["ramdisk"]
+    watcher = inotify.adapters.Inotify()
+    watcher.add_watch(ramdisk, mask=IN_CLOSE_WRITE)
+
+    ms.log(f"{sys.argv[0]} watching {ramdisk} for audio wav chunks")
+
+    try:
+        for event in watcher.event_gen(yield_nones=False):
+            (_, type_names, path, filename) = event
+
+            if not WAV_RE.match(filename):
+                continue
+
+            wav_path = os.path.join(path, filename)
+
+            if not os.path.exists(wav_path):
+                continue
+
+            if os.path.getsize(wav_path) == 0:
+                ms.log(f"skip empty wav {wav_path}")
+                continue
+
+            classify_wav(wav_path)
+
+    except Exception as e:
+        ms.log(f"Exception in {sys.argv[0]}: {e}")
+        raise
+
+
+if __name__ == "__main__":
+    main()
+----
