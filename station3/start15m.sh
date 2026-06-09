@@ -3,3 +3,4 @@
 /usr/bin/python3 /home/pi/station3/dhtBird3.py
 /home/pi/station3/sysmon2.sh
 /home/pi/station3/heatTest.sh
+/home/pi/station3/argonset.sh

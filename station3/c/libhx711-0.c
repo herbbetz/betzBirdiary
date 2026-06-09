@@ -2,7 +2,7 @@
  * libhx711.c — Robust HX711 driver with discard, median5 and resync
  *
  * Build:
- * gcc -std=c17 -Wall -Wextra -O2 -shared -fPIC libhx711.c -llgpio -o libhx711.so
+ *   gcc -std=c17 -Wall -Wextra -O2 -shared -fPIC libhx711.c -llgpio -o libhx711.so
  *
  * This library can be loaded in Python via ctypes.
  */
@@ -73,18 +73,14 @@ static long read_raw_once(void)
     for (int i=0; i<24; i++)
     {
         lgGpioWrite(chip, sck_pin, 1);
-        sleep_us(1); // Protect clock high setup time constraint (Min 0.2us)
         value = (value << 1) | lgGpioRead(chip, dout_pin);
         lgGpioWrite(chip, sck_pin, 0);
-        sleep_us(1); // Protect clock low minimum time constraint (Min 0.2us)
     }
 
     for (int i=0; i<3; i++) // gain=64
     {
         lgGpioWrite(chip, sck_pin, 1);
-        sleep_us(1);
         lgGpioWrite(chip, sck_pin, 0);
-        sleep_us(1);
     }
 
     if (value & 0x800000)
@@ -112,11 +108,7 @@ int hx711_init(int data_pin, int clock_pin)
 
     // discard first 5 readings
     for (int i=0;i<20;i++)
-    {
-        // Optimization: Break immediately if driver times out to avoid a 20-second startup block
-        if (read_raw_once() == LONG_MIN)
-            return -4;
-    }
+        read_raw_once();
 
     return 0;
 }
@@ -127,15 +119,13 @@ long hx711_read(void)
 {
     static long last = 0;
 
-    // Optimization: Evaluate sequentially and abort early if any sample hits a timeout.
-    // This stops a disconnected sensor from hanging the Python thread for 5 full seconds.
-    long r1 = read_raw_once(); if (r1 == LONG_MIN) return LONG_MIN;
-    long r2 = read_raw_once(); if (r2 == LONG_MIN) return LONG_MIN;
-    long r3 = read_raw_once(); if (r3 == LONG_MIN) return LONG_MIN;
-    long r4 = read_raw_once(); if (r4 == LONG_MIN) return LONG_MIN;
-    long r5 = read_raw_once(); if (r5 == LONG_MIN) return LONG_MIN;
-
-    long v = median5(r1, r2, r3, r4, r5);
+    long v = median5(
+        read_raw_once(),
+        read_raw_once(),
+        read_raw_once(),
+        read_raw_once(),
+        read_raw_once()
+    );
 
     if (last && labs(v - last) > 150000) v = last;
     last = v;

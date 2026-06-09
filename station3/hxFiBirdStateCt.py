@@ -55,7 +55,7 @@ class HX711_CT:
         val = self.lib.hx711_read()
 
         # LONG_MIN → driver timeout/error
-        if val == -9223372036854775808:
+        if val == -9223372036854775808: # this is LONG_MIN returned as error code from libhx711.c
             raise RuntimeError("HX711 read timeout")
 
         return val
@@ -178,7 +178,7 @@ class WeightFSM:
             return "IDLE"
 
         # ---------- ARRIVAL ----------
-        if self.state == STATE_ARRIVAL:
+        elif self.state == STATE_ARRIVAL:
 
             if w > self.threshold:
 
@@ -200,7 +200,7 @@ class WeightFSM:
             return "ARRIVAL"
 
         # ---------- PRESENT ----------
-        if self.state == STATE_PRESENT:
+        elif self.state == STATE_PRESENT:
 
             self.peak = max(self.peak, w)
 
@@ -218,7 +218,7 @@ class WeightFSM:
             return "PRESENT"
 
         # ---------- DEPARTURE ----------
-        if self.state == STATE_DEPARTURE:
+        elif self.state == STATE_DEPARTURE:
 
             if w < BASELINE_ZONE:
 
@@ -268,6 +268,7 @@ try:
             raw = hx.read_raw()
         except RuntimeError:
             ms.log("HX711 read error")
+            time.sleep(SLEEP_TIME) # avoid tight loop
             continue
 
         now = datetime.now()
@@ -291,23 +292,27 @@ try:
             glitch_count += 1
 
             if glitch_count >= GLITCH_LIMIT:
-
                 ms.log(f"{tstr} Too many glitches → reinitializing HX711")
-
                 hx.close()
                 time.sleep(1)
-
                 hx = HX711_CT(hxDataPin, hxClckPin)
-
                 # re-zero after hardware reset
                 hxOffset = startup_zero(hx)
+
+                # Reset FSM state along with environmental trackers
+                fsm.state = STATE_IDLE
+                fsm.stable_counter = 0
+                fsm.peak = 0.0
 
                 glitch_count = 0
                 last_raw = None
                 drift_est = 0.0
                 raw_idle_buffer.clear()
-
                 continue
+
+            # An isolated glitch (count < 5) needs a pacing delay before retrying
+            time.sleep(SLEEP_TIME) 
+            continue
 
         glitch_count = 0
         last_raw = raw
@@ -317,6 +322,7 @@ try:
         # -------- Weight sanity check --------
         if abs(weight) > weightlimit:
             ms.log(f"{tstr} WEIGHT glitch {weight} g")
+            time.sleep(SLEEP_TIME) # avoid tight loop
             continue
 
         state = fsm.update(weight, tstr)
@@ -330,6 +336,7 @@ try:
             if abs(weight) > 20:
                 ms.log("Baseline >> 0, recalibration")
                 hxOffset = startup_zero(hx)
+                time.sleep(SLEEP_TIME) # avoid tight loop
                 continue
             
             drift_est = (1 - DRIFT_ALPHA) * drift_est + DRIFT_ALPHA * weight

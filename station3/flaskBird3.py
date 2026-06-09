@@ -19,11 +19,6 @@ import io
 
 # PYTHON = "/home/pi/birdvenv/bin/python3"
 PYTHON = "/usr/bin/python3"
-### inactivity monitor for endpoint /msgjson
-lock = threading.Lock()
-timeout = 5  # seconds
-last_activity = time.time()
-client_active = 1
 
 # for timeseries_svg():
 LABELS = {
@@ -35,12 +30,17 @@ LABELS = {
 "gain": "Gain"
 }
 
+### inactivity monitor for endpoint /msgjson
+lock = threading.Lock()
+timeout = 5  # seconds
+last_activity = time.time()
+client_active = 1
+
 def monitor_inactivity():
    global last_activity, client_active
    while True:
       time.sleep(1)  # check every second
       with lock:
-         # Check if the client has been inactive for too long
          if time.time() - last_activity > timeout:
             if client_active != 0:
                client_active = 0
@@ -205,13 +205,13 @@ def chstandby():
 @app.route('/envupdate')
 def envupdate():
    cmd = f"{PYTHON} {birdpath['appdir']}/dhtBird3.py"
-   subprocess.call(cmd, shell=True)
+   subprocess.Popen(cmd, shell=True) # asynchronous "fire and forget"
    return jsonify(success=True)
 
 @app.route('/sysupdate')
 def sysupdate():
    cmd = f"bash {birdpath['appdir']}/sysmon2.sh"
-   subprocess.call(cmd, shell=True)
+   subprocess.Popen(cmd, shell=True)
    return jsonify(success=True)
 
 @app.route('/updatesettings', methods=['POST'])
@@ -278,14 +278,13 @@ def tempdata_svg():
 @app.route("/daywatch")
 def daygallery():
     # for the images the path relative to flaskBird3.py and it s html must not contain {birdpath['appdir']}:
-    dayimg_dir = "ramdisk" # "ramdisk/daydir" would have to be created first by the img writer or else
-    # gather jpg images
+    dayimg_dir = "ramdisk"
     images = sorted([
         f for f in os.listdir(dayimg_dir)
         if f.lower().endswith(".jpg") and "_" in f # only .jpg filenames containing "_" (which monitor jpg have not)
     ]) # needs be sorted to compare common fst part of filename
-    # start HTML
-    html = """
+    # start HTML:
+    html_segments = ["""
     <!DOCTYPE html>
     <html>
     <head>
@@ -301,59 +300,56 @@ def daygallery():
         <div class='csv-line'>model0 = Birdiary, model2 = Anni's Model</div>
         <a href='./model/daywatch.md'>Erklärung</a>
         </div><hr>
-    """
+    """]
+    
     stat_frame = f"{dayimg_dir}/model2.html"
     if os.path.exists(stat_frame):
-       html += f"<div><iframe src='{stat_frame}' class='stats-iframe'></iframe></div><hr>\n"
-    # append each image row-wise, grouped by common prefix before "."
+       html_segments.append(f"<div><iframe src='{stat_frame}' class='stats-iframe'></iframe></div><hr>\n")
+
     currentprefix = None
-    current_comb_prefix = None  # track the comb_prefix for the CURRENT group
+    current_comb_prefix = None  
     groupIdx = 0
-    # following loop could be clearer (without currentprefix neccessary) by using groupby from itertools
+    vidURL_prev = ""
+
+    # Build the sequential body
     for img in images:
         namesplits = img.split(".")
-        prefix = namesplits[0]  # part before the first "."
-        # msec_suffix = namesplits[1] # if len(namesplits) > 2 else ""
-        comb_prefix = f"{prefix}.{namesplits[1]}"  # e.g. 2026-02-09_092556.532543
+        prefix = namesplits[0]  
+        comb_prefix = f"{prefix}.{namesplits[1]}"  
         vidURL = f"https://wiediversistmeingarten.org/api/uploads/videos/{comb_prefix}.mp4"
-        # If prefix changes, we handle the transition
+        
         if prefix != currentprefix:
             # 1. End the PREVIOUS group's div/link (if it's not the first loop)
             if currentprefix is not None:
-               html += "</div>"
-               html += render_csv_block(dayimg_dir, current_comb_prefix)
-               html += f'<div>{groupIdx} <a href="{vidURL_prev}" target="_blank">{currentprefix}</a></div>'
-               # html += f'DEBUG: groupIdx={groupIdx}: csv={current_comb_prefix}, video={vidURL_prev}, videolinktext={currentprefix}' # for debugging if csv block, vidURL and videolinktext have matching prefix
-               html += "<hr>"
+               html_segments.append("</div>")
+               html_segments.append(render_csv_block(dayimg_dir, current_comb_prefix))
+               html_segments.append(f'<div>{groupIdx} <a href="{vidURL_prev}" target="_blank">{currentprefix}</a></div><hr>')
+               # html += f'lastDEBUG: groupIdx={groupIdx}: csv={current_comb_prefix}, video={vidURL_prev}, videolinktext={currentprefix}'
 
             # 2. Start the NEW group's row
             groupIdx += 1
-            html += '<div class="rowed">'
+            html_segments.append('<div class="rowed">')
             currentprefix = prefix
             current_comb_prefix = comb_prefix
             vidURL_prev = vidURL
-        # 3. Add the image (this happens for every image, new row or not)
-        html += f"""
+
+        # 3. Add the image (this happens for every image, new row or not)    
+        html_segments.append(f"""
         <div class="image-container">
             <img src="{dayimg_dir}/{img}" alt="{img}">
         </div>
-        """
+        """)
 
-    # 4. Final Cleanup: Close the very last group after the loop ends
+    # Close the very last group
     if currentprefix is not None:
-      html += "</div>"
-      html += render_csv_block(dayimg_dir, current_comb_prefix)
-      html += f'<div>{groupIdx} <a href="{vidURL_prev}" target="_blank">{currentprefix}</a></div>'
-      # html += f'lastDEBUG: groupIdx={groupIdx}: csv={current_comb_prefix}, video={vidURL_prev}, videolinktext={currentprefix}'
-      html += "<hr>"
+      html_segments.append("</div>")
+      html_segments.append(render_csv_block(dayimg_dir, current_comb_prefix))
+      html_segments.append(f'<div>{groupIdx} <a href="{vidURL_prev}" target="_blank">{currentprefix}</a></div><hr>')
 
-
-    # finish HTML
-    html += """
-    </body>
-    </html>
-    """
-    return html
+    html_segments.append("</body></html>")
+    
+    # Join everything cleanly with newlines
+    return "\n".join(html_segments)
 
 @app.route("/videoking")
 def monthlyking():

@@ -190,18 +190,24 @@ def send_movement(circ_output, picam, wght, stop_event): # first parameter is ei
      # time.perf_counter() is monotonic and only for time diff, time.time() is different and returns seconds.msecs since epoch (1.1.1970)
     deadline = time.perf_counter() + videodurate
     while time.perf_counter() < deadline:
-        if imgCnt < imgMax:
-            imgName = f"{daydir}/{videoUrlStr}.{imgCnt}.jpg"
-            capture_img(picam, imgName)
-            # ms.log(f"img#{imgCnt} taken at {time.time()}")
-            imgCnt += 1
+        # Check for stop signal first
         if stop_event.is_set():
             ms.log("Rec stop by -1 signal")
             time.sleep(1.0)  # record ~1 second extra
-            break
+            break            # This exits the while loop completely!
+
+        # Handle image capture
+        if imgCnt < imgMax:
+            imgName = f"{daydir}/{videoUrlStr}.{imgCnt}.jpg"
+            capture_img(picam, imgName) # this slows the loop down implicitely
+            # ms.log(f"img#{imgCnt} taken at {time.time()}")
+            imgCnt += 1
+            # record img interval:
+            time.sleep(0.1) 
         else:
-            time.sleep(0.1) # record img interval
-        time.sleep(0.05)
+            # Once 30 images are taken, explicitly drop into a longer, 
+            # low-overhead sleep to protect the CPU until the deadline hits
+            time.sleep(0.25)
     
     circ_output.stop()
     stop_event.clear()
@@ -298,6 +304,9 @@ def readBalance(bQ, stop_event):
                         stop_event.set()
                     elif ms.getStandby() == 0:
                         bQ.put(float(data))
+                else:
+                    # If the pipe is empty, yield CPU for a fraction of a second
+                    time.sleep(0.1)
         except Exception as e:
             ms.log(f"Exception in readBalance: {e}")
 
