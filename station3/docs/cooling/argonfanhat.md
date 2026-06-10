@@ -1,4 +1,6 @@
-<!--keywords[Argon40,Cooling,Fan_Hat]-->
+<!--keywords[Argon40,Cooling,Fan_Hat,tight_loops]-->
+
+- Neben einem Ventilator beinhaltet ein Hitzekonzept auch passive Kühlelemente und schädlingssichere Luftlöcher im Vogelhaus. Die Software muss sogenannte `tight loops (pausenlose while...continue Schleifen)` vermeiden, die einen CPU Core unproduktiv zu 100% beanspruchen können, ohne für das OS noch Pausen zu lassen.
 
 - [Argon40 Fan Hat](https://argon40.com/en-de/products/argon-fan-hat), gekauft Mai 2026 von [BerryBase](https://www.berrybase.de/argon-fan-hat-fuer-raspberry-pi). Anleitung auf [argon40.com](https://argon40.com/en-de/blogs/argon-resources/argon-fan-hat-installation-guide), sh. `Argon_Fan_Hat.pdf`.
 
