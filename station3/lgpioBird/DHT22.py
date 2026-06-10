@@ -1,4 +1,4 @@
-# class for DHT22 only, derived from DHT.py by chatGPT (June 2025)
+# class for DHT22 only
 import time
 import lgpio as sbc
 
@@ -21,8 +21,10 @@ class DHT22Sensor:
         self._temperature = 0.0
         self._humidity = 0.0
         self._status = DHT_TIMEOUT
+        
+        self._last_read_time = 0.0  # Cooldown tracker
 
-        # watchdog after 1 ms
+        # Setup initial state safely
         sbc.gpio_set_watchdog_micros(self._chip, self._gpio, 1000)
         self._cb = sbc.callback(self._chip, self._gpio, sbc.RISING_EDGE, self._rising_edge)
 
@@ -36,13 +38,11 @@ class DHT22Sensor:
         chksum = (b1 + b2 + b3 + b4) & 0xFF
 
         if chksum == b0:
-            # decode temperature
             if b2 & 128:
                 div = -10.0
             else:
                 div = 10.0
             t = float(((b2 & 127) << 8) + b1) / div
-            # decode humidity
             h = float((b4 << 8) + b3) / 10.0
 
             if (h <= 110.0) and (t >= -50.0) and (t <= 135.0):
@@ -53,7 +53,6 @@ class DHT22Sensor:
                 self._new_data = True
                 return
 
-        # If checksum or validation fails
         self._status = DHT_TIMEOUT
         self._new_data = False
 
@@ -61,7 +60,7 @@ class DHT22Sensor:
         if level != sbc.TIMEOUT:
             edge_len = tick - self._last_edge_tick
             self._last_edge_tick = tick
-            if edge_len > 2e8:  # 0.2 seconds, reset on long pause
+            if edge_len > 2e8:  # 0.2 seconds reset
                 self._bits = 0
                 self._code = 0
             else:
@@ -70,30 +69,42 @@ class DHT22Sensor:
                     self._code |= 1
                 self._bits += 1
         else:
-            # watchdog timeout: data ready?
             if self._bits >= 30:
                 self._decode_dht22()
 
     def _trigger(self):
-        sbc.gpio_claim_output(self._chip, self._gpio, 0)
-        time.sleep(0.001)  # DHT22 trigger pulse
+        # Enforce physical hardware cooldown (DHT22 needs 2 full seconds between triggers)
+        elapsed = time.time() - self._last_read_time
+        if elapsed < 2.0:
+            time.sleep(2.0 - elapsed)
+
         self._bits = 0
         self._code = 0
+        
+        # Safe direction flip sequence
+        sbc.gpio_claim_output(self._chip, self._gpio, 0)
+        time.sleep(0.018)  # Official DHT22 spec requires pulling low for > 18ms
+        
         sbc.gpio_claim_alert(self._chip, self._gpio, sbc.RISING_EDGE)
+        self._last_read_time = time.time()
 
     def read(self):
         self._new_data = False
         self._status = DHT_TIMEOUT
-        self._trigger()
+        
+        try:
+            self._trigger()
+        except Exception as e:
+            raise RuntimeError(f"DHT22 trigger initialization failed: {e}")
 
-        # Wait up to 1 second for data
+        # Paced verification scan loop
         for _ in range(20):
             time.sleep(0.05)
             if self._new_data:
                 break
 
         if not self._new_data:
-            raise RuntimeError("DHT22 data timeout")
+            raise RuntimeError("DHT22 data timeout (sensor disconnected or line floating)")
 
         return (self._timestamp, self._temperature, self._humidity)
 
