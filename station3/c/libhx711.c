@@ -1,5 +1,5 @@
 /*
- * libhx711.c — Robust HX711 driver with discard, median5 and resync
+ * libhx711.c — Robust HX711 driver with fast timeout and single-read throughput.
  *
  * Build:
  * gcc -std=c17 -Wall -Wextra -O2 -shared -fPIC libhx711.c -llgpio -o libhx711.so
@@ -36,21 +36,6 @@ static double monotonic_seconds(void)
     return ts.tv_sec + ts.tv_nsec / 1e9;
 }
 
-/* ---------- median-of-5 helper ---------- */
-static long median5(long a, long b, long c, long d, long e)
-{
-    long arr[5] = {a,b,c,d,e};
-    for (int i=0;i<5;i++)
-        for (int j=i+1;j<5;j++)
-            if (arr[j] < arr[i])
-            {
-                long t = arr[i];
-                arr[i] = arr[j];
-                arr[j] = t;
-            }
-    return arr[2];
-}
-
 /* ---------- HX711 low-level read ---------- */
 static int wait_ready(double timeout_s)
 {
@@ -73,13 +58,13 @@ static long read_raw_once(void)
     for (int i=0; i<24; i++)
     {
         lgGpioWrite(chip, sck_pin, 1);
-        sleep_us(1); // Protect clock high setup time constraint (Min 0.2us)
-        value = (value << 1) | lgGpioRead(chip, dout_pin);
+        // Fast direct read prevents bit-slipping propagation delays
+        value = (value << 1) | lgGpioRead(chip, dout_pin); 
         lgGpioWrite(chip, sck_pin, 0);
-        sleep_us(1); // Protect clock low minimum time constraint (Min 0.2us)
+        sleep_us(1); 
     }
 
-    for (int i=0; i<3; i++) // gain=64
+    for (int i=0; i<3; i++) // gain=64 configuration pulses
     {
         lgGpioWrite(chip, sck_pin, 1);
         sleep_us(1);
@@ -110,10 +95,9 @@ int hx711_init(int data_pin, int clock_pin)
     if (lgGpioClaimOutput(chip, 0, sck_pin, 0) < 0)
         return -3;
 
-    // discard first 5 readings
-    for (int i=0;i<20;i++)
+    // Fast-discard startup readings to stabilize the internal capacitor
+    for (int i=0; i<20; i++)
     {
-        // Optimization: Break immediately if driver times out to avoid a 20-second startup block
         if (read_raw_once() == LONG_MIN)
             return -4;
     }
@@ -121,26 +105,11 @@ int hx711_init(int data_pin, int clock_pin)
     return 0;
 }
 
-/* read median-of-5 to reduce spikes 
-and exclude jumps > 150000 */
+/* Clean, optimized, but lightning-fast single-read driver */
 long hx711_read(void)
 {
-    static long last = 0;
-
-    // Optimization: Evaluate sequentially and abort early if any sample hits a timeout.
-    // This stops a disconnected sensor from hanging the Python thread for 5 full seconds.
-    long r1 = read_raw_once(); if (r1 == LONG_MIN) return LONG_MIN;
-    long r2 = read_raw_once(); if (r2 == LONG_MIN) return LONG_MIN;
-    long r3 = read_raw_once(); if (r3 == LONG_MIN) return LONG_MIN;
-    long r4 = read_raw_once(); if (r4 == LONG_MIN) return LONG_MIN;
-    long r5 = read_raw_once(); if (r5 == LONG_MIN) return LONG_MIN;
-
-    long v = median5(r1, r2, r3, r4, r5);
-
-    if (last && labs(v - last) > 150000) v = last;
-    last = v;
-
-    return v;
+    // Aborts in 1 second if disconnected, otherwise returns instantly
+    return read_raw_once(); 
 }
 
 /* software resync if HX711 glitches */

@@ -41,8 +41,7 @@ class HX711_CT:
 
         self.lib.hx711_init.argtypes = [ctypes.c_int, ctypes.c_int]
         self.lib.hx711_init.restype = ctypes.c_int
-
-        self.lib.hx711_read.restype = ctypes.c_long
+        self.lib.hx711_read.restype = ctypes.c_int32
         self.lib.hx711_close.restype = None
 
         ret = self.lib.hx711_init(data_pin, clock_pin)
@@ -260,21 +259,33 @@ last_raw = None
 glitch_count = 0
 
 
+# --- Rolling window to replace the slow C-level median-of-5 ---
+moving_window = []
+
+
 try:
 
     while True:
 
+        # 1. Fetch raw value with C-driver timeout protection
         try:
-            raw = hx.read_raw()
+            raw_sample = hx.read_raw()
         except RuntimeError:
             ms.log("HX711 read error")
-            time.sleep(SLEEP_TIME) # avoid tight loop
+            time.sleep(SLEEP_TIME)  # avoid tight loop on hardware failure
             continue
+
+        # Smooth out spikes using Python's high-speed rolling median window
+        moving_window.append(raw_sample)
+        if len(moving_window) > 3:
+            moving_window.pop(0)
+            
+        raw = int(np.median(moving_window))
 
         now = datetime.now()
         tstr = f"{now.hour}:{now.minute}:{now.second}"
 
-        # -------- RAW Watchdog --------
+        # 2. Check Raw Value Electrical Integrity (Watchdog)
         glitch = False
 
         if abs(raw) > RAW_ABS_LIMIT:
@@ -282,13 +293,11 @@ try:
             glitch = True
 
         if last_raw is not None:
-
             if abs(raw - last_raw) > RAW_JUMP_LIMIT:
                 ms.log(f"{tstr} RAW jump {raw-last_raw}")
                 glitch = True
 
         if glitch:
-
             glitch_count += 1
 
             if glitch_count >= GLITCH_LIMIT:
@@ -296,10 +305,9 @@ try:
                 hx.close()
                 time.sleep(1)
                 hx = HX711_CT(hxDataPin, hxClckPin)
-                # re-zero after hardware reset
+                
+                # Full hardware recovery sequence
                 hxOffset = startup_zero(hx)
-
-                # Reset FSM state along with environmental trackers
                 fsm.state = STATE_IDLE
                 fsm.stable_counter = 0
                 fsm.peak = 0.0
@@ -308,58 +316,58 @@ try:
                 last_raw = None
                 drift_est = 0.0
                 raw_idle_buffer.clear()
+                moving_window.clear()
                 continue
 
-            # An isolated glitch (count < 5) needs a pacing delay before retrying
             time.sleep(SLEEP_TIME) 
             continue
 
         glitch_count = 0
         last_raw = raw
 
+        # 3. Calculate Normalized Weight
         weight = roundFlt((raw - hxOffset) / hxScale)
 
-        # -------- Weight sanity check --------
         if abs(weight) > weightlimit:
             ms.log(f"{tstr} WEIGHT glitch {weight} g")
-            time.sleep(SLEEP_TIME) # avoid tight loop
+            time.sleep(SLEEP_TIME) 
             continue
 
+        # 4. Update Finite State Machine
         state = fsm.update(weight, tstr)
-
-        # debugging:
-        # ms.log(f"RAW={raw:.0f}  WEIGHT={weight:.2f} g  STATE={state}")
         ms.log(f"{tstr} {weight:.1f}grams {state}", terminal=False)
 
-        # -------- Drift correction (IDLE only) --------
+        # 5. Non-Blocking Environmental Corrections (IDLE only)
         if state == "IDLE":
+            
+            # Instant step adjustment for large sudden weight changes (e.g., wind/debris)
             if abs(weight) > 20:
-                ms.log("Baseline >> 0, recalibration")
-                hxOffset = startup_zero(hx)
-                time.sleep(SLEEP_TIME) # avoid tight loop
+                ms.log(f"Baseline shifted ({weight}g), updating offset instantly.")
+                hxOffset = raw 
+                
+                raw_idle_buffer.clear()
+                drift_est = 0.0
+                last_raw = raw
+                time.sleep(SLEEP_TIME)
                 continue
             
+            # Smooth slow thermal drift using EMA
             drift_est = (1 - DRIFT_ALPHA) * drift_est + DRIFT_ALPHA * weight
 
             if abs(drift_est) > 0.5:
-
                 hxOffset += drift_est * hxScale
-
                 ms.log(f"EMA drift adjust → {hxOffset}")
-
                 drift_est = 0.0
 
-            # -------- Recalibration (true idle only) --------
+            # Periodic multi-sample statistical realignment
             raw_idle_buffer.append(raw)
 
             if len(raw_idle_buffer) >= 30:
-
                 hxOffset = calibOffset(raw_idle_buffer, hxOffset)
-
                 raw_idle_buffer.clear()
 
         else:
-
+            # Clear historical context buffers while birds are present
             raw_idle_buffer.clear()
             drift_est = 0.0
 
@@ -367,19 +375,16 @@ try:
 
 
 except (KeyboardInterrupt, SystemExit):
-
     ms.log("hxFiBirdStateCt shutting down")
 
 
 finally:
-
+    # Save the last valid calibration metrics back to file storage
     update_config_json({
         "hxOffset": hxOffset,
         "hxScale": hxScale
     })
 
     hx.close()
-
     clearPID(1)
-
     ms.log(f"End hxFiBirdStateCt {datetime.now()}")
