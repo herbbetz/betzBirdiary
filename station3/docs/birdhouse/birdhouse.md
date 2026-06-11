@@ -1,10 +1,10 @@
-<!--keywords[Holzhaus,Mausschaden]-->
+<!--keywords[Hitzekonzept,Holzhaus,Mausschaden]-->
 <img src="mausschaden20250318.jpg" alt="mousedamage" style="zoom: 25%;" />![squirrel](squirrel17-7-2024.jpg) 
 
 Allerlei Kleintiere wie Spechte und Eichhörnchen unterziehen das Vogelhaus immer wieder einer gründlichen Inspektion. Im März 2025 bekam das Vogelhaus eine gründliche Überarbeitung, nachdem eine Maus die Kabel zerfressen hatte. Der Elektronikraum wurde nach oben abgedichtet und der Futterauslass mit Hasengitter versehen. Zwei weitere Änderungen waren besonders nützlich: 1) der Austausch des leicht eintrübenden Acrylglases vor der Kamera durch ein Fensterglas machte einen deutlichen Unterschied. 2) Besser ins Bild kamen die Vögel durch eine breitere und höhere Sitzstange: waagrecht 9cm (früher 6cm), schräg-vertikal 7cm (früher 5cm). Eine breitere Sitzstange lädt aber auch taubengroße Vögel ein ![ringeltaube](taubengross.jpg).
 
 <img src="vogelhaus2vornS.jpg" alt="vorn" style="zoom: 50%;" /><img src="vhs2etronikS.jpg" alt="seitlich" style="zoom:50%;" />
-<img src="vent_side.jpg" alt="vorn" style="zoom: 33%;" /><img src="vent_bottom.jpg" alt="seitlich" style="zoom:50%;" />
+<img src="vent_side.jpg" alt="seit" style="zoom: 33%;" /><img src="vent_bottom.jpg" alt="unten" style="zoom:50%;" /><img src="vent_front.jpg" alt="vorn" style="zoom:33%;" />
 ... das schädlingssichere Hitzekonzept.
 
 Schräg im Futtersilo steht ein leicht nach vorn unten gekrümmtes Rutschblech aus Edelstahl, um das Vogelfutter zum Auslass zu lenken.
