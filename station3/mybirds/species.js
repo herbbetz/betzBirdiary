@@ -12,8 +12,9 @@ const records = new Array(
 "rotkehljung|Rotkehlchen jung|robin",
 "rotschwanz-vorn24-4-2025|Rotschwanz|redstart",
 "2025-05-06_spatz2|Spatz|house-sparrow",
-"ehaeher2025-08-18|Eichelhäher (177g)|jay",
-"drossel20260105|Drossel? (103g)|mistle-thrush",
-"ringeltaube2025-8-2|Ringeltaube (228g)|collared-dove",
+"ehaeher2025-08-18|Eichelhäher 177g|jay",
+"drossel20260105|Drossel? 103g|mistle-thrush",
+"ringeltaube2025-8-2|Ringeltaube 228g|collared-dove",
+"buntspecht23062026|Buntspecht 98g|great-spotted-woodpecker",
 "squirrel2025-05-26|Schmarotzer|"
 );
