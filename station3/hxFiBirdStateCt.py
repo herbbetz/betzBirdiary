@@ -41,7 +41,7 @@ class HX711_CT:
 
         self.lib.hx711_init.argtypes = [ctypes.c_int, ctypes.c_int]
         self.lib.hx711_init.restype = ctypes.c_int
-        self.lib.hx711_read.restype = ctypes.c_int32
+        self.lib.hx711_read.restype = ctypes.c_long
         self.lib.hx711_close.restype = None
 
         ret = self.lib.hx711_init(data_pin, clock_pin)
@@ -160,6 +160,9 @@ class WeightFSM:
         self.stable_counter = 0
         self.peak = 0.0
 
+        # Timestamp when DEPARTURE state starts
+        self.departure_start = 0.0
+
     def update(self, w, tstr):
 
         # ---------- IDLE ----------
@@ -206,6 +209,10 @@ class WeightFSM:
             if w < self.threshold:
 
                 self.state = STATE_DEPARTURE
+
+                # Start timeout watchdog for DEPARTURE state
+                self.departure_start = time.monotonic()
+
                 self.stable_counter = 0
 
                 sendFifo(-1)
@@ -219,6 +226,19 @@ class WeightFSM:
         # ---------- DEPARTURE ----------
         elif self.state == STATE_DEPARTURE:
 
+            # Force return to IDLE after 10 seconds
+            # in case thermal drift or residual load prevents
+            # reaching the baseline zone.
+            if time.monotonic() - self.departure_start > 10:
+
+                ms.log("Departure timeout -> IDLE")
+
+                self.state = STATE_IDLE
+                self.stable_counter = 0
+                self.peak = 0.0
+
+                return "IDLE"
+
             if w < BASELINE_ZONE:
 
                 self.stable_counter += 1
@@ -226,13 +246,24 @@ class WeightFSM:
                 if self.stable_counter >= STABLE_COUNT:
 
                     self.state = STATE_IDLE
+                    self.stable_counter = 0
 
                     ms.log(f"{tstr} back to IDLE")
 
                     return "IDLE"
 
             elif w > self.threshold:
+
+                # Bird returned before complete departure
                 self.state = STATE_ARRIVAL
+                self.stable_counter = 0
+
+            else:
+
+                # Weight is between BASELINE_ZONE and threshold.
+                # Reset counter so only consecutive low samples
+                # can return to IDLE.
+                self.stable_counter = 0
 
             return "DEPARTURE"
 
@@ -337,8 +368,9 @@ try:
         state = fsm.update(weight, tstr)
         ms.log(f"{tstr} {weight:.1f}grams {state}", terminal=False)
 
-        # 5. Non-Blocking Environmental Corrections (IDLE only)
-        if state == "IDLE":
+        # 5. Non-Blocking Environmental Corrections
+        if state in ("IDLE", "DEPARTURE"):
+        # if state == "IDLE":
             
             # Instant step adjustment for large sudden weight changes (e.g., wind/debris)
             if abs(weight) > 20:

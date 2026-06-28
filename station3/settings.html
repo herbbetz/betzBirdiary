@@ -129,16 +129,17 @@ th {
 <script>
   // List of all configuration keys, including editable and non-editable
   const allConfigKeys = [
-    'serverUrl', 'boxId', 'upmaxcnt', 'videodurate', 'hflip_val', 'vflip_val', 'vidsize', 'losize',
+    'serverUrl', 'boxId', 'boxName', 'upmaxcnt', 'videodurate', 'hflip_val', 'vflip_val', 'vidsize', 'losize',
     'luxThreshold', 'luxLimit', 'weightlimit', 'weightThreshold', 'hxScale', 'hxOffset', 'dhtPin',
     'hxDataPin', 'hxClckPin', 'recordstep', 'heatdown', 'mdroid_key', 'wapp_key', 'wapp_phone', 'tasmota_ip', 'mqtt_broker', 'birdweather_token', 'geoloc', 'sun', 'version'
   ];
 
-  const editableKeys = ['boxId', 'upmaxcnt', 'videodurate', 'recordstep', 'heatdown', 'wapp_key', 'wapp_phone', 'tasmota_ip', 'mqtt_broker', 'birdweather_token'];
+  const editableKeys = ['boxId','boxName', 'upmaxcnt', 'videodurate', 'recordstep', 'heatdown', 'wapp_key', 'wapp_phone', 'tasmota_ip', 'mqtt_broker', 'birdweather_token'];
 
   const comments = {
     "serverUrl": "birdiary API for uploads",
     "boxId": "Your birdiary station Id",
+    "boxName": "Your birdiary station Name",
     "upmaxcnt": "Maximum video uploads per runtime (0 = no limit)",
     "videodurate": "max. video duration (secs), excl. prebuffer",
     "hflip_val": "Mirror the image horizontally (boolean)",

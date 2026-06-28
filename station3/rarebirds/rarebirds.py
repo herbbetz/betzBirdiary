@@ -5,9 +5,11 @@ using german bird labels from "webserver-main2026-04-18/nginx/data_visualization
 import requests
 from datetime import datetime
 from sharedBird import prev_month
+from configBird3 import boxId, boxName
 
 BASE_URL = "https://wiediversistmeingarten.org/api/movement/"
-STATION_ID = "87bab185-7630-461c-85e6-c04cf5bab180"
+STATION_ID = boxId
+STATION_NAME = boxName
 API_URL = f"{BASE_URL}{STATION_ID}"
 month_back = 3
 FREQUENT_BIRDS = {"Haussperling", "Feldsperling", "Gimpel", "Blaumeise",  "Kohlmeise", "Rotkehlchen", "Buchfink", "Gruenfink", "Kleiber"} # sets are scanned faster than lists or tuples, and they don't allow duplicates, so a set is appropriate here.
@@ -130,7 +132,7 @@ if __name__ == "__main__":
     '''
     html_output = [html_head]
     html_output.append("<h1>Rare Bird Video Report</h1>")
-    html_output.append(f"<p>Human validations<br>of station <b>{STATION_ID}</b><br>from {earliest_date} to {current_day}</p>")
+    html_output.append(f"<p>Human validations<br>of station {STATION_NAME} ({STATION_ID})<br>from {earliest_date} to {current_day}</p>")
     html_output.append("<h3>Frequent Birds</h3>")
     html_output.append("<ul>")
     for bird, count in frequent_counts.items():

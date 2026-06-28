@@ -75,6 +75,10 @@ sleep 1
 KINGDIR="$APPDIR/videoking"
 cd "$KINGDIR" || { log "$KINGDIR missing"; exit 1; } # avoids output into wrong path
 $PYTHON "$KINGDIR/vk_lastmonth_shared.py" > /dev/null 2>&1 # >> "$APPDIR/logs/videoking.log" 2>&1 # once a month takes several minutes to contact all station apis and produce html report for last month's video uploads
+#
+RAREDIR="$APPDIR/rarebirds"
+cd "$RAREDIR" || { log "$RAREDIR missing"; exit 1; } # avoids output into wrong path
+$PYTHON "$RAREDIR/rarebirds.py" > /dev/null 2>&1
 cd "$APPDIR"
 log "startup2stage.sh ended at $(date)"
 exit # status reflects last cmds success

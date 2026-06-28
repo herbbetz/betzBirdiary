@@ -94,6 +94,7 @@ _config = read_config_json()
 try:
     serverUrl        = _config['serverUrl']
     boxId            = _config['boxId']
+    boxName          = _config['boxName']
     upmaxcnt         = _config['upmaxcnt']
     videodurate      = _config['videodurate']
     hflip_val        = _config['hflip_val']
