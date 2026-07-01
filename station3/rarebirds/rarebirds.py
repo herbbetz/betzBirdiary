@@ -97,11 +97,13 @@ if __name__ == "__main__":
         
         for v in validations:
             german_name = v.get("germanName")
-            
+
+            # validations "germanName":"" with "latinName":"None" means, the user validated "not a bird"! Could be empty video or a human...
+
             # Skip if there's no valid German name recorded yet
             if not german_name:
                 continue
-                
+
             if german_name in FREQUENT_BIRDS:
                 # Increment count for frequent birds
                 frequent_counts[german_name] = frequent_counts.get(german_name, 0) + 1

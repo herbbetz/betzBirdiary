@@ -93,6 +93,28 @@ class MedianFilter:
         self.buf.append(sample.raw_sample)
         sample.raw = int(np.median(self.buf))
 
+class LoadEstimator:
+
+    def __init__(self):
+        self.fast = None
+        self.slow = None
+
+    def update(self, weight):
+
+        if self.fast is None:
+            self.fast = weight
+            self.slow = weight
+            return weight
+
+        # reacts within about 1 second
+        self.fast = 0.30 * weight + 0.70 * self.fast
+
+        # reacts within about 8–10 seconds
+        self.slow = 0.03 * weight + 0.97 * self.slow
+
+        # estimated true load
+        return self.fast - self.slow
+
 # ============================================================
 # WATCHDOG (hardware integrity only)
 # ============================================================
@@ -211,15 +233,13 @@ class WeightFSM:
 
     def __init__(self):
         self.state = STATE_IDLE
-        self.threshold = weightThreshold
-        self.stable = 0
+        self.threshold_on = weightThreshold
+        self.threshold_off = weightThreshold * 0.7  # hysteresis (IMPORTANT)
+
+        self.stable_up = 0
+        self.stable_down = 0
         self.peak = 0.0
         self.departure_t0 = 0.0
-
-    def resetIdle(self):
-        self.state = STATE_IDLE
-        self.stable = 0
-        self.peak = 0.0
 
     def process_weight(self, w: float, sample: Sample):
 
@@ -229,32 +249,32 @@ class WeightFSM:
         # ---------------- IDLE ----------------
         if self.state == STATE_IDLE:
 
-            if w > self.threshold:
-                self.state = STATE_ARRIVAL
-                self.stable = 0
-                self.peak = w
-                sample.note = "IDLE→ARRIVAL"
-                return "ARRIVAL"
+            if w > self.threshold_on:
+                self.stable_up += 1
+                if self.stable_up >= 3:
+                    self.state = STATE_ARRIVAL
+                    self.stable_up = 0
+                    self.peak = w
+                    sample.note = "IDLE→ARRIVAL"
+                    return "ARRIVAL"
+            else:
+                self.stable_up = 0
 
             return None
 
         # ---------------- ARRIVAL ----------------
         if self.state == STATE_ARRIVAL:
 
-            if w > self.threshold:
-                self.peak = max(self.peak, w)
-                self.stable += 1
-                sample.stable = self.stable
-                sample.peak = self.peak
+            self.peak = max(self.peak, w)
 
-                if self.stable >= STABLE_COUNT and w > self.threshold and self.peak > self.threshold * 1.05:
+            if w > self.threshold_on:
+                self.stable_up += 1
+                if self.stable_up >= 5:
                     self.state = STATE_PRESENT
                     sample.note = "ARRIVAL→PRESENT"
                     return "PRESENT"
-
             else:
-                self.resetIdle()
-                sample.note = "ARRIVAL→IDLE"
+                self.stable_up = 0
 
             return None
 
@@ -262,41 +282,32 @@ class WeightFSM:
         if self.state == STATE_PRESENT:
 
             self.peak = max(self.peak, w)
-            sample.peak = self.peak
 
-            if w < self.threshold:
-                self.stable += 1
-                if self.stable >= 3: # sitting pole swings when bird leaves
+            if w < self.threshold_off:
+                self.stable_down += 1
+                if self.stable_down >= 4:
                     self.state = STATE_DEPARTURE
                     self.departure_t0 = time.monotonic()
                     sample.note = "PRESENT→DEPARTURE"
                     return "DEPARTURE"
+            else:
+                self.stable_down = 0
 
             return None
 
         # ---------------- DEPARTURE ----------------
         if self.state == STATE_DEPARTURE:
 
-            if time.monotonic() - self.departure_t0 > 10:
-                self.resetIdle()
-                sample.note = "DEPARTURE→IDLE(timeout)"
+            if time.monotonic() - self.departure_t0 > 8:
+                self.state = STATE_IDLE
+                sample.note = "TIMEOUT→IDLE"
                 return "IDLE"
 
-            if w < 0.6 * weightThreshold:
-                self.stable += 1
-                sample.stable = self.stable
-
-                if self.stable >= 8:
-                    self.resetIdle()
-                    sample.note = "DEPARTURE→IDLE(stable)"
-                    return "IDLE"
-
-            elif w > self.threshold:
+            if w > self.threshold_on:
                 self.state = STATE_ARRIVAL
                 sample.note = "DEPARTURE→ARRIVAL"
 
             return None
-
 # ============================================================
 # TRACE RECORDER (replaces CSV spam logging)
 # ============================================================
@@ -342,6 +353,47 @@ class TraceRecorder:
                     f"{s.note}\n"
                 )
 
+class SignalLogger:
+
+    def __init__(self, size=300):
+        self.buffer = deque(maxlen=size)
+
+        self.window = deque(maxlen=20)
+
+        self.file = os.path.join(
+            birdpath["ramdisk"],
+            f"signal_diag_{int(time.time())}.csv"
+        )
+
+        with open(self.file, "w") as f:
+            f.write("t,raw,filtered,weight,var,mean,energy\n")
+
+    def update(self, sample: Sample):
+
+        w = sample.weight
+        r = sample.raw_sample
+        f = sample.raw  # median filtered
+
+        self.window.append(w)
+
+        if len(self.window) >= 5:
+            var = float(np.var(self.window))
+            mean = float(np.mean(self.window))
+            energy = float(np.mean([abs(x) for x in self.window]))
+        else:
+            var = 0.0
+            mean = w
+            energy = abs(w)
+
+        self.buffer.append((sample.t, r, f, w, var, mean, energy))
+
+    def flush(self):
+
+        with open(self.file, "a") as f:
+            for t, r, fi, w, var, mean, energy in self.buffer:
+                f.write(f"{t:.3f},{r},{fi:.3f},{w:.3f},{var:.3f},{mean:.3f},{energy:.3f}\n")
+
+        self.buffer.clear()
 # ============================================================
 # MAIN PROGRAM
 # ============================================================
@@ -374,21 +426,24 @@ writePID(1)
 
 hx = HX711_CT()
 
+load = LoadEstimator()
 baseline = Baseline(hx)
 fsm = WeightFSM()
 watchdog = Watchdog()
-trace = TraceRecorder()
+
+# trace = TraceRecorder()
+signal_logger = SignalLogger()
 
 median = MedianFilter(size=3)
-
 sample = Sample()
-
 baseline.startup(sample)
-
 
 # ============================================================
 # LOOP STATE
 # ============================================================
+stability_window = deque(maxlen=15)
+energy_window = deque(maxlen=5)
+
 try:
     while True:
 
@@ -413,7 +468,6 @@ try:
 
             if glitches >= GLITCH_LIMIT:
                 ms.log("HX711 reset")
-
                 hx.close()
                 time.sleep(1)
 
@@ -427,52 +481,80 @@ try:
             time.sleep(0.15)
             continue
 
-
-        # ---------------- BASELINE (ONLY CONVERT + STABLE STATE) ----------------
+        # ---------------- BASELINE ----------------
         baseline.process(sample)
-        # trace.record(sample)
+        signal_logger.update(sample)
+        weight = sample.weight
+        signal = load.update(weight)
+        # =========================================================
+        # 1. PHYSICAL STABILITY MODEL (NEW CORE LAYER)
+        # =========================================================
 
-        # ---------------- FREEZE SNAPSHOT (CRITICAL FIX) ----------------
-        # FSM MUST NEVER SEE CHANGING DERIVED VALUES
-        weight_snapshot = sample.weight
-        if abs(weight_snapshot) > weightlimit:
-            sample.glitch = True
-            sample.glitch_reason = "WEIGHT_LIMIT"
-            ms.log(f"LIMIT {weight_snapshot:.2f} g met")
+        stability_window.append(signal)
 
-        # ---------------- FSM ----------------
-        event = fsm.process_weight(weight_snapshot, sample)
+        if len(stability_window) == stability_window.maxlen:
+            mean = np.mean(stability_window)
+            var = np.var(stability_window)
+        else:
+            mean = weight
+            var = 999.0
 
-        if event is not None:
-            trace.dump_event(event)
+        # Wind / vibration detection
+        is_stable = var < 2.5
+        is_quiet = abs(mean) < weightThreshold * 0.3
+        is_valid = is_stable and is_quiet and not sample.glitch
 
-        # ---------------- FIFO OUTPUT ----------------
+        # HARD FREEZE if unstable
+        if not is_valid:
+            ms.log("UNSTABLE ENV (FSM frozen)")
+            time.sleep(0.15)
+            continue
+
+        # Dead zone (removes pole flutter)
+        if abs(mean) < 0.8:
+            mean = 0.0
+
+        # =========================================================
+        # 2. ENERGY MODEL (prevents bounce FSM triggers)
+        # =========================================================
+
+        energy_window.append(mean)
+        energy = np.mean([abs(x) for x in energy_window])
+
+        # =========================================================
+        # 3. FSM INPUT (ONLY CLEAN SIGNAL)
+        # =========================================================
+
+        signal = mean
+
+        event = fsm.process_weight(signal, sample)
+
+        # if event is not None: trace.dump_event(event)
+
+        # ---------------- OUTPUT ----------------
         if event == "ARRIVAL":
             send_fifo(fsm.peak)
 
         elif event == "DEPARTURE":
             send_fifo(-1)
 
-        # ---------------- LOG (UI FEED, unchanged semantics) ----------------
-        ms.log(f"{weight_snapshot:.2f} g {STATE_NAME[sample.state]}", terminal=False)
+        ms.log(f"{weight:.2f} g {STATE_NAME[sample.state]}", terminal=False)
 
-        # ---------------- DRIFT (AFTER FSM ONLY — FIXED CAUSALITY) ----------------
-        if sample.state in (STATE_IDLE, STATE_DEPARTURE):
+        # =========================================================
+        # 4. DRIFT CONTROL (VERY STRICT NOW)
+        # =========================================================
+        '''
+        if sample.state == STATE_IDLE and is_valid and is_quiet:
 
-            # only allow drift when system is physically "quiet"
-            is_quiet = abs(weight_snapshot) < weightThreshold * 0.5
+            # ultra-slow correction (wind-safe)
+            baseline.drift = 0.997 * baseline.drift + 0.003 * mean
 
-            # extra safety: do NOT learn during obvious instability
-            if is_quiet and not sample.glitch:
-
-                baseline.drift = 0.98 * baseline.drift + 0.02 * weight_snapshot
-
-                if abs(baseline.drift) > 0.5:
-                    baseline.offset += baseline.drift * hxScale
-                    baseline.drift = 0.0
-
-                    # apply only next cycle (correct)
-                    sample.offset = baseline.offset
+            # only correct if persistent bias exists
+            if abs(baseline.drift) > 0.6:
+                baseline.offset += baseline.drift * hxScale
+                baseline.drift = 0.0
+                sample.offset = baseline.offset
+        '''
         time.sleep(0.15)
 # ============================================================
 # CLEAN EXIT
@@ -482,6 +564,7 @@ except (KeyboardInterrupt, SystemExit):
     ms.log("shutdown hxFiBirdStateCt2")
 
 finally:
+    signal_logger.flush()
     update_config_json({
         "hxOffset": baseline.offset,
         "hxScale": hxScale
