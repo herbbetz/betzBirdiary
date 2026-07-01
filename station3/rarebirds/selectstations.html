@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<!-- https://codepen.io/verreauxblack/pen/xxmwKWM adapted by Gemini 06/2026 -->
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Searchable Station Dropdown</title>
+  <link rel="stylesheet" href="./select.css">
+  <script src="./stations.js"></script>
+</head>
+<body>
+
+  <form action="/rarebirds" method="GET">
+    
+    <div class="dropdown">
+      <input type="text" class="dropdown-input" name="station_name" placeholder="Search station...">
+      <input type="hidden" id="selected-station-id" name="station_id">
+      <div class="dropdown-list"></div>
+    </div>
+
+    <button type="submit">Submit</button>
+
+  </form>
+
+  <script src="./select.js"></script>
+</body>
+</html>

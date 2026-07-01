@@ -1,9 +1,9 @@
-import csv
+# import csv
 import json
 import requests
 
 STATION_API_URL = "https://wiediversistmeingarten.org/api/station"
-OUTPUT_CSV = "stations.csv"
+# OUTPUT_CSV = "stations.csv"
 OUTPUT_JS = "stations.js"  # Added JS output constant
 
 def export_stations():
@@ -30,6 +30,7 @@ def export_stations():
         # Sort the list ascendingly by the "name" key
         sorted_stations = sorted(extracted_data, key=lambda x: x["name"].lower())
 
+        '''
         # --- 1. Write to the CSV file ---
         with open(OUTPUT_CSV, mode="w", encoding="utf-8", newline="") as f:
             writer = csv.DictWriter(f, fieldnames=["name", "station_id"])
@@ -37,7 +38,7 @@ def export_stations():
             writer.writerows(sorted_stations)
 
         print(f"Successfully saved {len(sorted_stations)} stations to '{OUTPUT_CSV}'.")
-
+        '''
         # --- 2. Write to the JavaScript file ---
         # Fixed the key here to use "station_id" to match extracted_data
         js_array = [{station["name"]: station["station_id"]} for station in sorted_stations]

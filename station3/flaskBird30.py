@@ -12,8 +12,6 @@ import markdown
 import msgBird as ms
 from configBird3 import birdpath, update_config_json
 from sharedBird import delFromGallery, prev_month
-# Import the entire module so you can use the module prefix
-import rarebirds.rarebirds4server as rb
 # for camdata plotting:
 import matplotlib.pyplot as plt
 from collections import defaultdict
@@ -383,14 +381,6 @@ def monthlyking():
             </body>
         </html>
         """        
-
-@app.route("/rarebirds")
-def rarebirds():
-    station_name = request.args.get('station_name')
-    station_id = request.args.get('station_id')
-    # module imported above as rb, so we can call rb.setStation() and rb.getHTML()
-    rb.setStation(station_name, station_id)
-    return rb.getHTML()
 
 # remove mp4 and record from gallery.js, 'del' button in gallery3.html handled by it's sendDelRec(recId):
 @app.route('/delrecord', methods=['POST'])

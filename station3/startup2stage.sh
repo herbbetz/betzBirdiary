@@ -78,7 +78,8 @@ $PYTHON "$KINGDIR/vk_lastmonth_shared.py" > /dev/null 2>&1 # >> "$APPDIR/logs/vi
 #
 RAREDIR="$APPDIR/rarebirds"
 cd "$RAREDIR" || { log "$RAREDIR missing"; exit 1; } # avoids output into wrong path
-$PYTHON "$RAREDIR/rarebirds.py" > /dev/null 2>&1
+# $PYTHON "$RAREDIR/rarebirds.py" > /dev/null 2>&1
+$PYTHON "$RAREDIR/stations.py" > /dev/null 2>&1
 cd "$APPDIR"
 log "startup2stage.sh ended at $(date)"
 exit # status reflects last cmds success
