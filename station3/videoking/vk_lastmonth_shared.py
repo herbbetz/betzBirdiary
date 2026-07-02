@@ -51,6 +51,11 @@ def get_data():
                 last_mov = station.get("lastMovement", {})
                 start_date = last_mov.get("start_date", "")
                 
+                # Performance optimization: If the station hasn't seen activity since before our target month,
+                # skip it completely without making a heavy network request.
+                if start_date and start_date[:7] < TARGET_MONTH:
+                    continue
+                
                 if start_date.startswith(TARGET_MONTH) or start_date.startswith(CURRENT_MONTH):
                     station_id = station.get("station_id")
                     
@@ -69,14 +74,14 @@ def get_data():
                                     continue
                                 
                                 buffer += chunk
-                                # Clean off array syntax characters if present at start of stream
-                                buffer = buffer.lstrip('[,\s')
+                                # Clean off array syntax characters safely using raw strings r'...'
+                                buffer = buffer.lstrip(r'[,\s')
                                 
                                 while buffer:
                                     try:
                                         # Decode exactly ONE individual JSON object from the text stream
                                         obj, idx = decoder.raw_decode(buffer)
-                                        buffer = buffer[idx:].lstrip('[,\s')
+                                        buffer = buffer[idx:].lstrip(r'[,\s')
                                         
                                         start_date_m = obj.get("start_date", "")
                                         current_month = start_date_m[:7]
