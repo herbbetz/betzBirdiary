@@ -9,7 +9,6 @@ from urllib3.util.retry import Retry
 from datetime import datetime
 import time
 import os
-import json
 from pathlib import Path # to delete old reports
 from sharedBird import prev_month
 
@@ -44,7 +43,6 @@ def get_data():
             stations = response.json()
             
             results = []
-            decoder = json.JSONDecoder()
 
             # 2. Filter stations
             for station in stations:
@@ -54,49 +52,27 @@ def get_data():
                 if start_date.startswith(TARGET_MONTH) or start_date.startswith(CURRENT_MONTH):
                     station_id = station.get("station_id")
                     
-                    # 3. Fetch movement data with stream=True
+                    # 3. Fetch movement data with retry logic
                     try:
-                        mov_response = session.get(f"{MOVEMENT_API_BASE}{station_id}", timeout=30, stream=True)
+                        mov_response = session.get(f"{MOVEMENT_API_BASE}{station_id}", timeout=30)
                         if mov_response.status_code == 200:
+                            movements = mov_response.json()
+
+                            # 4. Calculate stats
                             cnt_move = 0
                             cnt_validated = 0
-                            should_abort = False
-                            buffer = ""
                             
-                            # Stream network text data in chunks
-                            for chunk in mov_response.iter_content(chunk_size=16384, decode_unicode=True):
-                                if not chunk:
+                            for m in movements:
+                                start_date_m = m.get("start_date", "")
+                                current_month = start_date_m[:7]
+                                
+                                if current_month > TARGET_MONTH:
                                     continue
-                                
-                                buffer += chunk
-                                # Clean off array syntax characters if present at start of stream
-                                buffer = buffer.lstrip('[,\s')
-                                
-                                while buffer:
-                                    try:
-                                        # Decode exactly ONE individual JSON object from the text stream
-                                        obj, idx = decoder.raw_decode(buffer)
-                                        buffer = buffer[idx:].lstrip('[,\s')
-                                        
-                                        start_date_m = obj.get("start_date", "")
-                                        current_month = start_date_m[:7]
-                                        
-                                        if current_month > TARGET_MONTH:
-                                            continue
-                                        elif current_month == TARGET_MONTH:
-                                            cnt_move += 1
-                                            if "validation" in obj:
-                                                cnt_validated += 1
-                                        else:
-                                            # We hit historical logs older than our target month! Break completely.
-                                            should_abort = True
-                                            break
-                                    except json.JSONDecodeError:
-                                        # Not enough data in buffer to build a full JSON object yet, pull next chunk
-                                        break
-                                
-                                if should_abort:
-                                    mov_response.close()
+                                elif current_month == TARGET_MONTH:
+                                    cnt_move += 1
+                                    if "validation" in m:
+                                        cnt_validated += 1
+                                else:
                                     break
 
                             if cnt_move > 0:
