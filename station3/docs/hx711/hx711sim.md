@@ -1,4 +1,4 @@
-<!--keywords[ADC,Falstad,Fritzing,Dehnmesstreifen,Hx711,load_cell,Wheatstone]-->
+<!--keywords[ADC,Falstad,Fritzing,Dehnmesstreifen,Hx711,load_cell,Verdrahtung,wiring,Wheatstone]-->
 
 Mit [Falstad](https://www.falstad.com/circuit/) kann man folgende Schaltung für den [Dehnmesstreifen](https://circuitjournal.com/four-wire-load-cell-with-HX711) (strain gauge, load cell) imitieren und den hx711 mit einem Potentiometer testen. Die Simulation zeigt, dass bei 5V DC, selbst wenn die Widerstände der wheatstone Widerstandsanordnung nur 100 Ohm betrügen, nur eine Spannung von 2.5 V für den Raspi Messeingang resultiert.
 
@@ -12,14 +12,18 @@ A+ mit A- kurzschließen (E+, E- frei) ist ein Standardtest für Null Input zur 
 | CLK                                                          | 16 | r1s8 | 23 |      |
 | GND                                                          | 6    | r1s3 |||
 
-DHT22: Dat -> GPIO16 (r1s-3), GND -> r1s-4, VCC -> r1s2
-
 | hx711 Board | Load cell |
-| ----------- | :-------- |
+| :--- | :-------- |
 | E+          | red          |
 | E-          | black          |
 | A-          | green          |
 | A+		|	white		|
+
+| DHT22 | Reihe/Spalte |                 |
+| :---- | :--------: | :-------------- |
+| DAT   | r1s -3       | GPIO 16 /Pin 36 |
+| GND   | r1s -4       | Pin 34          |
+| VCC   | r1s2         | Pin 4 (5V)      |
 
 <img src="image19.png" alt="RPi4B" style="zoom:75%;" />
 <img src="wheatstone.jpg" alt="skizze" style="zoom:50%;" /> <img src="circuit-20250620-0550.svg" alt="wstone_falstad" style="zoom:100%;" /> <img src="wheatstone_bb.svg" alt="wstone_fritzing" style="zoom:75%;" />

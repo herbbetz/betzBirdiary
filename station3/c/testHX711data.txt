@@ -16,4 +16,22 @@ Spike rate: 0.000
 Drift start→end: 1298.0
 Noise level (avg): 631.7
 Verdict: STABLE SENSOR
+================================
+
+
+Nach Einbau und Kalib:
+pi@rpibird:~/station3/c $ python testhxctypeStats.py
+min=  175928 max=  177279 span= 1351 mean=  176574.8 std= 283.81
+min=  175762 max=  177259 span= 1497 mean=  176590.6 std= 268.87
+min=  175942 max=  177088 span= 1146 mean=  176578.6 std= 278.29
+
+Cpi@rpibird:~/station3/c $ python hx711sensortest.py
+Running HX711 diagnostic... (silent mode)
+
+===== HX711 DIAGNOSTIC REPORT =====
+Samples: 358
+Spike rate: 0.000
+Drift start→end: 536.0
+Noise level (avg): 261.6
+Verdict: STABLE SENSOR
 ===================================
