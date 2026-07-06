@@ -179,6 +179,7 @@ Example from https://wiediversistmeingarten.org/api/station :
 
 
 Example from https://wiediversistmeingarten.org/api/movement/87bab185-7630-461c-85e6-c04cf5bab180 :
+    https://wiediversistmeingarten.org/api/movement/<stationId>
 
 [
   {

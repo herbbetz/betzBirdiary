@@ -12,5 +12,14 @@ A+ mit A- kurzschließen (E+, E- frei) ist ein Standardtest für Null Input zur 
 | CLK                                                          | 16 | r1s8 | 23 |      |
 | GND                                                          | 6    | r1s3 |||
 
+DHT22: Dat -> GPIO16 (r1s-3), GND -> r1s-4, VCC -> r1s2
+
+| hx711 Board | Load cell |
+| ----------- | :-------- |
+| E+          | red          |
+| E-          | black          |
+| A-          | green          |
+| A+		|	white		|
+
 <img src="image19.png" alt="RPi4B" style="zoom:75%;" />
 <img src="wheatstone.jpg" alt="skizze" style="zoom:50%;" /> <img src="circuit-20250620-0550.svg" alt="wstone_falstad" style="zoom:100%;" /> <img src="wheatstone_bb.svg" alt="wstone_fritzing" style="zoom:75%;" />
