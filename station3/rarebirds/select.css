@@ -47,3 +47,8 @@ body {
 .dropdown-item:hover {
   background-color: #f0f0f0;
 }
+
+.dropdown-input.input-error {
+  border: 2px solid #ff4d4d;
+  background-color: #fff2f2;
+}

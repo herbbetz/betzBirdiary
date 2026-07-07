@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>RareBirds Dashboard</title>
+        <style>
+            #loading { font-style: italic; color: #666; }
+            .hidden { display: none; }
+        </style>
+    </head>
+    <body>
+        <h1>Rare Bird Video Report</h1>
+        <div id="meta-info">Loading station details...</div>
+        
+        <div id="loading">⏳ Fetching bird movements from server... This may take up to 3 minutes for heavy stations. Please wait.</div>
+
+        <div id="content" class="hidden">
+            <h3>Frequent Birds</h3>
+            <ul id="frequent-birds"></ul>
+
+            <h3>Rare Bird Videos</h3>
+            <ul id="rare-birds"></ul>
+        </div>
+
+        <script>
+            // Automatically fire the background network request when the page paints
+            // 1. Grab '?station_id=87bab1...&station_name=Betzbirdiary' from the browser address bar
+            const currentQueryParams = window.location.search;
+            // 2. Append them dynamically so the fetch hits '/api/report-data?station_id=87bab1...'
+            fetch(`/api/report-data${currentQueryParams}`)
+                .then(response => response.json())
+                .then(data => {
+                    // 1. Hide the loading text, show the content block
+                    document.getElementById('loading').classList.add('hidden');
+                    document.getElementById('content').classList.remove('hidden');
+
+                    //2. Populate the metadata
+                    document.getElementById('meta-info').innerHTML = 
+                        `Human validations of station <b>${data.station_name}</b> (${data.station_id})<br>from ${data.earliest_date} to ${data.current_day}`;
+
+                    // 3. Render the frequent birds list
+                    const freqList = document.getElementById('frequent-birds');
+                    for (const [bird, count] of Object.entries(data.frequent_birds)) {
+                        const li = document.createElement('li');
+                        li.textContent = `${bird}: ${count}`;
+                        freqList.appendChild(li);
+                    }
+
+                    // 4. Render the rare bird video links
+                    const rareList = document.getElementById('rare-birds');
+                    data.rare_birds.forEach(linkHtml => {
+                        const li = document.createElement('li');
+                        li.innerHTML = linkHtml; // Safely inject the <a> link structure
+                        rareList.appendChild(li);
+                    });
+                })
+                .catch(err => {
+                    document.getElementById('loading').textContent = "❌ Error loading report data.";
+                    console.error("Fetch error:", err);
+                });
+        </script>
+    </body>
+    </html>

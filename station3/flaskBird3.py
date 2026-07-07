@@ -384,13 +384,17 @@ def monthlyking():
         </html>
         """        
 
-@app.route("/rarebirds")
-def rarebirds():
+@app.route("/api/report-data")
+# selectstations.html submits to layouter '/rarebirds/rb_report.html' with GET parameters station_name and station_id
+def api_rarebirds():
     station_name = request.args.get('station_name')
     station_id = request.args.get('station_id')
+    # DEBUG PRINT: Watch this terminal output after starting flask from terminal!
+    print(f"--- Flask Received: Name={station_name}, ID={station_id} ---")
     # module imported above as rb, so we can call rb.setStation() and rb.getHTML()
     rb.setStation(station_name, station_id)
-    return rb.getHTML()
+    report_data = rb.getReport()
+    return jsonify(report_data)
 
 # remove mp4 and record from gallery.js, 'del' button in gallery3.html handled by it's sendDelRec(recId):
 @app.route('/delrecord', methods=['POST'])
@@ -451,5 +455,5 @@ if __name__ == '__main__':
    threading.Thread(target=monitor_inactivity, daemon=True).start() # daemon=True so it will not block the main thread or it's exit
    logging.getLogger('werkzeug').setLevel(logging.ERROR) # Werkzeug logger prints no info/warning
    # logging.getLogger('werkzeug').disabled = True
-   app.run(host='0.0.0.0', port=8080, debug=debug_mode) # port 80 "Permission denied"
+   app.run(host='0.0.0.0', port=8080, debug=debug_mode, threaded=True) # port 80 "Permission denied"
    ms.log(f"End flaskBird3 {datetime.now()}")
