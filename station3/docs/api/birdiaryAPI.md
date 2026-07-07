@@ -15,9 +15,10 @@ Die Birdiary Website bietet ein API, das pro Station hochgeladene Videos und Umw
 
 Die Birdiary API hat bereits einige Parameter, um nicht immer den kompletten Datensatz laden zu müssen: 
 
-- GET /api/movement/<station_id> ?movements=N – liefert die letzten N Bewegungen, z. B. ?movements=100
+- GET /api/movement/<station_id>?movements=N – liefert die letzten N Bewegungen, z. B. ?movements=100
 -  ?date=YYYY-MM-DD – filtert auf einen bestimmten Tag, z. B. ?date=2026-07-07 
 - ?species=Parus*major – filtert nach Art (Leerzeichen durch*  ersetzen)
 - Kombinationen sind möglich: ?date=2026-07-07&species=Parus_major
-- GET /api/station/<station_id> ?movements=N – Limit für die zurückgegebenen Bewegungen 
-- ?movementsOffset=N – Offset für Pagination; die Antwort enthält dann zusätzlich movementsMeta mit total, returned und hasMore
+- GET /api/station/<station_id>?movements=N – Limit für die zurückgegebenen Bewegungen 
+- ?movementsOffset=N – Offset für Pagination; die Antwort enthält dann zusätzlich movementsMeta mit total, returned und hasMore. Dies funktioniert Juli 26 aber nur in `api/station/<stationId>` und nicht in `api/movement/<stationId>`.
+- weitere Beispiele: `https://wiediversistmeingarten.org/api/station/87bab185-7630-461c-85e6-c04cf5bab180?movementsOffset=500&movements=3`
