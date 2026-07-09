@@ -26,5 +26,5 @@ Die Birdiary API hat bereits einige Parameter, um nicht immer den kompletten Dat
 - Kombinationen sind möglich: ?date=2026-07-07&species=Parus_major
 - GET /api/station/<station_id>?movements=N – Limit für die zurückgegebenen Bewegungen 
 - ?movementsOffset=N – Offset für Pagination; die Antwort enthält dann zusätzlich movementsMeta mit total, returned und hasMore. Dies funktioniert Juli 26 aber nur in `api/station/<stationId>` und nicht in `api/movement/<stationId>`.
-- die Station `999` kann für Tests mit Hochladen oder Löschen verwendet werden.
-- weitere Beispiele: `https://wiediversistmeingarten.org/api/station/87bab185-7630-461c-85e6-c04cf5bab180?movementsOffset=500&movements=3`, `https://wiediversistmeingarten.org/api/movement/87bab185-7630-461c-85e6-c04cf5bab180?from=2026-06-01&species=Aphelocoma_californica`
+- die Station `999` kann für Tests mit Hochladen oder Löschen verwendet werden. Man kann sich nicht an ihr anmelden. Ihr API-Key: `a0d28a6d7004e466f2819384d1d3b398`. `https://wiediversistmeingarten.org/api/station/999` oder `.../api/movement/999`(leer) werden nach 1 Stunde zurückgesetzt.
+- weitere Beispiele: `https://wiediversistmeingarten.org/api/station/87bab185-7630-461c-85e6-c04cf5bab180?movementsOffset=500&movements=3`, `https://wiediversistmeingarten.org/api/movement/87bab185-7630-461c-85e6-c04cf5bab180?from=2026-06-01&species=Aphelocoma_californica`, `https://wiediversistmeingarten.org/api/station/999`
