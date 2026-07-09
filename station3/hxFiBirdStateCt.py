@@ -93,28 +93,6 @@ class MedianFilter:
         self.buf.append(sample.raw_sample)
         sample.raw = int(np.median(self.buf))
 
-class LoadEstimator:
-
-    def __init__(self):
-        self.fast = None
-        self.slow = None
-
-    def update(self, weight):
-
-        if self.fast is None:
-            self.fast = weight
-            self.slow = weight
-            return weight
-
-        # reacts within about 1 second
-        self.fast = 0.30 * weight + 0.70 * self.fast
-
-        # reacts within about 8–10 seconds
-        self.slow = 0.03 * weight + 0.97 * self.slow
-
-        # estimated true load
-        return self.fast - self.slow
-
 # ============================================================
 # WATCHDOG (hardware integrity only)
 # ============================================================
@@ -227,7 +205,6 @@ STATE_NAME = {
     2: "PRESENT",
     3: "DEPARTURE"
 }
-STABLE_COUNT = 8
 
 class WeightFSM:
 
@@ -243,9 +220,7 @@ class WeightFSM:
 
     def process_weight(self, w: float, sample: Sample):
 
-        sample.state = self.state
         sample.note = ""
-
         # ---------------- IDLE ----------------
         if self.state == STATE_IDLE:
 
@@ -308,6 +283,7 @@ class WeightFSM:
                 sample.note = "DEPARTURE→ARRIVAL"
 
             return None
+
 # ============================================================
 # TRACE RECORDER (replaces CSV spam logging)
 # ============================================================
@@ -317,48 +293,65 @@ import copy # real snapshot of Sample object, not reference
 class TraceRecorder:
 
     def __init__(self, size_before=60):
+
         self.buffer = deque(maxlen=200)
         self.before = size_before
         self.event_id = 0
 
+        self.file = os.path.join(
+            birdpath["ramdisk"],
+            "trace_events.csv"
+        )
+
+        # create header only for a new file
+        if not os.path.exists(self.file):
+            with open(self.file, "w") as f:
+                f.write(
+                    "event_id,event_time,reason,"
+                    "t,raw,weight,offset,drift,"
+                    "state,stable,peak,note\n"
+                )
+
+
     def record(self, sample: Sample):
+
+        # store a real snapshot, not a reference
         self.buffer.append(copy.deepcopy(sample))
+
 
     def dump_event(self, reason: str):
 
         self.event_id += 1
 
-        path = os.path.join(
-            birdpath["ramdisk"],
-            f"event_{self.event_id:04d}.csv"
-        )
+        event_time = time.ctime()
 
         start = max(0, len(self.buffer) - self.before)
+
         snapshot = list(self.buffer)[start:]
 
-        with open(path, "w") as f:
 
-            f.write(f"===== EVENT {self.event_id} =====\n")
-            f.write(f"time: {time.ctime()}\n")
-            f.write(f"reason: {reason}\n\n")
-
-            f.write("t,raw,weight,offset,drift,state,stable,peak,note\n")
+        with open(self.file, "a", buffering=1) as f:
 
             for s in snapshot:
+
                 f.write(
+                    f"{self.event_id},"
+                    f"{event_time},"
+                    f"{reason},"
                     f"{s.t:.3f},"
-                    f"{s.raw},{s.weight:.3f},"
-                    f"{s.offset:.2f},{s.drift:.3f},"
-                    f"{s.state},{s.stable},{s.peak:.2f},"
+                    f"{s.raw},"
+                    f"{s.weight:.3f},"
+                    f"{s.offset:.2f},"
+                    f"{s.drift:.3f},"
+                    f"{s.state},"
+                    f"{s.stable},"
+                    f"{s.peak:.2f},"
                     f"{s.note}\n"
                 )
 
 class SignalLogger:
 
-    def __init__(self, size=300):
-        self.buffer = deque(maxlen=size)
-
-        self.window = deque(maxlen=20)
+    def __init__(self):
 
         self.file = os.path.join(
             birdpath["ramdisk"],
@@ -366,34 +359,34 @@ class SignalLogger:
         )
 
         with open(self.file, "w") as f:
-            f.write("t,raw,filtered,weight,var,mean,energy\n")
+            f.write(
+                "t,raw,filtered,weight,signal,var,mean,energy,state,event\n"
+            )
 
-    def update(self, sample: Sample):
+    def update(
+        self,
+        sample,
+        signal,
+        var,
+        mean,
+        energy,
+        state,
+        event=""
+    ):
 
-        w = sample.weight
-        r = sample.raw_sample
-        f = sample.raw  # median filtered
-
-        self.window.append(w)
-
-        if len(self.window) >= 5:
-            var = float(np.var(self.window))
-            mean = float(np.mean(self.window))
-            energy = float(np.mean([abs(x) for x in self.window]))
-        else:
-            var = 0.0
-            mean = w
-            energy = abs(w)
-
-        self.buffer.append((sample.t, r, f, w, var, mean, energy))
-
-    def flush(self):
-
-        with open(self.file, "a") as f:
-            for t, r, fi, w, var, mean, energy in self.buffer:
-                f.write(f"{t:.3f},{r},{fi:.3f},{w:.3f},{var:.3f},{mean:.3f},{energy:.3f}\n")
-
-        self.buffer.clear()
+        with open(self.file, "a", buffering=1) as f:
+            f.write(
+                f"{sample.t:.3f},"
+                f"{sample.raw_sample},"
+                f"{sample.raw},"
+                f"{sample.weight:.3f},"
+                f"{signal:.3f},"
+                f"{var:.3f},"
+                f"{mean:.3f},"
+                f"{energy:.3f},"
+                f"{state},"
+                f"{event}\n"
+            )
 # ============================================================
 # MAIN PROGRAM
 # ============================================================
@@ -426,12 +419,11 @@ writePID(1)
 
 hx = HX711_CT()
 
-load = LoadEstimator()
 baseline = Baseline(hx)
 fsm = WeightFSM()
 watchdog = Watchdog()
 
-# trace = TraceRecorder()
+trace = TraceRecorder()
 signal_logger = SignalLogger()
 
 median = MedianFilter(size=3)
@@ -483,14 +475,13 @@ try:
 
         # ---------------- BASELINE ----------------
         baseline.process(sample)
-        signal_logger.update(sample)
-        weight = sample.weight
-        signal = load.update(weight)
+        
         # =========================================================
         # 1. PHYSICAL STABILITY MODEL (NEW CORE LAYER)
         # =========================================================
+        weight = sample.weight
 
-        stability_window.append(signal)
+        stability_window.append(weight)
 
         if len(stability_window) == stability_window.maxlen:
             mean = np.mean(stability_window)
@@ -499,37 +490,42 @@ try:
             mean = weight
             var = 999.0
 
-        # Wind / vibration detection
-        is_stable = var < 2.5
-        is_quiet = abs(mean) < weightThreshold * 0.3
-        is_valid = is_stable and is_quiet and not sample.glitch
-
-        # HARD FREEZE if unstable
-        if not is_valid:
-            ms.log("UNSTABLE ENV (FSM frozen)")
-            time.sleep(0.15)
-            continue
-
-        # Dead zone (removes pole flutter)
-        if abs(mean) < 0.8:
-            mean = 0.0
+        # diagnostic only
+        signal = weight
 
         # =========================================================
-        # 2. ENERGY MODEL (prevents bounce FSM triggers)
+        # 2. Energy only for SignalLogger
         # =========================================================
 
         energy_window.append(mean)
         energy = np.mean([abs(x) for x in energy_window])
-
         # =========================================================
         # 3. FSM INPUT (ONLY CLEAN SIGNAL)
         # =========================================================
 
-        signal = mean
+        event = fsm.process_weight(weight, sample)
 
-        event = fsm.process_weight(signal, sample)
+        # synchronise Sample snapshot
+        sample.state = fsm.state
+        sample.peak = fsm.peak
+        sample.stable = max(
+            fsm.stable_up,
+            fsm.stable_down
+        )
 
-        # if event is not None: trace.dump_event(event)
+        signal_logger.update(
+            sample,
+            signal,
+            var,
+            mean,
+            energy,
+            STATE_NAME[fsm.state],
+            event
+        )
+
+        trace.record(sample)
+        if event is not None: 
+            trace.dump_event(event)
 
         # ---------------- OUTPUT ----------------
         if event == "ARRIVAL":
@@ -564,7 +560,6 @@ except (KeyboardInterrupt, SystemExit):
     ms.log("shutdown hxFiBirdStateCt2")
 
 finally:
-    signal_logger.flush()
     update_config_json({
         "hxOffset": baseline.offset,
         "hxScale": hxScale
