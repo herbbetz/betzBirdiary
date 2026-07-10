@@ -18,7 +18,7 @@ import errno
 
 from sharedBird import fifoExists, writePID, clearPID
 from configBird3 import (
-    birdpath, hxDataPin, hxClckPin, hxScale,
+    birdpath, hxDataPin, hxClckPin, hxScale, hxOffset,
     weightThreshold, weightlimit,
     update_config_json
 )
@@ -120,10 +120,6 @@ class Watchdog:
             sample.glitch = True
             sample.glitch_reason = "ABS_LIMIT"
 
-        if abs(sample.weight) > weightlimit:
-            sample.glitch = True
-            sample.glitch_reason = "WEIGHT_LIMIT"
-
         if self.last_raw is not None:
             if abs(raw - self.last_raw) > RAW_JUMP_LIMIT:
                 sample.glitch = True
@@ -154,19 +150,36 @@ class Baseline:
         self.drift = 0.0
 
     # ---------------- startup calibration ----------------
-    def startup(self, sample: Sample, n=60):
+    def startup(self, sample: Sample, n=60, previous_offset=None):
 
         ms.log("Startup zeroing...")
 
         time.sleep(STARTUP_SETTLE_TIME)
 
         vals = [self.hx.read() for _ in range(n)]
-        self.offset = float(np.median(vals))
+        measured_offset = float(np.median(vals))
+
+        boot_load = False
+
+        if previous_offset is not None:
+
+            delta = (measured_offset - previous_offset) / hxScale
+
+            if abs(delta) > weightThreshold:
+                boot_load = True
+                sample.note = "BOOT_LOAD_DETECTED"
+                ms.log(f"Boot load detected: {delta:.1f}g")
+
+        if boot_load:
+            self.offset = previous_offset
+        else:
+            self.offset = measured_offset
+
         self.drift = 0.0
 
         sample.offset = self.offset
 
-        return self.offset
+        return boot_load
 
     # ---------------- convert raw → weight ----------------
     def process(self, sample: Sample):
@@ -204,104 +217,186 @@ STATE_IDLE = 0
 STATE_ARRIVAL = 1
 STATE_PRESENT = 2
 STATE_DEPARTURE = 3
+STATE_OVERSIZE = 4
+
 STATE_NAME = {
-    0: "IDLE",
-    1: "ARRIVAL",
-    2: "PRESENT",
-    3: "DEPARTURE"
+    STATE_IDLE: "IDLE",
+    STATE_ARRIVAL: "ARRIVAL",
+    STATE_PRESENT: "PRESENT",
+    STATE_DEPARTURE: "DEPARTURE",
+    STATE_OVERSIZE: "OVERSIZE"
 }
+
 
 class WeightFSM:
 
     def __init__(self):
+
         self.state = STATE_IDLE
+
         self.threshold_on = weightThreshold
-        self.threshold_off = weightThreshold * 0.7  # hysteresis (IMPORTANT)
+        self.threshold_off = weightThreshold * 0.7
 
         self.stable_up = 0
         self.stable_down = 0
+
         self.peak = 0.0
         self.departure_t0 = 0.0
 
     def reset(self, keep_peak=True):
+
         self.stable_up = 0
         self.stable_down = 0
 
         if not keep_peak:
             self.peak = 0.0
 
+    def force_present(self):
+        self.state = STATE_PRESENT
+        self.reset()
+
     def process_weight(self, w: float, sample: Sample):
 
         sample.note = ""
-        # ---------------- IDLE ----------------
+
+        # -------------------------------------------------
+        # IDLE
+        # -------------------------------------------------
         if self.state == STATE_IDLE:
 
             if w > self.threshold_on:
+
                 self.stable_up += 1
+
                 if self.stable_up >= 3:
+
+                    self.peak = w
+
+                    if w > weightlimit:
+                        self.state = STATE_OVERSIZE
+                        self.reset()
+                        sample.note = "IDLE→OVERSIZE"
+                        return "OVERSIZE"
+
                     self.state = STATE_ARRIVAL
                     self.reset()
-                    self.peak = w
                     sample.note = "IDLE→ARRIVAL"
                     return "ARRIVAL"
+
             else:
                 self.stable_up = 0
 
             return None
 
-        # ---------------- ARRIVAL ----------------
+        # -------------------------------------------------
+        # ARRIVAL
+        # -------------------------------------------------
         if self.state == STATE_ARRIVAL:
 
             self.peak = max(self.peak, w)
 
+            if self.peak > weightlimit:
+                self.state = STATE_OVERSIZE
+                self.reset()
+                sample.note = "ARRIVAL→OVERSIZE"
+                return "OVERSIZE"
+
             if w > self.threshold_on:
+
                 self.stable_up += 1
+
                 if self.stable_up >= 5:
                     self.state = STATE_PRESENT
-                    self.reset()                    
+                    self.reset()
                     sample.note = "ARRIVAL→PRESENT"
                     return "PRESENT"
+
             else:
                 self.stable_up = 0
 
             return None
 
-        # ---------------- PRESENT ----------------
+        # -------------------------------------------------
+        # PRESENT
+        # -------------------------------------------------
         if self.state == STATE_PRESENT:
 
             self.peak = max(self.peak, w)
 
+            if self.peak > weightlimit:
+                self.state = STATE_OVERSIZE
+                self.reset()
+                sample.note = "PRESENT→OVERSIZE"
+                return "OVERSIZE"
+
             if w < self.threshold_off:
+
                 self.stable_down += 1
+
                 if self.stable_down >= 2:
                     self.state = STATE_DEPARTURE
                     self.reset()
                     self.departure_t0 = time.monotonic()
                     sample.note = "PRESENT→DEPARTURE"
                     return "DEPARTURE"
+
             else:
                 self.stable_down = 0
 
             return None
 
-        # ---------------- DEPARTURE ----------------
+        # -------------------------------------------------
+        # OVERSIZE
+        # -------------------------------------------------
+        if self.state == STATE_OVERSIZE:
+
+            self.peak = max(self.peak, w)
+
+            if w < self.threshold_off:
+
+                self.stable_down += 1
+
+                if self.stable_down >= 2:
+                    self.state = STATE_DEPARTURE
+                    self.reset()
+                    self.departure_t0 = time.monotonic()
+                    sample.note = "OVERSIZE→DEPARTURE"
+                    return "DEPARTURE"
+
+            else:
+                self.stable_down = 0
+
+            return None
+
+        # -------------------------------------------------
+        # DEPARTURE
+        # -------------------------------------------------
         if self.state == STATE_DEPARTURE:
 
             if time.monotonic() - self.departure_t0 > 2:
+
                 self.state = STATE_IDLE
                 self.reset(keep_peak=False)
                 sample.note = "TIMEOUT→IDLE"
                 return "IDLE"
 
             if w > self.threshold_on:
+
+                self.peak = w
+
+                if w > weightlimit:
+                    self.state = STATE_OVERSIZE
+                    self.reset()
+                    sample.note = "DEPARTURE→OVERSIZE"
+                    return "OVERSIZE"
+
                 self.state = STATE_ARRIVAL
                 self.reset()
-                self.peak = w
                 sample.note = "DEPARTURE→ARRIVAL"
                 return "ARRIVAL"
 
             return None
-
+        
 # ============================================================
 # TRACE RECORDER (replaces CSV spam logging)
 # ============================================================
@@ -449,7 +544,10 @@ signal_logger = SignalLogger()
 
 median = MedianFilter(size=3)
 sample = Sample()
-baseline.startup(sample)
+boot_load = baseline.startup(sample, previous_offset=hxOffset)
+
+if boot_load:
+    fsm.force_present()    
 
 # ============================================================
 # LOOP STATE
@@ -489,7 +587,9 @@ try:
 
                 hx = HX711_CT()
                 baseline = Baseline(hx)
-                baseline.startup(sample)
+                boot_load = baseline.startup(sample, previous_offset=hxOffset)
+                if boot_load:
+                    fsm.force_present()
 
                 watchdog = Watchdog()
                 median = MedianFilter(size=3)
@@ -531,7 +631,7 @@ try:
         sample.peak = fsm.peak
         if fsm.state in (STATE_IDLE, STATE_ARRIVAL):
             sample.stable = fsm.stable_up
-        elif fsm.state == STATE_PRESENT:
+        elif fsm.state in (STATE_PRESENT, STATE_OVERSIZE):
             sample.stable = fsm.stable_down
         else:
             sample.stable = 0
