@@ -9,6 +9,7 @@ Refactor principle:
 
 from dataclasses import dataclass
 from collections import deque
+from datetime import datetime
 import time
 import numpy as np
 import ctypes
@@ -119,6 +120,10 @@ class Watchdog:
             sample.glitch = True
             sample.glitch_reason = "ABS_LIMIT"
 
+        if abs(sample.weight) > weightlimit:
+            sample.glitch = True
+            sample.glitch_reason = "WEIGHT_LIMIT"
+
         if self.last_raw is not None:
             if abs(raw - self.last_raw) > RAW_JUMP_LIMIT:
                 sample.glitch = True
@@ -218,6 +223,13 @@ class WeightFSM:
         self.peak = 0.0
         self.departure_t0 = 0.0
 
+    def reset(self, keep_peak=True):
+        self.stable_up = 0
+        self.stable_down = 0
+
+        if not keep_peak:
+            self.peak = 0.0
+
     def process_weight(self, w: float, sample: Sample):
 
         sample.note = ""
@@ -228,7 +240,7 @@ class WeightFSM:
                 self.stable_up += 1
                 if self.stable_up >= 3:
                     self.state = STATE_ARRIVAL
-                    self.stable_up = 0
+                    self.reset()
                     self.peak = w
                     sample.note = "IDLE→ARRIVAL"
                     return "ARRIVAL"
@@ -246,6 +258,7 @@ class WeightFSM:
                 self.stable_up += 1
                 if self.stable_up >= 5:
                     self.state = STATE_PRESENT
+                    self.reset()                    
                     sample.note = "ARRIVAL→PRESENT"
                     return "PRESENT"
             else:
@@ -260,8 +273,9 @@ class WeightFSM:
 
             if w < self.threshold_off:
                 self.stable_down += 1
-                if self.stable_down >= 4:
+                if self.stable_down >= 2:
                     self.state = STATE_DEPARTURE
+                    self.reset()
                     self.departure_t0 = time.monotonic()
                     sample.note = "PRESENT→DEPARTURE"
                     return "DEPARTURE"
@@ -273,20 +287,26 @@ class WeightFSM:
         # ---------------- DEPARTURE ----------------
         if self.state == STATE_DEPARTURE:
 
-            if time.monotonic() - self.departure_t0 > 8:
+            if time.monotonic() - self.departure_t0 > 2:
                 self.state = STATE_IDLE
+                self.reset(keep_peak=False)
                 sample.note = "TIMEOUT→IDLE"
                 return "IDLE"
 
             if w > self.threshold_on:
                 self.state = STATE_ARRIVAL
+                self.reset()
+                self.peak = w
                 sample.note = "DEPARTURE→ARRIVAL"
+                return "ARRIVAL"
 
             return None
 
 # ============================================================
 # TRACE RECORDER (replaces CSV spam logging)
 # ============================================================
+def readable_time():
+    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 import copy # real snapshot of Sample object, not reference
 
@@ -323,7 +343,7 @@ class TraceRecorder:
 
         self.event_id += 1
 
-        event_time = time.ctime()
+        event_time = readable_time()
 
         start = max(0, len(self.buffer) - self.before)
 
@@ -355,12 +375,12 @@ class SignalLogger:
 
         self.file = os.path.join(
             birdpath["ramdisk"],
-            f"signal_diag_{int(time.time())}.csv"
+            f"signal_diag_{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.csv"
         )
 
         with open(self.file, "w") as f:
             f.write(
-                "t,raw,filtered,weight,signal,var,mean,energy,state,event\n"
+                "time,mono_t,raw,filtered,weight,signal,var,mean,energy,state,event\n"
             )
 
     def update(
@@ -376,6 +396,7 @@ class SignalLogger:
 
         with open(self.file, "a", buffering=1) as f:
             f.write(
+                f"{readable_time()},"
                 f"{sample.t:.3f},"
                 f"{sample.raw_sample},"
                 f"{sample.raw},"
@@ -452,6 +473,9 @@ try:
         # ---------------- FILTER ----------------
         median.update(sample)
 
+        # ---------------- BASELINE ----------------
+        baseline.process(sample)
+
         # ---------------- WATCHDOG ----------------
         glitches = watchdog.process(sample)
 
@@ -473,9 +497,6 @@ try:
             time.sleep(0.15)
             continue
 
-        # ---------------- BASELINE ----------------
-        baseline.process(sample)
-        
         # =========================================================
         # 1. PHYSICAL STABILITY MODEL (NEW CORE LAYER)
         # =========================================================
@@ -508,10 +529,12 @@ try:
         # synchronise Sample snapshot
         sample.state = fsm.state
         sample.peak = fsm.peak
-        sample.stable = max(
-            fsm.stable_up,
-            fsm.stable_down
-        )
+        if fsm.state in (STATE_IDLE, STATE_ARRIVAL):
+            sample.stable = fsm.stable_up
+        elif fsm.state == STATE_PRESENT:
+            sample.stable = fsm.stable_down
+        else:
+            sample.stable = 0
 
         signal_logger.update(
             sample,
