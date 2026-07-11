@@ -1,10 +1,56 @@
 """
-hxFiBirdStateCt2.py
+hxFiBirdStateCt.py
 
-Refactor principle:
-- ONE object per cycle (Sample)
-- all subsystems operate on it
-- recorder only observes
+Purpose
+-------
+Read the HX711 load cell and generate reliable bird arrival/departure events.
+
+Processing pipeline
+-------------------
+HX711_CT
+    acquire raw ADC value
+
+MedianFilter
+    suppress single-sample spikes
+
+Baseline
+    convert filtered ADC value into weight
+
+Watchdog
+    detect hardware communication faults
+
+WeightFSM
+    determine object state
+
+        IDLE
+          ↓
+      ARRIVAL
+          ↓
+      PRESENT
+          ↓
+     DEPARTURE
+          ↓
+        IDLE
+
+        or
+
+      OVERSIZE
+          ↓
+     DEPARTURE
+
+TraceRecorder
+    permanently log boot, reset and state transitions
+
+SignalLogger
+    temporarily save measurements before and after transitions
+    for diagnostic analysis
+
+Design rules
+------------
+• Sample is the only data object exchanged between modules.
+• Modules modify only their own fields.
+• Recorders never influence measurements or decisions.
+• The main loop contains only the processing sequence.
 """
 
 from dataclasses import dataclass
@@ -32,29 +78,29 @@ import msgBird as ms
 
 @dataclass
 class Sample:
+
+    # timestamp of this measurement cycle
     t: float = 0.0
 
-    # raw pipeline
-    raw_sample: int = 0
-    raw: int = 0
+    # raw HX711 pipeline
+    raw_sample: int = 0      # direct ADC reading from HX711
+    raw: int = 0             # filtered ADC reading
 
-    # physical model
-    offset: float = 0.0
-    weight: float = 0.0
-    drift: float = 0.0
+    # calibrated physical value
+    offset: float = 0.0      # current zero reference
+    weight: float = 0.0      # calculated weight in grams
 
-    # FSM
-    state: int = 0
-    stable: int = 0
-    peak: float = 0.0
+    # FSM result
+    state: int = 0           # current bird state
+    peak: float = 0.0        # highest weight during current event
+    event: str = ""          # state transition, e.g. ARRIVAL
 
-    # watchdog
+    # watchdog information
     glitch: bool = False
     glitch_reason: str = ""
 
-    # annotations
+    # event annotation (for logs only)
     note: str = ""
-
 
 # ============================================================
 # HX711 DRIVER (unchanged contract)
@@ -135,9 +181,8 @@ class Watchdog:
 
         return self.glitch_count
 
-
 # ============================================================
-# BASELINE (offset + drift model)
+# BASELINE (offset management and raw → weight conversion)
 # ============================================================
 
 STARTUP_SETTLE_TIME = 1.2
@@ -150,45 +195,91 @@ class Baseline:
         self.offset = 0.0
         self.drift = 0.0
 
-    # ---------------- startup calibration ----------------
     def startup(self, sample: Sample, n=60, previous_offset=None):
+        """
+        Initialise the zero reference.
+
+        If a significant load is already present during startup,
+        keep the previous offset instead of zeroing the scale.
+        """
 
         ms.log("Startup zeroing...")
 
         time.sleep(STARTUP_SETTLE_TIME)
 
-        vals = [self.hx.read() for _ in range(n)]
-        measured_offset = float(np.median(vals))
+        measured_offset = self._measure_offset(n)
 
-        boot_load = False
+        boot_load = self._detect_boot_load(
+            measured_offset,
+            previous_offset
+        )
 
-        if previous_offset is not None:
-
-            delta = (measured_offset - previous_offset) / hxScale
-
-            if abs(delta) > weightThreshold:
-                boot_load = True
-                sample.note = "BOOT_LOAD_DETECTED"
-                ms.log(f"Boot load detected: {delta:.1f}g")
-
-        if boot_load and previous_offset is not None:
-            self.offset = previous_offset
-        else:
-            self.offset = measured_offset
+        self.offset = self._select_offset(
+            measured_offset,
+            previous_offset,
+            boot_load
+        )
 
         self.drift = 0.0
+
+        self._fill_sample(sample, measured_offset)
+
+        return boot_load
+
+    # --------------------------------------------------------
+
+    def process(self, sample: Sample):
+        """Convert filtered ADC value into weight."""
+
+        sample.offset = self.offset
+        sample.weight = (sample.raw - self.offset) / hxScale
+        sample.drift = self.drift
+
+    # ========================================================
+    # internal helpers
+    # ========================================================
+
+    def _measure_offset(self, n):
+
+        values = [self.hx.read() for _ in range(n)]
+        return float(np.median(values))
+
+    def _detect_boot_load(self, measured_offset, previous_offset):
+
+        if previous_offset is None:
+            return False
+
+        delta = (measured_offset - previous_offset) / hxScale
+
+        if abs(delta) > weightThreshold:
+            ms.log(f"Boot load detected: {delta:.1f}g")
+            return True
+
+        return False
+
+    def _select_offset(
+        self,
+        measured_offset,
+        previous_offset,
+        boot_load
+    ):
+
+        if boot_load:
+            return previous_offset
+
+        return measured_offset
+
+    def _fill_sample(self, sample, measured_offset):
 
         sample.offset = self.offset
         sample.raw_sample = int(measured_offset)
         sample.raw = sample.raw_sample
         sample.weight = (sample.raw - self.offset) / hxScale
-        return boot_load
 
-    # ---------------- convert raw → weight ----------------
-    def process(self, sample):
-        sample.offset = self.offset
-        sample.weight = (sample.raw - self.offset) / hxScale
-        sample.drift = self.drift
+        if sample.weight:
+            sample.note = "BOOT_LOAD_DETECTED"
+        else:
+            sample.note = ""
 
 # ============================================================
 # FSM (pure state machine, no I/O, no logging)
@@ -207,7 +298,6 @@ STATE_NAME = {
     STATE_DEPARTURE: "DEPARTURE",
     STATE_OVERSIZE: "OVERSIZE"
 }
-
 
 class WeightFSM:
 
@@ -234,151 +324,182 @@ class WeightFSM:
 
     def force_present(self, weight=0.0):
         self.state = STATE_PRESENT
-        self.reset()
+        self.reset(keep_peak=False)
         self.peak = weight
 
-    def process_weight(self, w: float, sample: Sample):
+    # =======================================================
+    # public entry
+    # =======================================================
+
+    def process_weight(self, w, sample):
 
         sample.note = ""
 
-        # -------------------------------------------------
-        # IDLE
-        # -------------------------------------------------
         if self.state == STATE_IDLE:
+            return self.state_idle(w, sample)
 
-            if w > self.threshold_on:
-
-                self.stable_up += 1
-
-                if self.stable_up >= 3:
-
-                    self.peak = w
-
-                    if w > weightlimit:
-                        self.state = STATE_OVERSIZE
-                        self.reset()
-                        sample.note = "IDLE→OVERSIZE"
-                        return "OVERSIZE"
-
-                    self.state = STATE_ARRIVAL
-                    self.reset()
-                    sample.note = "IDLE→ARRIVAL"
-                    return "ARRIVAL"
-
-            else:
-                self.stable_up = 0
-
-            return None
-
-        # -------------------------------------------------
-        # ARRIVAL
-        # -------------------------------------------------
         if self.state == STATE_ARRIVAL:
+            return self.state_arrival(w, sample)
 
-            self.peak = max(self.peak, w)
-
-            if self.peak > weightlimit:
-                self.state = STATE_OVERSIZE
-                self.reset()
-                sample.note = "ARRIVAL→OVERSIZE"
-                return "OVERSIZE"
-
-            if w > self.threshold_on:
-
-                self.stable_up += 1
-
-                if self.stable_up >= 5:
-                    self.state = STATE_PRESENT
-                    self.reset()
-                    sample.note = "ARRIVAL→PRESENT"
-                    return "PRESENT"
-
-            else:
-                self.stable_up = 0
-
-            return None
-
-        # -------------------------------------------------
-        # PRESENT
-        # -------------------------------------------------
         if self.state == STATE_PRESENT:
+            return self.state_present(w, sample)
 
-            self.peak = max(self.peak, w)
-
-            if self.peak > weightlimit:
-                self.state = STATE_OVERSIZE
-                self.reset()
-                sample.note = "PRESENT→OVERSIZE"
-                return "OVERSIZE"
-
-            if w < self.threshold_off:
-
-                self.stable_down += 1
-
-                if self.stable_down >= 2:
-                    self.state = STATE_DEPARTURE
-                    self.reset()
-                    self.departure_t0 = time.monotonic()
-                    sample.note = "PRESENT→DEPARTURE"
-                    return "DEPARTURE"
-
-            else:
-                self.stable_down = 0
-
-            return None
-
-        # -------------------------------------------------
-        # OVERSIZE
-        # -------------------------------------------------
         if self.state == STATE_OVERSIZE:
+            return self.state_oversize(w, sample)
 
-            self.peak = max(self.peak, w)
-
-            if w < self.threshold_off:
-
-                self.stable_down += 1
-
-                if self.stable_down >= 2:
-                    self.state = STATE_DEPARTURE
-                    self.reset()
-                    self.departure_t0 = time.monotonic()
-                    sample.note = "OVERSIZE→DEPARTURE"
-                    return "DEPARTURE"
-
-            else:
-                self.stable_down = 0
-
-            return None
-
-        # -------------------------------------------------
-        # DEPARTURE
-        # -------------------------------------------------
         if self.state == STATE_DEPARTURE:
+            return self.state_departure(w, sample)
 
-            if time.monotonic() - self.departure_t0 > 2:
+        return None
 
-                self.state = STATE_IDLE
-                self.reset(keep_peak=False)
-                sample.note = "TIMEOUT→IDLE"
-                return "IDLE"
+    def _transition(self, new_state, sample: Sample, note,
+                    keep_peak=True, departure=False):
 
-            if w > self.threshold_on:
+        self.state = new_state
+        self.reset(keep_peak=keep_peak)
+
+        if departure:
+            self.departure_t0 = time.monotonic()
+
+        sample.note = note
+
+        return STATE_NAME[new_state]    
+
+    def state_idle(self, w, sample):
+
+        if w > self.threshold_on:
+
+            self.stable_up += 1
+
+            if self.stable_up >= 3:
 
                 self.peak = w
 
                 if w > weightlimit:
-                    self.state = STATE_OVERSIZE
-                    self.reset()
-                    sample.note = "DEPARTURE→OVERSIZE"
-                    return "OVERSIZE"
+                    return self._transition(
+                        STATE_OVERSIZE,
+                        sample,
+                        "IDLE→OVERSIZE"
+                    )
 
-                self.state = STATE_ARRIVAL
-                self.reset()
-                sample.note = "DEPARTURE→ARRIVAL"
-                return "ARRIVAL"
+                return self._transition(
+                    STATE_ARRIVAL,
+                    sample,
+                    "IDLE→ARRIVAL"
+                )
 
-            return None
-        
+        else:
+            self.stable_up = 0
+
+        return None
+
+    def state_arrival(self, w, sample):
+
+        self.peak = max(self.peak, w)
+
+        if self.peak > weightlimit:
+            return self._transition(
+                STATE_OVERSIZE,
+                sample,
+                "ARRIVAL→OVERSIZE"
+            )
+
+        if w > self.threshold_on:
+
+            self.stable_up += 1
+
+            if self.stable_up >= 5:
+
+                return self._transition(
+                    STATE_PRESENT,
+                    sample,
+                    "ARRIVAL→PRESENT"
+                )
+
+        else:
+            self.stable_up = 0
+
+        return None
+    
+    def state_present(self, w, sample):
+
+        self.peak = max(self.peak, w)
+
+        if self.peak > weightlimit:
+            return self._transition(
+                STATE_OVERSIZE,
+                sample,
+                "PRESENT→OVERSIZE"
+            )
+
+        if w < self.threshold_off:
+
+            self.stable_down += 1
+
+            if self.stable_down >= 2:
+                return self._transition(
+                    STATE_DEPARTURE,
+                    sample,
+                    "PRESENT→DEPARTURE",
+                    departure=True
+                )
+
+        else:
+            self.stable_down = 0
+
+        return None
+
+    def state_oversize(self, w, sample):
+
+        self.peak = max(self.peak, w)
+
+        if w < self.threshold_off:
+
+            self.stable_down += 1
+
+            if self.stable_down >= 2:
+                return self._transition(
+                    STATE_DEPARTURE,
+                    sample,
+                    "OVERSIZE→DEPARTURE",
+                    departure=True
+                )
+
+        else:
+            self.stable_down = 0
+
+        return None
+
+    def state_departure(self, w, sample):
+
+        if time.monotonic() - self.departure_t0 > 2:
+
+            return self._transition(
+                STATE_IDLE,
+                sample,
+                "TIMEOUT→IDLE",
+                keep_peak=False
+            )
+
+        if w > self.threshold_on:
+
+            self.peak = w
+
+            if w > weightlimit:
+                return self._transition(
+                    STATE_OVERSIZE,
+                    sample,
+                    "DEPARTURE→OVERSIZE"
+                )
+
+            return self._transition(
+                STATE_ARRIVAL,
+                sample,
+                "DEPARTURE→ARRIVAL"
+            )
+
+        return None
+
 # ============================================================
 # TRACE RECORDER (replaces CSV spam logging)
 # ============================================================
