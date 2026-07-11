@@ -14,6 +14,7 @@ import time
 import numpy as np
 import ctypes
 import os
+import sys
 import errno
 
 from sharedBird import fifoExists, writePID, clearPID
@@ -529,7 +530,7 @@ def send_fifo(value):
 # ============================================================
 
 ms.init()
-ms.log(f"hxFiBirdStateCt2 start {time.ctime()}")
+ms.log(f"{sys.argv[0]} start {time.ctime()}")
 
 writePID(1)
 

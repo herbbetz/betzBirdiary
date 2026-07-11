@@ -1,0 +1,390 @@
+"""
+Bird feeder scale runtime using blocking HX711 driver (C/ctypes version).
+
+- Reads raw weight values from HX711 via libhx711.so
+- FSM detects bird triggers and writes peak weights or -1 to birdpipe
+- Maintains software offset and EMA baseline correction
+- Performs safe baseline recalibration on startup and during run (spread-based)
+- Persists calibration values from configBird3
+
+Simple deterministic FSM:
+IDLE -> ARRIVAL -> PRESENT -> DEPARTURE -> IDLE
+
+- No None state
+- Immediate trigger when threshold crossed
+- Baseline recalibration only in IDLE
+"""
+
+from datetime import datetime
+import time
+import numpy as np
+import os
+import errno
+import ctypes
+
+from sharedBird import roundFlt, fifoExists, writePID, clearPID
+from configBird3 import (
+    birdpath, hxDataPin, hxClckPin,hxScale,
+    weightThreshold, weightlimit,
+    update_config_json
+) # hxOffset from config.json is not used
+import msgBird as ms
+
+
+# ---------------- HX711 ctypes interface ----------------
+class HX711_CT:
+
+    def __init__(self, data_pin, clock_pin):
+
+        libpath = f"{birdpath['appdir']}/c/libhx711.so"
+        self.lib = ctypes.CDLL(libpath)
+
+        self.lib.hx711_init.argtypes = [ctypes.c_int, ctypes.c_int]
+        self.lib.hx711_init.restype = ctypes.c_int
+        self.lib.hx711_read.restype = ctypes.c_int32
+        self.lib.hx711_close.restype = None
+
+        ret = self.lib.hx711_init(data_pin, clock_pin)
+
+        if ret != 0:
+            raise RuntimeError(f"HX711 init failed {ret}")
+
+    def read_raw(self):
+
+        val = self.lib.hx711_read()
+
+        # LONG_MIN → driver timeout/error
+        if val == -9223372036854775808: # this is LONG_MIN returned as error code from libhx711.c
+            raise RuntimeError("HX711 read timeout")
+
+        return val
+
+    def close(self):
+        self.lib.hx711_close()
+
+
+# ---------------- Constants ----------------
+STARTUP_SETTLE_TIME = 1.2
+SLEEP_TIME = 0.15
+
+BASELINE_ZONE = 0.6 * weightThreshold
+STABLE_COUNT = 3
+DRIFT_ALPHA = 0.02
+MAX_SPREAD_FOR_CAL = weightThreshold * hxScale
+MAX_STARTUP_SPREAD = 0.5 * weightThreshold * hxScale
+
+# --- Watchdog constants ---
+RAW_JUMP_LIMIT = 120000
+RAW_ABS_LIMIT = 8_000_000
+GLITCH_LIMIT = 5
+
+
+# ---------------- FIFO ----------------
+fifo = birdpath["fifo"]
+if not fifoExists(fifo):
+    os.mkfifo(fifo)
+    ms.log("hxFiBird created missing FIFO")
+
+
+# ---------------- Helper ----------------
+def get_median_spread(vals):
+    return np.median(vals), np.max(vals) - np.min(vals)
+
+
+def startup_zero(hx, retries=3):
+    # does not depend on old hxoffset, just raw median
+    ms.log("Startup zeroing...")
+
+    for attempt in range(retries):
+
+        time.sleep(STARTUP_SETTLE_TIME)
+
+        samples = [hx.read_raw() for _ in range(60)]
+        median, spread = get_median_spread(samples)
+
+        ms.log(f"Startup spread {spread}")
+
+        if spread < MAX_STARTUP_SPREAD:
+            ms.log(f"Startup hxOffset set to {median}")
+            return median
+
+        ms.log("Startup unstable — retrying")
+
+    ms.log("Startup zero failed — using median anyway")
+    return median
+
+
+def calibOffset(samples, hxoffset):
+
+    median, spread = get_median_spread(samples)
+    ms.log(f"Calibration spread {spread}")
+
+    if spread < MAX_SPREAD_FOR_CAL:
+        hxoffset = median
+        ms.log("hxOffset Cal OK")
+    else:
+        ms.log("hxOffset Cal SKIPPED")
+
+    ms.log(f"hxOffset now {hxoffset}")
+
+    return hxoffset
+
+
+def sendFifo(weight):
+
+    try:
+        fd = os.open(fifo, os.O_WRONLY | os.O_NONBLOCK)
+
+        with os.fdopen(fd, "w") as f:
+            f.write(str(weight) + "\n")
+
+    except OSError as e:
+        if e.errno != errno.ENXIO:
+            raise
+
+
+# ---------------- FSM ----------------
+STATE_IDLE = 0
+STATE_ARRIVAL = 1
+STATE_PRESENT = 2
+STATE_DEPARTURE = 3
+
+
+class WeightFSM:
+
+    def __init__(self, threshold, weight_max):
+
+        self.state = STATE_IDLE
+        self.threshold = threshold
+        self.weightMax = weight_max
+        self.stable_counter = 0
+        self.peak = 0.0
+
+    def update(self, w, tstr):
+
+        # ---------- IDLE ----------
+        if self.state == STATE_IDLE:
+
+            if w > self.threshold:
+                self.state = STATE_ARRIVAL
+                self.stable_counter = 0
+                self.peak = w
+
+                ms.log(f"{tstr} ARRIVAL")
+
+                return "ARRIVAL"
+
+            return "IDLE"
+
+        # ---------- ARRIVAL ----------
+        elif self.state == STATE_ARRIVAL:
+
+            if w > self.threshold:
+
+                self.peak = max(self.peak, w)
+                self.stable_counter += 1
+
+                if self.stable_counter >= STABLE_COUNT:
+
+                    self.state = STATE_PRESENT
+                    sendFifo(self.peak)
+
+                    ms.log(f"{tstr} PRESENT peak={self.peak}")
+
+                    return "PRESENT"
+
+            else:
+                self.state = STATE_IDLE
+
+            return "ARRIVAL"
+
+        # ---------- PRESENT ----------
+        elif self.state == STATE_PRESENT:
+
+            self.peak = max(self.peak, w)
+
+            if w < self.threshold:
+
+                self.state = STATE_DEPARTURE
+                self.stable_counter = 0
+
+                sendFifo(-1)
+
+                ms.log(f"{tstr} DEPARTURE")
+
+                return "DEPARTURE"
+
+            return "PRESENT"
+
+        # ---------- DEPARTURE ----------
+        elif self.state == STATE_DEPARTURE:
+
+            if w < BASELINE_ZONE:
+
+                self.stable_counter += 1
+
+                if self.stable_counter >= STABLE_COUNT:
+
+                    self.state = STATE_IDLE
+
+                    ms.log(f"{tstr} back to IDLE")
+
+                    return "IDLE"
+
+            elif w > self.threshold:
+                self.state = STATE_ARRIVAL
+
+            return "DEPARTURE"
+
+
+# ---------------- Main ----------------
+ms.init()
+
+ms.log(f"Start hxFiBirdStateCt {datetime.now()}")
+
+writePID(1)
+
+hx = HX711_CT(hxDataPin, hxClckPin)
+
+# ---- Startup baseline calibration ----
+hxOffset = startup_zero(hx)
+
+fsm = WeightFSM(weightThreshold, weightlimit)
+
+drift_est = 0.0
+raw_idle_buffer = []
+
+# --- Watchdog runtime vars ---
+last_raw = None
+glitch_count = 0
+
+
+# --- Rolling window to replace the slow C-level median-of-5 ---
+moving_window = []
+
+
+try:
+
+    while True:
+
+        # 1. Fetch raw value with C-driver timeout protection
+        try:
+            raw_sample = hx.read_raw()
+        except RuntimeError:
+            ms.log("HX711 read error")
+            time.sleep(SLEEP_TIME)  # avoid tight loop on hardware failure
+            continue
+
+        # Smooth out spikes using Python's high-speed rolling median window
+        moving_window.append(raw_sample)
+        if len(moving_window) > 3:
+            moving_window.pop(0)
+            
+        raw = int(np.median(moving_window))
+
+        now = datetime.now()
+        tstr = f"{now.hour}:{now.minute}:{now.second}"
+
+        # 2. Check Raw Value Electrical Integrity (Watchdog)
+        glitch = False
+
+        if abs(raw) > RAW_ABS_LIMIT:
+            ms.log(f"{tstr} RAW overflow {raw}")
+            glitch = True
+
+        if last_raw is not None:
+            if abs(raw - last_raw) > RAW_JUMP_LIMIT:
+                ms.log(f"{tstr} RAW jump {raw-last_raw}")
+                glitch = True
+
+        if glitch:
+            glitch_count += 1
+
+            if glitch_count >= GLITCH_LIMIT:
+                ms.log(f"{tstr} Too many glitches → reinitializing HX711")
+                hx.close()
+                time.sleep(1)
+                hx = HX711_CT(hxDataPin, hxClckPin)
+                
+                # Full hardware recovery sequence
+                hxOffset = startup_zero(hx)
+                fsm.state = STATE_IDLE
+                fsm.stable_counter = 0
+                fsm.peak = 0.0
+
+                glitch_count = 0
+                last_raw = None
+                drift_est = 0.0
+                raw_idle_buffer.clear()
+                moving_window.clear()
+                continue
+
+            time.sleep(SLEEP_TIME) 
+            continue
+
+        glitch_count = 0
+        last_raw = raw
+
+        # 3. Calculate Normalized Weight
+        weight = roundFlt((raw - hxOffset) / hxScale)
+
+        if abs(weight) > weightlimit:
+            ms.log(f"{tstr} WEIGHT glitch {weight} g")
+            time.sleep(SLEEP_TIME) 
+            continue
+
+        # 4. Update Finite State Machine
+        state = fsm.update(weight, tstr)
+        ms.log(f"{tstr} {weight:.1f}grams {state}", terminal=False)
+
+        # 5. Non-Blocking Environmental Corrections (IDLE only)
+        if state == "IDLE":
+            
+            # Instant step adjustment for large sudden weight changes (e.g., wind/debris)
+            if abs(weight) > 20:
+                ms.log(f"Baseline shifted ({weight}g), updating offset instantly.")
+                hxOffset = raw 
+                
+                raw_idle_buffer.clear()
+                drift_est = 0.0
+                last_raw = raw
+                time.sleep(SLEEP_TIME)
+                continue
+            
+            # Smooth slow thermal drift using EMA
+            drift_est = (1 - DRIFT_ALPHA) * drift_est + DRIFT_ALPHA * weight
+
+            if abs(drift_est) > 0.5:
+                hxOffset += drift_est * hxScale
+                ms.log(f"EMA drift adjust → {hxOffset}")
+                drift_est = 0.0
+
+            # Periodic multi-sample statistical realignment
+            raw_idle_buffer.append(raw)
+
+            if len(raw_idle_buffer) >= 30:
+                hxOffset = calibOffset(raw_idle_buffer, hxOffset)
+                raw_idle_buffer.clear()
+
+        else:
+            # Clear historical context buffers while birds are present
+            raw_idle_buffer.clear()
+            drift_est = 0.0
+
+        time.sleep(SLEEP_TIME)
+
+
+except (KeyboardInterrupt, SystemExit):
+    ms.log("hxFiBirdStateCt shutting down")
+
+
+finally:
+    # Save the last valid calibration metrics back to file storage
+    update_config_json({
+        "hxOffset": hxOffset,
+        "hxScale": hxScale
+    })
+
+    hx.close()
+    clearPID(1)
+    ms.log(f"End hxFiBirdStateCt {datetime.now()}")
