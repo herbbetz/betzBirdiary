@@ -170,7 +170,7 @@ class Baseline:
                 sample.note = "BOOT_LOAD_DETECTED"
                 ms.log(f"Boot load detected: {delta:.1f}g")
 
-        if boot_load:
+        if boot_load and previous_offset is not None:
             self.offset = previous_offset
         else:
             self.offset = measured_offset
@@ -536,7 +536,6 @@ writePID(1)
 hx = HX711_CT()
 
 baseline = Baseline(hx)
-fsm = WeightFSM()
 watchdog = Watchdog()
 
 trace = TraceRecorder()
@@ -545,10 +544,15 @@ signal_logger = SignalLogger()
 median = MedianFilter(size=3)
 sample = Sample()
 boot_load = baseline.startup(sample, previous_offset=hxOffset)
-
+fsm = WeightFSM()
 if boot_load:
     fsm.force_present()    
 
+sample.state = fsm.state
+sample.note = "BOOT->PRESENT"
+
+trace.record(sample)
+trace.dump_event("BOOT")
 # ============================================================
 # LOOP STATE
 # ============================================================
@@ -581,13 +585,15 @@ try:
             ms.log(f"GLITCH: {sample.glitch_reason}")
 
             if glitches >= GLITCH_LIMIT:
+                old_offset = baseline.offset # store old offset before reset
                 ms.log("HX711 reset")
                 hx.close()
                 time.sleep(1)
 
                 hx = HX711_CT()
                 baseline = Baseline(hx)
-                boot_load = baseline.startup(sample, previous_offset=hxOffset)
+                fsm = WeightFSM()
+                boot_load = baseline.startup(sample, previous_offset=old_offset)
                 if boot_load:
                     fsm.force_present()
 
