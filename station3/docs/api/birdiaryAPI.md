@@ -2,12 +2,12 @@
 
 siehe die [API Doc](https://wiediversistmeingarten.org/doc/) auf https://wiediversistmeingarten.org/doc/
 
-Das REST-API akzeptiert CRUD (create-read-update-delete) Kommandos von *request* Modul. Wird ein Access-Key (apikey) benötigt, ist er als "Stationsschlüssel" nach dem Einloggen zu sehen. Im Skript wird er dann als Header folgendermaßen eingesetzt:
+Das REST-API akzeptiert CRUD (create-read-update-delete) Kommandos von *request* Modul. Wird ein Access-Key (apikey) benötigt, ist er als "Stationsschlüssel" nach dem Einloggen zu sehen. Im Skript wird er dann folgendermaßen eingesetzt (kein `Authorization Header` nötig):
 
 ```
-headers = {"apikey": <apikey>}
-url = f"{API_URL}/{mov_id}"
-response = session.delete(url, headers=headers, timeout=10)
+ACCESS_TOKEN = "XXXXXXXX"
+url = f"{API_URL}/{mov_id}?apikey={ACCESS_TOKEN}"
+response = session.delete(url, timeout=10)
 ```
 
 

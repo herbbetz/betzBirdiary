@@ -141,7 +141,7 @@ class HX711_CT:
 # ============================================================
 
 class MedianFilter:
-    def __init__(self, size=3):
+    def __init__(self, size=7):
         self.buf = deque(maxlen=size)
 
     def update(self, sample: Sample):
@@ -773,7 +773,7 @@ def initialize_measurement_system(
     sample.update_from_fsm(fsm)
 
     watchdog = Watchdog()
-    median = MedianFilter(size=3)
+    median = MedianFilter(size=7)
     signal_logger = SignalLogger()
     stability = StabilityModel()
 
@@ -811,7 +811,7 @@ def process_sample(
 
     mean, var, energy = stability.process(sample)
 
-    event = fsm.process_weight(mean, sample)
+    event = fsm.process_weight(sample.weight, sample)
 
     sample.update_from_fsm(fsm)
 
