@@ -109,13 +109,6 @@ class Sample:
         else:
             self.stable = 0
 
-    def clear_measurement(self):
-        self.raw_sample = 0
-        self.raw = 0
-        self.weight = 0.0
-        self.stable = 0
-        self.peak = 0.0
-
 # ============================================================
 # HX711 DRIVER (unchanged contract)
 # ============================================================
@@ -198,103 +191,168 @@ class Watchdog:
 # ============================================================
 # BASELINE (offset management and raw → weight conversion)
 # ============================================================
-
 STARTUP_SETTLE_TIME = 1.2
 
 
 class Baseline:
+    """
+    Maintains the zero reference (offset).
+
+    startup()
+        determine initial offset while preserving an existing
+        bird already sitting on the balance.
+
+    process()
+        convert filtered ADC values into weight.
+    """
 
     def __init__(self, hx: HX711_CT):
+
         self.hx = hx
+
         self.offset = 0.0
         self.drift = 0.0
 
-    def startup(self, sample: Sample, n=60, previous_offset=None):
-        """
-        Initialise the zero reference.
+    # --------------------------------------------------------
+    # startup calibration
+    # --------------------------------------------------------
 
-        If a significant load is already present during startup,
-        keep the previous offset instead of zeroing the scale.
-        """
+    def startup(
+        self,
+        sample: Sample,
+        previous_offset=None,
+        n=60
+    ):
 
         ms.log("Startup zeroing...")
 
         time.sleep(STARTUP_SETTLE_TIME)
 
-        measured_offset = self._measure_offset(n)
-
-        boot_load = self._detect_boot_load(
-            measured_offset,
-            previous_offset
-        )
-
-        self.offset = self._select_offset(
-            measured_offset,
-            previous_offset,
-            boot_load
-        )
-
-        self.drift = 0.0
-
-        self._fill_sample(sample, measured_offset)
-
-        return boot_load
-
-    # --------------------------------------------------------
-
-    def process(self, sample: Sample):
-        """Convert filtered ADC value into weight."""
-
-        sample.offset = self.offset
-        sample.weight = (sample.raw - self.offset) / hxScale
-        sample.drift = self.drift
-
-    # ========================================================
-    # internal helpers
-    # ========================================================
-
-    def _measure_offset(self, n):
-
         values = [self.hx.read() for _ in range(n)]
-        return float(np.median(values))
+        measured_offset = float(np.median(values))
 
-    def _detect_boot_load(self, measured_offset, previous_offset):
+        boot_load = False
 
-        if previous_offset is None:
-            return False
+        if previous_offset is not None:
 
-        delta = (measured_offset - previous_offset) / hxScale
+            delta = (
+                measured_offset - previous_offset
+            ) / hxScale
 
-        if abs(delta) > weightThreshold:
-            ms.log(f"Boot load detected: {delta:.1f}g")
-            return True
+            if abs(delta) > weightThreshold:
 
-        return False
+                boot_load = True
 
-    def _select_offset(
-        self,
-        measured_offset,
-        previous_offset,
-        boot_load
-    ):
+                ms.log(
+                    f"Boot load detected: {delta:.1f} g"
+                )
 
         if boot_load:
-            return previous_offset
+            self.offset = previous_offset
+            sample.note = "BOOT_LOAD_DETECTED"
 
-        return measured_offset
+        else:
+            self.offset = measured_offset
+            sample.note = ""
 
-    def _fill_sample(self, sample, measured_offset):
+        self.drift = 0.0
 
         sample.offset = self.offset
         sample.raw_sample = int(measured_offset)
         sample.raw = sample.raw_sample
-        sample.weight = (sample.raw - self.offset) / hxScale
+        sample.weight = (
+            sample.raw - self.offset
+        ) / hxScale
+        sample.drift = self.drift
 
-        if sample.weight:
-            sample.note = "BOOT_LOAD_DETECTED"
+        return boot_load
+
+    # --------------------------------------------------------
+    # normal operation
+    # --------------------------------------------------------
+
+    def process(self, sample: Sample):
+
+        sample.offset = self.offset
+        sample.weight = (
+            sample.raw - self.offset
+        ) / hxScale
+        sample.drift = self.drift
+
+# ============================================================
+# STABILITY MODEL
+#
+# Converts the physical weight signal into a stable FSM input.
+#
+# Input:
+#     sample.weight
+#
+# Output:
+#     mean   -> cleaned weight for FSM
+#     var    -> signal variation
+#     energy -> short term movement indicator
+#
+# No decisions are made here.
+# ============================================================
+
+class StabilityModel:
+
+    def __init__(
+        self,
+        stability_size=15,
+        energy_size=5
+    ):
+
+        # history for stable weight calculation
+        self.stability_window = deque(
+            maxlen=stability_size
+        )
+
+        # history for movement calculation
+        self.energy_window = deque(
+            maxlen=energy_size
+        )
+
+
+    def process(self, sample: Sample):
+
+        weight = sample.weight
+
+        self.stability_window.append(weight)
+
+        if len(self.stability_window) == self.stability_window.maxlen:
+
+            mean = np.mean(
+                self.stability_window
+            )
+
+            var = np.var(
+                self.stability_window
+            )
+
         else:
-            sample.note = ""
 
+            mean = weight
+            var = None
+
+
+        self.energy_window.append(
+            weight - mean
+        )
+
+        energy = np.mean(
+            [
+                abs(x)
+                for x in self.energy_window
+            ]
+        )
+
+
+        return (
+            mean,
+            var,
+            energy
+        )
 # ============================================================
 # FSM (pure state machine, no I/O, no logging)
 # ============================================================
@@ -665,6 +723,111 @@ def send_fifo(value):
         if e.errno != errno.ENXIO:
             raise
 
+# ============================================================
+# SYSTEM INITIALIZATION / RECOVERY
+# ============================================================
+
+def initialize_measurement_system(
+        hx,
+        sample,
+        previous_offset,
+        reason
+):
+    """
+    Initialize Baseline and FSM after startup or HX711 reset.
+
+    Returns:
+        hx, baseline, fsm, watchdog, median, signal_logger
+
+    reason:
+        "BOOT" or "RESET"
+    """
+
+    baseline = Baseline(hx)
+
+    boot_load = baseline.startup(
+        sample,
+        previous_offset=previous_offset
+    )
+
+    fsm = WeightFSM()
+
+    if boot_load:
+
+        fsm.force_present(sample.weight)
+
+        if reason == "BOOT":
+            sample.note = "BOOT_LOAD_DETECTED"
+        else:
+            sample.note = "RESET_LOAD_DETECTED"
+
+    else:
+
+        if reason == "BOOT":
+            sample.note = "BOOT_ZERO"
+        else:
+            sample.note = "RESET_ZERO"
+
+
+    sample.update_from_fsm(fsm)
+
+    watchdog = Watchdog()
+    median = MedianFilter(size=3)
+    signal_logger = SignalLogger()
+    stability = StabilityModel()
+
+    return (
+        baseline,
+        fsm,
+        watchdog,
+        median,
+        signal_logger,
+        stability
+    )
+
+# ============================================================
+# PROCESS ONE SAMPLE
+# ============================================================
+
+def process_sample(
+    sample,
+    median,
+    baseline,
+    watchdog,
+    stability,
+    fsm,
+    signal_logger,
+    trace
+):
+
+    median.update(sample)
+    baseline.process(sample)
+
+    watchdog.process(sample)
+
+    if sample.glitch:
+        return None, watchdog.glitch_count >= GLITCH_LIMIT
+
+    mean, var, energy = stability.process(sample)
+
+    event = fsm.process_weight(mean, sample)
+
+    sample.update_from_fsm(fsm)
+
+    signal_logger.update(
+        sample,
+        sample.weight,
+        var,
+        mean,
+        energy,
+        STATE_NAME[sample.state],
+        event
+    )
+
+    if event:
+        trace.dump_event(event, sample)
+
+    return event, False
 
 # ============================================================
 # INIT
@@ -677,168 +840,97 @@ writePID(1)
 
 hx = HX711_CT()
 
-baseline = Baseline(hx)
-watchdog = Watchdog()
-
 trace = TraceRecorder()
-
-median = MedianFilter(size=3)
-signal_logger = SignalLogger()
 
 sample = Sample()
 
-boot_load = baseline.startup(sample, previous_offset=hxOffset)
-fsm = WeightFSM()
-if boot_load:
-    fsm.force_present(sample.weight)
-    sample.note = "BOOT_LOAD_DETECTED"
-else:
-    sample.note = "BOOT_ZERO"
+(
+    baseline,
+    fsm,
+    watchdog,
+    median,
+    signal_logger,
+    stability
+) = initialize_measurement_system(
+        hx,
+        sample,
+        hxOffset,
+        "BOOT"
+)
 
-# baseline.process(sample)
-sample.state = fsm.state
-sample.peak = fsm.peak
 trace.dump_event("BOOT", sample)
 
 # ============================================================
 # LOOP STATE
 # ============================================================
-stability_window = deque(maxlen=15)
-energy_window = deque(maxlen=5)
-
 try:
+
     while True:
 
         sample.t = time.monotonic()
 
-        # ---------------- RAW ----------------
         try:
             sample.raw_sample = hx.read()
+
         except RuntimeError:
             ms.log("HX711 read error")
             time.sleep(0.15)
             continue
 
-        # ---------------- FILTER ----------------
-        median.update(sample)
-
-        # ---------------- BASELINE ----------------
-        baseline.process(sample)
-
-        # ---------------- WATCHDOG ----------------
-        glitches = watchdog.process(sample)
+        event, recover = process_sample(
+            sample,
+            median,
+            baseline,
+            watchdog,
+            stability,
+            fsm,
+            signal_logger,
+            trace
+        )
 
         if sample.glitch:
+
             ms.log(f"GLITCH: {sample.glitch_reason}")
 
-            if glitches >= GLITCH_LIMIT:
-                old_offset = baseline.offset # store old offset before reset
-                ms.log("HX711 reset")
+            if recover:
+
+                old_offset = baseline.offset
                 hx.close()
                 time.sleep(1)
-
                 hx = HX711_CT()
-                baseline = Baseline(hx)
-                fsm = WeightFSM()
-                boot_load = baseline.startup(sample, previous_offset=old_offset)
 
-                watchdog = Watchdog()
-                if boot_load:
-                    fsm.force_present(sample.weight)
-                    sample.note = "RESET_LOAD_DETECTED"
-                else:
-                    sample.note = "RESET_ZERO"
-                sample.state = fsm.state
-                sample.peak = fsm.peak
-                sample.raw_sample = 0
-                sample.raw = 0
-                sample.weight = 0
-                sample.stable = 0
+                (
+                    baseline,
+                    fsm,
+                    watchdog,
+                    median,
+                    signal_logger,
+                    stability
+                ) = initialize_measurement_system(
+                    hx,
+                    sample,
+                    old_offset,
+                    "RESET"
+                )
+
                 trace.dump_event("RESET", sample)
-
-                median = MedianFilter(size=3)
-                signal_logger = SignalLogger()
-                stability_window.clear()
-                energy_window.clear()
 
             time.sleep(0.15)
             continue
 
-        # =========================================================
-        # 1. PHYSICAL STABILITY MODEL (NEW CORE LAYER)
-        # =========================================================
-        weight = sample.weight
-        signal = sample.weight
-
-        stability_window.append(weight)
-
-        if len(stability_window) == stability_window.maxlen:
-            mean = np.mean(stability_window)
-            var = np.var(stability_window)
-        else:
-            mean = weight
-            var = None
-
-        # =========================================================
-        # 2. Energy only for SignalLogger
-        # =========================================================
-
-        energy_window.append(weight - mean)
-        energy = np.mean([abs(x) for x in energy_window])
-        # =========================================================
-        # 3. FSM INPUT (ONLY CLEAN SIGNAL)
-        # =========================================================
-
-        event = fsm.process_weight(mean, sample)
-
-        # synchronise Sample snapshot
-        sample.state = fsm.state
-        sample.peak = fsm.peak
-        if fsm.state in (STATE_IDLE, STATE_ARRIVAL):
-            sample.stable = fsm.stable_up
-        elif fsm.state in (STATE_PRESENT, STATE_OVERSIZE):
-            sample.stable = fsm.stable_down
-        else:
-            sample.stable = 0
-
-        signal_logger.update(
-            sample,
-            weight,
-            var,
-            mean,
-            energy,
-            STATE_NAME[fsm.state],
-            event
-        )
-
-        if event is not None:
-            trace.dump_event(event, sample)
-
-        # ---------------- OUTPUT ----------------
         if event == "ARRIVAL":
-            send_fifo(fsm.peak)
+            send_fifo(sample.peak)
 
         elif event == "DEPARTURE":
             send_fifo(-1)
 
-        ms.log(f"{weight:.2f} g {STATE_NAME[sample.state]}", terminal=False)
+        ms.log(
+            f"{sample.weight:.2f} g {STATE_NAME[sample.state]}",
+            terminal=False
+        )
 
-        # =========================================================
-        # 4. DRIFT CONTROL (VERY STRICT NOW)
-        # =========================================================
-        '''
-        if sample.state == STATE_IDLE and is_valid and is_quiet:
-
-            # ultra-slow correction (wind-safe)
-            baseline.drift = 0.997 * baseline.drift + 0.003 * mean
-
-            # only correct if persistent bias exists
-            if abs(baseline.drift) > 0.6:
-                baseline.offset += baseline.drift * hxScale
-                baseline.drift = 0.0
-                sample.offset = baseline.offset
-        '''
         time.sleep(0.15)
+
 # ============================================================
 # CLEAN EXIT
 # ============================================================
