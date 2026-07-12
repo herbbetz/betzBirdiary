@@ -75,32 +75,46 @@ import msgBird as ms
 # ============================================================
 # SAMPLE (single source of truth per cycle)
 # ============================================================
-
 @dataclass
 class Sample:
 
-    # timestamp of this measurement cycle
     t: float = 0.0
 
-    # raw HX711 pipeline
-    raw_sample: int = 0      # direct ADC reading from HX711
-    raw: int = 0             # filtered ADC reading
+    raw_sample: int = 0
+    raw: int = 0
 
-    # calibrated physical value
-    offset: float = 0.0      # current zero reference
-    weight: float = 0.0      # calculated weight in grams
+    offset: float = 0.0
+    weight: float = 0.0
+    drift: float = 0.0
 
-    # FSM result
-    state: int = 0           # current bird state
-    peak: float = 0.0        # highest weight during current event
-    event: str = ""          # state transition, e.g. ARRIVAL
+    state: int = 0  # STATE_IDLE
+    stable: int = 0
+    peak: float = 0.0
 
-    # watchdog information
     glitch: bool = False
     glitch_reason: str = ""
 
-    # event annotation (for logs only)
     note: str = ""
+
+    def update_from_fsm(self, fsm):
+        self.state = fsm.state
+        self.peak = fsm.peak
+
+        if fsm.state in (STATE_IDLE, STATE_ARRIVAL):
+            self.stable = fsm.stable_up
+
+        elif fsm.state in (STATE_PRESENT, STATE_OVERSIZE):
+            self.stable = fsm.stable_down
+
+        else:
+            self.stable = 0
+
+    def clear_measurement(self):
+        self.raw_sample = 0
+        self.raw = 0
+        self.weight = 0.0
+        self.stable = 0
+        self.peak = 0.0
 
 # ============================================================
 # HX711 DRIVER (unchanged contract)
