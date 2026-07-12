@@ -672,6 +672,7 @@ class SignalLogger:
 
             # copy pre-history
             self.event_buffer = list(self.buffer)
+            return
 
         # append post-history
         if self.active:
