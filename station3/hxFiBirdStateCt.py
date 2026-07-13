@@ -89,6 +89,8 @@ class MedianFilter:
 # BASELINE (offset management and raw → weight conversion)
 # ============================================================
 STARTUP_SETTLE_TIME = 1.2
+OFFSET_STEP = 0.02      # adapt 2 % each update
+OFFSET_PERIOD = 100     # every 100 samples (~15 s)
 
 class Baseline:
 
@@ -96,6 +98,7 @@ class Baseline:
 
         self.hx = hx
         self.offset = 0.0
+        self.count = 0
 
     # --------------------------------------------------------
     # startup calibration
@@ -162,10 +165,22 @@ class Baseline:
         sample.weight = (
             sample.raw - self.offset
         ) / hxScale
+    # --------------------------------------------------------
+    # slowly follow long-term zero drift
+    # --------------------------------------------------------
+    def adapt_offset(self, sample):
 
-# ============================================================
-# FSM (pure state machine, no I/O, no logging)
-# ============================================================
+        self.count += 1
+
+        if self.count < OFFSET_PERIOD:
+            return
+
+        self.count = 0
+
+        self.offset += (
+            sample.raw - self.offset
+        ) * OFFSET_STEP
+
 # ============================================================
 # FSM (pure state machine, no I/O, no logging)
 # ============================================================
@@ -596,6 +611,8 @@ try:
 
         sample.state = fsm.state
         sample.peak = fsm.peak
+        if sample.state == STATE_IDLE and abs(sample.weight) < weightThreshold: # 2) not adapting offset when bird on the scale
+            baseline.adapt_offset(sample)
 
         # 5. record everything
         signal_logger.log(

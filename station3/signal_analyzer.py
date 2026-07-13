@@ -1,131 +1,168 @@
+#!/usr/bin/env python3
 """
 signal_analyzer.py
 
-Analyze signalLogger CSV output.
-
-Only physical quantities:
-    raw
-    offset
-    weight
-
-No signal processing.
+Analyze SignalLogger output.
 """
 
-import csv
+from datetime import datetime
 import sys
-from collections import defaultdict
 
 
-def read_csv(filename):
+if len(sys.argv) != 2:
+    print("usage: signal_analyzer.py signal_xxx.csv")
+    sys.exit(1)
 
-    with open(filename) as f:
-        return list(csv.DictReader(f))
+
+# --------------------------------------------------------
+# read csv
+# --------------------------------------------------------
+
+rows = []
+
+with open(sys.argv[1]) as f:
+
+    header = f.readline()
+
+    for line in f:
+
+        (
+            t,
+            mono,
+            raw,
+            offset,
+            weight,
+            state,
+            event,
+            peak,
+            note
+        ) = line.strip().split(",")
+
+        rows.append({
+            "time": t,
+            "mono": float(mono),
+            "raw": int(raw),
+            "offset": float(offset),
+            "weight": float(weight),
+            "state": state,
+            "event": event,
+            "peak": float(peak),
+            "note": note
+        })
 
 
-def state_summary(rows):
+print()
 
-    data = defaultdict(list)
+print(f"samples : {len(rows)}")
+print(f"first   : {rows[0]['time']}")
+print(f"last    : {rows[-1]['time']}")
 
-    for r in rows:
-        data[r["state"]].append(
-            float(r["weight"])
+print()
+
+# --------------------------------------------------------
+# group into periods
+# --------------------------------------------------------
+
+periods = []
+
+start = 0
+state = rows[0]["state"]
+
+for i in range(1, len(rows)):
+
+    if rows[i]["state"] != state:
+
+        periods.append(
+            (state, start, i - 1)
         )
 
-    print("\nWeight by state")
+        start = i
+        state = rows[i]["state"]
 
-    for state, values in data.items():
+periods.append(
+    (state, start, len(rows) - 1)
+)
+
+# --------------------------------------------------------
+# print periods
+# --------------------------------------------------------
+
+print("State periods")
+print("-------------")
+
+for state, first, last in periods:
+
+    segment = rows[first:last + 1]
+
+    weights = [
+        r["weight"]
+        for r in segment
+    ]
+
+    mean = (
+        sum(weights)
+        / len(weights)
+    )
+
+    minimum = min(weights)
+    maximum = max(weights)
+
+    peak = max(
+        r["peak"]
+        for r in segment
+    )
+
+    duration = (
+        segment[-1]["mono"]
+        - segment[0]["mono"]
+    )
+
+    print()
+
+    print(
+        f"{state}"
+    )
+
+    print(
+        f"  start    : {segment[0]['time']}"
+    )
+
+    print(
+        f"  end      : {segment[-1]['time']}"
+    )
+
+    print(
+        f"  duration : {duration:.1f} s"
+    )
+
+    print(
+        f"  samples  : {len(segment)}"
+    )
+
+    print(
+        f"  mean     : {mean:7.2f} g"
+    )
+
+    print(
+        f"  min/max  : "
+        f"{minimum:7.2f} / {maximum:7.2f} g"
+    )
+
+    if peak > 0:
 
         print(
-            f"{state:10s} "
-            f"n={len(values):5d} "
-            f"mean={sum(values)/len(values):7.2f} g "
-            f"min={min(values):7.2f} g "
-            f"max={max(values):7.2f} g"
+            f"  peak     : {peak:.2f} g"
         )
 
+    events = [
+        r["event"]
+        for r in segment
+        if r["event"]
+    ]
 
-def transitions(rows):
+    if events:
 
-    print("\nState changes")
-
-    old = None
-
-    for r in rows:
-
-        state = r["state"]
-
-        if state != old:
-
-            print(
-                r["time"],
-                old,
-                "->",
-                state,
-                f"weight={float(r['weight']):.2f}"
-            )
-
-            old = state
-
-
-def check_arrival_weight(rows):
-
-    print("\nARRIVAL with negative weight")
-
-    for r in rows:
-
-        if (
-            r["state"] == "ARRIVAL"
-            and float(r["weight"]) < 0
-        ):
-            print(
-                r["time"],
-                r["weight"]
-            )
-
-
-def check_idle_zero(rows, limit=5):
-
-    print(
-        f"\nIDLE outside +/-{limit} g"
-    )
-
-    for r in rows:
-
-        if (
-            r["state"] == "IDLE"
-            and abs(float(r["weight"])) > limit
-        ):
-            print(
-                r["time"],
-                r["weight"]
-            )
-
-
-def main():
-
-    filename = sys.argv[1]
-
-    rows = read_csv(filename)
-
-    print(
-        f"samples: {len(rows)}"
-    )
-
-    print(
-        "first:",
-        rows[0]["time"]
-    )
-
-    print(
-        "last :",
-        rows[-1]["time"]
-    )
-
-    state_summary(rows)
-    transitions(rows)
-    check_arrival_weight(rows)
-    check_idle_zero(rows)
-
-
-if __name__ == "__main__":
-    main()
+        print(
+            f"  events   : "
+            + ", ".join(events)
+        )
