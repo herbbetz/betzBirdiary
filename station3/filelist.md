@@ -42,7 +42,8 @@ Trage Deine persönlichen Schlüssel dort ein, wo Du in den Dateien einen Ausdru
 ### Wiegevorgang über Dehnmesstreifen, Umweltdaten hochladen
 
 - calibrateHx711v2.py dient zum Kalibrieren der Waage: Skript bei leerer Waage starten, auf Aufforderung Gewicht von etwa 100g an die Vogelsitzstange hängen, Werte tragen sich selbst in configBird3.py ein, dann reboot. Dieses Vollkalibrieren sollte nur selten nötig sein.
-- hxFIBird3.py liest die Wiegewerte und ab einem dort eingetragenen Schwellenwert gibt es an mainFoBird3.py das Signal zur Videoaufnahme. Dieses Signal übermittelt es durch eine 'FIFO Pipe'. Anhand der Werte unterhalb der Schwelle kalibriert es die Waage nach, falls z.B. Sonne auf den Dehnmesstreifen einwirkt. Damit es von calibrateHx711v2.py automatisch beendet werden kann, schreibt es seine PID nach 'hxFiBird.txt' (Funktionen dazu in sharedBird.py).
+- hxFIBird3.py liest die Wiegewerte und ab einem dort eingetragenen Schwellenwert gibt es an mainFoBird3.py das Signal zur Videoaufnahme. Dieses Signal übermittelt es durch eine 'FIFO Pipe'. Anhand der Werte unterhalb der Schwelle kalibriert es die Waage nach, falls z.B. Sonne auf den Dehnmesstreifen einwirkt. Damit es von calibrateHx711v2.py automatisch beendet werden kann, schreibt es seine PID nach 'hxFiBird.txt' (Funktionen dazu in sharedBird.py). Spätere Versionen davon wie hxFiBirdStateCt.py arbeiten mit C-Driver und StateMaschine im Code.
+- hx_signalanalyzer.py fasst Logdaten zusammen, die hxFiBirdStateCt.py als signal_diag<date>.csv und tracerecord.csv auf /ramdisk ablegt.
 - dhtBird.py wird in regelmäßigen Abständen von crontab veranlasst, Temperatur- und Feuchtewerte auf die Birdiary Platform hochzuladen.
 - dhtTest.py und hx711Test.py sind einfache Skripte, falls die entsprechende Hardware mal Probleme macht. Wie für die Kamera Hardware funktionieren solche Testskripte aber nur, wenn kein anderes Programm auf die Hardware zugreift, siehe Kommando 'ps aux'.
 
