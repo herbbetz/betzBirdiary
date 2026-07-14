@@ -11,6 +11,7 @@ Schräg im Futtersilo steht ein leicht nach vorn unten gekrümmtes Rutschblech a
 Für kleine Vögel ist der Futtertrog etwas groß, so dass sie dort wie in einer Badewanne sitzen, ohne auf die Stange zu müssen. Der Futtertrog wurde deshalb nachträglich um 2 cm reduziert.
 
 <img src="bathtub.jpg" alt="Badewanne" style="zoom: 50%;" /><img src="troughreduceS.jpg" alt="kleinTrog" style="zoom: 66%;" />
+<img src="vorher2026-07.jpg" alt="Spechtschaden" /><img src="nachher2026-07.jpg" alt="Spechtschutz" style="zoom: 50%;" />
 
 Ich danke Andreas Mischko für den engagierten Aufbau, die Ideen und auch die Restaurierung des Vogelhauses.
 
