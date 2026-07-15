@@ -1,28 +1,31 @@
 #!/usr/bin/env python3
+
 """
-signal_analyzer.py
+hx_signalanalyzer.py
 
 Analyze SignalLogger output.
+
+todo: maybe add more compact timeline
 """
 
-from datetime import datetime
 import sys
 
 
-if len(sys.argv) != 2:
-    print("usage: signal_analyzer.py signal_xxx.csv")
-    sys.exit(1)
-
+CAMERA_MIN_PRESENT = 1.0   # seconds, for contact classification
 
 # --------------------------------------------------------
 # read csv
 # --------------------------------------------------------
 
+if len(sys.argv) != 2:
+    print("usage: hx_signalanalyzer.py signal_xxx.csv")
+    sys.exit(1)
+
 rows = []
 
 with open(sys.argv[1]) as f:
 
-    header = f.readline()
+    f.readline()
 
     for line in f:
 
@@ -39,28 +42,26 @@ with open(sys.argv[1]) as f:
         ) = line.strip().split(",")
 
         rows.append({
+
             "time": t,
             "mono": float(mono),
             "raw": int(raw),
             "offset": float(offset),
             "weight": float(weight),
             "state": state,
-            "event": event,
+            "event": None if event == "None" else event,
             "peak": float(peak),
-            "note": note
+            "note": None if note == "None" else note
         })
 
-
 print()
-
 print(f"samples : {len(rows)}")
 print(f"first   : {rows[0]['time']}")
 print(f"last    : {rows[-1]['time']}")
-
 print()
 
 # --------------------------------------------------------
-# group into periods
+# split into state periods
 # --------------------------------------------------------
 
 periods = []
@@ -72,97 +73,371 @@ for i in range(1, len(rows)):
 
     if rows[i]["state"] != state:
 
-        periods.append(
-            (state, start, i - 1)
-        )
+        r = rows[start:i]
+
+        periods.append({
+            "state": state,
+            "rows": r,
+            "duration": r[-1]["mono"] - r[0]["mono"]
+        })
 
         start = i
         state = rows[i]["state"]
 
-periods.append(
-    (state, start, len(rows) - 1)
-)
+r = rows[start:]
+
+periods.append({
+    "state": state,
+    "rows": r,
+    "duration": r[-1]["mono"] - r[0]["mono"]
+})
 
 # --------------------------------------------------------
-# print periods
+# build visits
 # --------------------------------------------------------
 
-print("State periods")
-print("-------------")
+visits = []
 
-for state, first, last in periods:
+current = None
 
-    segment = rows[first:last + 1]
+for p in periods:
 
-    weights = [
-        r["weight"]
-        for r in segment
-    ]
+    state = p["state"]
+    r = p["rows"]
 
-    mean = (
-        sum(weights)
-        / len(weights)
-    )
+    if state == "ARRIVAL":
 
-    minimum = min(weights)
-    maximum = max(weights)
+        current = {
+            "arrival": r[0]["time"],
+            "arrival_weight": r[0]["weight"]
+        }
 
-    peak = max(
-        r["peak"]
-        for r in segment
-    )
+    elif state == "PRESENT" and current is not None:
 
-    duration = (
-        segment[-1]["mono"]
-        - segment[0]["mono"]
-    )
+        current["present"] = r[0]["time"]
+        current["duration"] = (
+            r[-1]["mono"] - r[0]["mono"]
+        )
+
+        weights = [
+            x["weight"]
+            for x in r
+        ]
+
+        current["mean"] = (
+            sum(weights) / len(weights)
+        )
+
+        current["peak"] = max(weights)
+
+    elif state == "DEPARTURE" and current is not None:
+
+        current["departure"] = r[0]["time"]
+
+    elif state == "IDLE" and current is not None:
+
+        current["idle"] = r[0]["time"]
+
+        visits.append(current)
+
+        current = None
+
+# --------------------------------------------------------
+# print visits
+# --------------------------------------------------------
+
+print("Bird visits")
+print("-----------")
+
+for i, v in enumerate(visits, 1):
 
     print()
 
-    print(
-        f"{state}"
-    )
+    print(f"Visit {i}")
+
+    print(f"  arrival : {v.get('arrival')}")
+    print(f"  present : {v.get('present')}")
+    print(f"  leave   : {v.get('departure')}")
+    print(f"  idle    : {v.get('idle')}")
+
+    if "duration" in v:
+        print(f"  stay    : {v['duration']:.1f} s")
+
+    if "mean" in v:
+        print(f"  mean    : {v['mean']:.2f} g")
+
+    if "peak" in v:
+        print(f"  peak    : {v['peak']:.2f} g")
+
+# --------------------------------------------------------
+# state timeline
+# --------------------------------------------------------
+print()
+print("State periods")
+print("-------------")
+
+for i, p in enumerate(periods, 1):
+
+    r = p["rows"]
 
     print(
-        f"  start    : {segment[0]['time']}"
+        f"{i:3d} "
+        f"{p['state']:10s} "
+        f"{r[0]['time']} -> "
+        f"{r[-1]['time']} "
+        f"({p['duration']:.2f} s)"
     )
 
-    print(
-        f"  end      : {segment[-1]['time']}"
-    )
+# --------------------------------------------------------
+# contact classification
+# --------------------------------------------------------
 
-    print(
-        f"  duration : {duration:.1f} s"
-    )
+print()
+print("Contact statistics")
+print("-------------------")
 
-    print(
-        f"  samples  : {len(segment)}"
-    )
+contacts = []
 
-    print(
-        f"  mean     : {mean:7.2f} g"
-    )
+current_contact = None
 
-    print(
-        f"  min/max  : "
-        f"{minimum:7.2f} / {maximum:7.2f} g"
-    )
+for p in periods:
 
-    if peak > 0:
+    if p["state"] == "ARRIVAL":
 
-        print(
-            f"  peak     : {peak:.2f} g"
-        )
+        current_contact = {
+            "arrival": p["rows"][0]["time"],
+            "arrival_duration": p["duration"],
+            "present_duration": 0.0,
+            "has_present": False
+        }
 
-    events = [
-        r["event"]
-        for r in segment
-        if r["event"]
+    elif p["state"] == "PRESENT" and current_contact is not None:
+
+        current_contact["has_present"] = True
+        current_contact["present_duration"] = p["duration"]
+
+    elif p["state"] == "IDLE" and current_contact is not None:
+
+        contacts.append(current_contact)
+        current_contact = None
+
+
+# --------------------------------------------------------
+# classify contacts
+# --------------------------------------------------------
+short = [
+    c for c in contacts
+    if not c["has_present"]
+]
+
+brief = [
+    c for c in contacts
+    if c["has_present"]
+    and c["present_duration"] < CAMERA_MIN_PRESENT
+]
+
+valid = [
+    c for c in contacts
+    if c["has_present"]
+    and c["present_duration"] >= CAMERA_MIN_PRESENT
+]
+
+
+print(f"total contacts : {len(contacts)}")
+print(f"valid visits   : {len(valid)}")
+print(f"brief visits   : {len(brief)}")
+print(f"short contacts : {len(short)}")
+
+
+# --------------------------------------------------------
+# valid visit statistics
+# --------------------------------------------------------
+
+if valid:
+
+    durations = [
+        c["present_duration"]
+        for c in valid
     ]
 
-    if events:
+    print()
+    print("Valid PRESENT durations")
+    print("-----------------------")
+
+    print(
+        f"minimum : {min(durations):.2f} s"
+    )
+
+    print(
+        f"maximum : {max(durations):.2f} s"
+    )
+
+    print(
+        f"mean    : {sum(durations)/len(durations):.2f} s"
+    )
+
+
+# --------------------------------------------------------
+# brief visits
+# --------------------------------------------------------
+
+if brief:
+
+    print()
+    print("Brief visits")
+    print("------------")
+
+    for i, c in enumerate(brief, 1):
 
         print(
-            f"  events   : "
-            + ", ".join(events)
+            f"{i:2d}: "
+            f"{c['arrival']} "
+            f"(PRESENT {c['present_duration']:.2f} s)"
         )
+
+
+# --------------------------------------------------------
+# short contacts
+# --------------------------------------------------------
+
+if short:
+
+    print()
+    print("Short contacts")
+    print("--------------")
+
+    for i, c in enumerate(short, 1):
+
+        print(
+            f"{i:2d}: "
+            f"{c['arrival']} "
+            f"(ARRIVAL {c['arrival_duration']:.2f} s)"
+        )
+
+
+# --------------------------------------------------------
+# camera trigger simulation
+# --------------------------------------------------------
+
+print()
+print("Camera trigger simulation")
+print("-------------------------")
+
+print(
+    f"threshold     : {CAMERA_MIN_PRESENT:.2f} s"
+)
+
+print(
+    f"would trigger : {len(valid)}"
+)
+# --------------------------------------------------------
+# idle statistics
+# --------------------------------------------------------
+
+idle = [
+    r
+    for r in rows
+    if r["state"] == "IDLE"
+]
+
+if idle:
+
+    weights = [
+        r["weight"]
+        for r in idle
+    ]
+
+    print()
+    print("Idle statistics")
+    print("----------------")
+
+    print(
+        f"mean weight : {sum(weights)/len(weights):.2f} g"
+    )
+
+    print(
+        f"minimum     : {min(weights):.2f} g"
+    )
+
+    print(
+        f"maximum     : {max(weights):.2f} g"
+    )
+
+# --------------------------------------------------------
+# suspicious situations
+# --------------------------------------------------------
+
+print()
+print("Warnings")
+print("--------")
+
+found = False
+
+for p in periods:
+
+    if p["state"] == "ARRIVAL":
+
+        w = p["rows"][0]["weight"]
+
+        if w < 0:
+
+            print(
+                f"negative ARRIVAL at {p['rows'][0]['time']}"
+            )
+
+            found = True
+
+for r in idle:
+
+    if abs(r["weight"]) > 5:
+
+        print(
+            f"IDLE outside ±5 g at {r['time']} "
+            f"({r['weight']:.2f} g)"
+        )
+
+        found = True
+        break
+
+if not found:
+
+    print("none")
+
+# --------------------------------------------------------
+# summary
+# --------------------------------------------------------
+
+print()
+print("Summary")
+print("-------")
+
+print(f"visits : {len(visits)}")
+
+if visits:
+
+    peaks = [
+        v["peak"]
+        for v in visits
+        if "peak" in v
+    ]
+
+    stays = [
+        v["duration"]
+        for v in visits
+        if "duration" in v
+    ]
+
+    print(
+        f"mean stay : "
+        f"{sum(stays)/len(stays):.1f} s"
+    )
+
+    print(
+        f"longest   : "
+        f"{max(stays):.1f} s"
+    )
+
+    print(
+        f"highest   : "
+        f"{max(peaks):.2f} g"
+    )
