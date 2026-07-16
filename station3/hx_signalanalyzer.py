@@ -44,6 +44,7 @@ print(f"first   : {rows[0]['time']}")
 print(f"last    : {rows[-1]['time']}")
 
 periods = []
+
 start = 0
 state = rows[0]["state"]
 
@@ -68,25 +69,26 @@ periods.append({
 visits = []
 oversize = []
 
-current = None
+visit = None
 over = None
 
 for p in periods:
+
     state = p["state"]
     r = p["rows"]
 
     if state == "ARRIVAL":
-        current = {
+        visit = {
             "arrival": r[0]["time"],
             "peak": max(x["weight"] for x in r)
         }
 
-    elif state == "PRESENT" and current:
-        current["present"] = r[0]["time"]
-        current["duration"] = p["duration"]
+    elif state == "PRESENT" and visit:
         w = [x["weight"] for x in r]
-        current["mean"] = sum(w) / len(w)
-        current["peak"] = max(current["peak"], max(w))
+        visit["present"] = r[0]["time"]
+        visit["duration"] = p["duration"]
+        visit["mean"] = sum(w) / len(w)
+        visit["peak"] = max(visit["peak"], max(w))
 
     elif state == "OVERSIZE":
         over = {
@@ -96,18 +98,18 @@ for p in periods:
         }
 
     elif state == "DEPARTURE":
+        if visit:
+            visit["leave"] = r[0]["time"]
         if over:
             over["leave"] = r[0]["time"]
             oversize.append(over)
             over = None
-        elif current:
-            current["leave"] = r[0]["time"]
 
     elif state == "IDLE":
-        if current:
-            current["idle"] = r[0]["time"]
-            visits.append(current)
-            current = None
+        if visit:
+            visit["idle"] = r[0]["time"]
+            visits.append(visit)
+            visit = None
 
 print()
 print("Bird visits")
@@ -116,14 +118,12 @@ print("-----------")
 for i, v in enumerate(visits, 1):
     print()
     print(f"Visit {i}")
-    print(f"  arrival : {v.get('arrival')}")
-    print(f"  present : {v.get('present')}")
-    print(f"  leave   : {v.get('leave')}")
-    print(f"  idle    : {v.get('idle')}")
-    if "duration" in v:
-        print(f"  stay    : {v['duration']:.1f} s")
-    if "mean" in v:
-        print(f"  mean    : {v['mean']:.2f} g")
+    print(f"  arrival : {v['arrival']}")
+    print(f"  present : {v['present']}")
+    print(f"  leave   : {v['leave']}")
+    print(f"  idle    : {v['idle']}")
+    print(f"  stay    : {v['duration']:.1f} s")
+    print(f"  mean    : {v['mean']:.2f} g")
     print(f"  peak    : {v['peak']:.2f} g")
 
 print()
@@ -142,25 +142,20 @@ if oversize:
 else:
     print("none")
 
+triggered = [v for v in visits if v["duration"] >= CAMERA_MIN_PRESENT]
+
 print()
-print("Contact statistics")
-print("-------------------")
-
-valid = [v for v in visits if "duration" in v and v["duration"] >= CAMERA_MIN_PRESENT]
-brief = [v for v in visits if "duration" in v and v["duration"] < CAMERA_MIN_PRESENT]
-short = [v for v in visits if "duration" not in v]
-
-print(f"total contacts : {len(visits)}")
-print(f"valid visits   : {len(valid)}")
-print(f"brief visits   : {len(brief)}")
-print(f"short contacts : {len(short)}")
+print("Visit statistics")
+print("----------------")
+print(f"visits         : {len(visits)}")
+print(f"camera trigger : {len(triggered)}")
 print(f"oversize       : {len(oversize)}")
 
-if valid:
-    durations = [v["duration"] for v in valid]
+if visits:
+    durations = [v["duration"] for v in visits]
     print()
-    print("Valid visit durations")
-    print("---------------------")
+    print("Visit durations")
+    print("----------------")
     print(f"minimum : {min(durations):.2f} s")
     print(f"maximum : {max(durations):.2f} s")
     print(f"mean    : {sum(durations)/len(durations):.2f} s")
@@ -168,8 +163,8 @@ if valid:
 print()
 print("Camera trigger simulation")
 print("-------------------------")
-print(f"threshold     : {CAMERA_MIN_PRESENT:.2f} s")
-print(f"would trigger : {len(valid)}")
+print(f"threshold : {CAMERA_MIN_PRESENT:.2f} s")
+print(f"triggered : {len(triggered)}")
 
 idle = [r["weight"] for r in rows if r["state"] == "IDLE"]
 
@@ -206,13 +201,10 @@ print("-------")
 print(f"visits   : {len(visits)}")
 
 if visits:
-    stays = [v["duration"] for v in visits if "duration" in v]
     peaks = [v["peak"] for v in visits]
-
-    if stays:
-        print(f"mean stay: {sum(stays)/len(stays):.1f} s")
-        print(f"longest  : {max(stays):.1f} s")
-
+    durations = [v["duration"] for v in visits]
+    print(f"mean stay: {sum(durations)/len(durations):.1f} s")
+    print(f"longest  : {max(durations):.1f} s")
     print(f"highest  : {max(peaks):.2f} g")
 
 if oversize:

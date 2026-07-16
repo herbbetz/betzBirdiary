@@ -1,5 +1,5 @@
 """
-hxFiBirdStateCt2.py
+hxFiBirdStateCt.py
 
 HX711 -> Sample -> Baseline -> FSM -> Recorders
 
@@ -198,7 +198,7 @@ STATE_NAME = {
     STATE_DEPARTURE: "DEPARTURE",
     STATE_OVERSIZE: "OVERSIZE"
 }
-
+CAMERA_DELAY = 1.0 # 1 sec for the bird to sit before calling the camera by fifo
 
 class WeightFSM:
 
@@ -218,6 +218,8 @@ class WeightFSM:
         self.peak = 0.0
         self.departure_t0 = 0.0
 
+        self.present_t0 = 0.0
+        self.camera_sent = False
 
     def reset(self, keep_peak=True):
 
@@ -247,12 +249,29 @@ class WeightFSM:
         self.state = new_state
         self.reset(keep_peak=keep_peak)
 
+        if new_state == STATE_PRESENT:
+            self.present_t0 = time.monotonic()
+            self.camera_sent = False
+
         if departure:
             self.departure_t0 = time.monotonic()
 
         sample.note = note
         return STATE_NAME[new_state]
 
+    def camera_trigger(self):
+
+        if self.state != STATE_PRESENT:
+            return False
+
+        if self.camera_sent:
+            return False
+
+        if time.monotonic() - self.present_t0 < CAMERA_DELAY:
+            return False
+
+        self.camera_sent = True
+        return True
 
     # --------------------------------------------------------
     # main FSM entry
@@ -627,9 +646,8 @@ try:
             )
 
         # 6. communicate event
-        if event == "ARRIVAL":
+        if fsm.camera_trigger():
             send_fifo(sample.peak)
-
         elif event == "DEPARTURE":
             send_fifo(-1)
 
