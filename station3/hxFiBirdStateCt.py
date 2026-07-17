@@ -92,14 +92,18 @@ class MedianFilter:
 # ============================================================
 # BASELINE (offset management and raw → weight conversion)
 # ============================================================
+
 STARTUP_SETTLE_TIME = 5.0
-OFFSET_STEP = 0.005    # adapt 0.5 % each update
-OFFSET_PERIOD = 200     # every 200 samples (~30 s)
+STARTUP_SAMPLES = 60
+STARTUP_SPREAD_LIMIT = 2000   # HX711 raw units, tune on hardware
+
+OFFSET_STEP = 0.005
+OFFSET_PERIOD = 200
+
 
 class Baseline:
 
     def __init__(self, hx: HX711_CT):
-
         self.hx = hx
         self.offset = 0.0
         self.count = 0
@@ -107,70 +111,59 @@ class Baseline:
     # --------------------------------------------------------
     # startup calibration
     # --------------------------------------------------------
-    def startup(
-        self,
-        sample: Sample,
-        previous_offset=None,
-        n=60
-    ):
+    def startup(self, sample: Sample):
 
         ms.log("Startup zeroing...")
+
         time.sleep(STARTUP_SETTLE_TIME)
-        values = [
-            self.hx.read()
-            for _ in range(n)
-        ]
-        measured_offset = float(
+
+        while True:
+
+            values = [
+                self.hx.read()
+                for _ in range(STARTUP_SAMPLES)
+            ]
+
+            spread = max(values) - min(values)
+
+            if spread <= STARTUP_SPREAD_LIMIT:
+                break
+
+            ms.log(
+                f"Startup unstable spread={spread}"
+            )
+
+            time.sleep(0.5)
+
+        self.offset = float(
             np.median(values)
         )
 
-        # Check whether something is already sitting
-        # on the balance.
-        #
-        # Compare the new zero measurement with
-        # the old stored offset.
-
-        boot_load = False
-        sample.boot_load = 0.0
-        if previous_offset is not None:
-            load = (
-                measured_offset - previous_offset
-            ) / hxScale
-            sample.boot_load = load
-
-            if abs(load) > WEIGHTTHRESHOLD_off: # A bird can produce + or - values depending on HX711 polarity / hxScale.
-                boot_load = True
-                ms.log(
-                    f"Boot load detected: {load:.1f} g"
-                )
-
-        if boot_load:
-            # Keep old zero.
-            # The measured value includes the bird.
-            self.offset = previous_offset
-            sample.note = (
-                "BOOT_LOAD_DETECTED"
-            )
-        else:
-            # New empty zero.
-            self.offset = measured_offset
-            sample.note = (
-                "BOOT_ZERO"
-            )
-
         sample.offset = self.offset
-        sample.weight = (measured_offset - self.offset) / hxScale
+        sample.weight = 0.0
 
-        return boot_load
+        sample.note = (
+            f"STARTUP_ZERO spread={spread}"
+        )
+
+        ms.log(
+            f"Startup accepted spread={spread}"
+        )
+
+        return True
 
     # --------------------------------------------------------
     # normal measurement conversion
     # --------------------------------------------------------
     def process(self, sample: Sample):
+
         sample.offset = self.offset
+
         sample.weight = (
             sample.raw - self.offset
         ) / hxScale
+
+
     # --------------------------------------------------------
     # slowly follow long-term zero drift
     # --------------------------------------------------------
@@ -503,10 +496,11 @@ class SignalLogger:
             f.write("# weightThreshold={}\n".format(weightThreshold))
             f.write("# threshold_off={:.2f}\n".format(WEIGHTTHRESHOLD_off))
             f.write("# hxScale={}\n".format(hxScale))
+            f.write("# startup_offset={:.1f}\n".format(sample.offset))
+            f.write("# startup_note={}\n".format(sample.note))
             f.write(
                 "time,mono_t,raw,offset,weight,state,event,peak,note\n"
             )
-
 
     def log(self, sample, event=""):
 
@@ -595,10 +589,7 @@ sample = Sample()
 
 baseline = Baseline(hx)
 
-baseline.startup(
-    sample,
-    previous_offset=hxOffset
-)
+baseline.startup(sample)
 
 median = MedianFilter()
 

@@ -62,6 +62,8 @@ print("-------------")
 print(f"weight threshold : {weightThreshold:.2f} g")
 print(f"threshold off    : {threshold_off:.2f} g")
 print(f"hxScale          : {hxScale}")
+print(f"startup offset   : {meta.get('startup_offset',0):.1f}")
+print(f"startup note     : {meta.get('startup_note','')}")
 
 # ------------------------------------------------------------
 # split continuous FSM periods
@@ -134,6 +136,23 @@ for state,a,b in periods:
             visits.append(current)
             current = None
 
+# ------------------------------------------------------------
+# baseline
+# ------------------------------------------------------------
+idle_offsets = [
+    float(r["offset"])
+    for r in rows
+    if r["state"] == "IDLE"
+]
+
+if idle_offsets:
+    print()
+    print("Baseline statistics")
+    print("-------------------")
+    print(
+        f"idle offset change : "
+        f"{max(idle_offsets)-min(idle_offsets):.1f}"
+    )
 # ------------------------------------------------------------
 # visits
 # ------------------------------------------------------------
