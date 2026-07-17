@@ -4,145 +4,181 @@ hx_signalanalyzer.py
 
 Analyze SignalLogger output.
 
-States:
-    IDLE
-    ARRIVAL
-    PRESENT
-    OVERSIZE
-    DEPARTURE
+Reads metadata from SignalLogger header:
+    weightThreshold
+    threshold_off
+    hxScale
+
+FSM states:
+    IDLE ARRIVAL PRESENT OVERSIZE DEPARTURE
 """
 
 import sys
-
-CAMERA_MIN_PRESENT = 1.0
 
 if len(sys.argv) != 2:
     print("usage: hx_signalanalyzer.py signal_xxx.csv")
     sys.exit(1)
 
+meta = {}
 rows = []
 
 with open(sys.argv[1]) as f:
-    f.readline()
+    while True:
+        line = f.readline()
+        if not line:
+            break
+        if line.startswith("#"):
+            k, v = line[1:].strip().split("=")
+            meta[k] = float(v)
+        else:
+            header = line.strip().split(",")
+            break
+
     for line in f:
-        t, mono, raw, offset, weight, state, event, peak, note = line.strip().split(",")
-        rows.append({
-            "time": t,
-            "mono": float(mono),
-            "raw": int(raw),
-            "offset": float(offset),
-            "weight": float(weight),
-            "state": state,
-            "event": None if event == "None" else event,
-            "peak": float(peak),
-            "note": None if note == "None" else note
-        })
+        x = line.strip().split(",")
+        if len(x) != len(header):
+            continue
+
+        r = dict(zip(header, x))
+        r["mono_t"] = float(r["mono_t"])
+        r["weight"] = float(r["weight"])
+        r["peak"] = float(r["peak"])
+        rows.append(r)
+
+weightThreshold = meta.get("weightThreshold", 0)
+threshold_off = meta.get("threshold_off", weightThreshold * 0.7)
+hxScale = meta.get("hxScale", 0)
+
+CAMERA_MIN_PRESENT = 1.0
 
 print()
 print(f"samples : {len(rows)}")
 print(f"first   : {rows[0]['time']}")
 print(f"last    : {rows[-1]['time']}")
 
-periods = []
+print()
+print("Configuration")
+print("-------------")
+print(f"weight threshold : {weightThreshold:.2f} g")
+print(f"threshold off    : {threshold_off:.2f} g")
+print(f"hxScale          : {hxScale}")
 
+# ------------------------------------------------------------
+# split continuous FSM periods
+# ------------------------------------------------------------
+
+periods = []
 start = 0
 state = rows[0]["state"]
 
-for i in range(1, len(rows)):
-    if rows[i]["state"] != state:
-        r = rows[start:i]
-        periods.append({
-            "state": state,
-            "rows": r,
-            "duration": r[-1]["mono"] - r[0]["mono"]
-        })
+for i,r in enumerate(rows[1:],1):
+    if r["state"] != state:
+        periods.append((state,start,i-1))
         start = i
-        state = rows[i]["state"]
+        state = r["state"]
 
-r = rows[start:]
-periods.append({
-    "state": state,
-    "rows": r,
-    "duration": r[-1]["mono"] - r[0]["mono"]
-})
+periods.append((state,start,len(rows)-1))
+
+# ------------------------------------------------------------
+# reconstruct visits from transitions
+# ------------------------------------------------------------
 
 visits = []
 oversize = []
 
-visit = None
+current = None
 over = None
 
-for p in periods:
-
-    state = p["state"]
-    r = p["rows"]
+for state,a,b in periods:
+    r = rows[a:b+1]
 
     if state == "ARRIVAL":
-        visit = {
+        current = {
             "arrival": r[0]["time"],
+            "arrival_i": a,
             "peak": max(x["weight"] for x in r)
         }
 
-    elif state == "PRESENT" and visit:
-        w = [x["weight"] for x in r]
-        visit["present"] = r[0]["time"]
-        visit["duration"] = p["duration"]
-        visit["mean"] = sum(w) / len(w)
-        visit["peak"] = max(visit["peak"], max(w))
+    elif state == "PRESENT":
+        if current:
+            current["present"] = r[0]["time"]
+            current["present_i"] = a
+            current["stay"] = r[-1]["mono_t"] - r[0]["mono_t"]
+            w = [x["weight"] for x in r]
+            current["mean"] = sum(w)/len(w)
+            current["peak"] = max(current["peak"],max(w))
 
     elif state == "OVERSIZE":
         over = {
             "arrival": r[0]["time"],
-            "duration": p["duration"],
+            "duration": r[-1]["mono_t"]-r[0]["mono_t"],
             "peak": max(x["weight"] for x in r)
         }
 
     elif state == "DEPARTURE":
-        if visit:
-            visit["leave"] = r[0]["time"]
         if over:
             over["leave"] = r[0]["time"]
             oversize.append(over)
             over = None
+        elif current:
+            current["leave"] = r[0]["time"]
 
     elif state == "IDLE":
-        if visit:
-            visit["idle"] = r[0]["time"]
-            visits.append(visit)
-            visit = None
+        if current:
+            current["idle"] = r[0]["time"]
+
+            if "stay" not in current:
+                current["stay"] = 0.0
+                current["mean"] = 0.0
+
+            visits.append(current)
+            current = None
+
+# ------------------------------------------------------------
+# visits
+# ------------------------------------------------------------
 
 print()
 print("Bird visits")
 print("-----------")
 
-for i, v in enumerate(visits, 1):
+for i,v in enumerate(visits,1):
     print()
     print(f"Visit {i}")
     print(f"  arrival : {v['arrival']}")
-    print(f"  present : {v['present']}")
-    print(f"  leave   : {v['leave']}")
-    print(f"  idle    : {v['idle']}")
-    print(f"  stay    : {v['duration']:.1f} s")
+    print(f"  present : {v.get('present')}")
+    print(f"  leave   : {v.get('leave')}")
+    print(f"  idle    : {v.get('idle')}")
+    print(f"  stay    : {v['stay']:.1f} s")
     print(f"  mean    : {v['mean']:.2f} g")
     print(f"  peak    : {v['peak']:.2f} g")
+
+# ------------------------------------------------------------
+# oversize
+# ------------------------------------------------------------
 
 print()
 print("Oversize events")
 print("----------------")
 
 if oversize:
-    print(f"total : {len(oversize)}")
-    for i, e in enumerate(oversize, 1):
+    for i,v in enumerate(oversize,1):
         print()
         print(f"Event {i}")
-        print(f"  arrival : {e['arrival']}")
-        print(f"  leave   : {e.get('leave')}")
-        print(f"  duration: {e['duration']:.1f} s")
-        print(f"  peak    : {e['peak']:.2f} g")
+        print(f"  arrival : {v['arrival']}")
+        print(f"  leave   : {v.get('leave')}")
+        print(f"  peak    : {v['peak']:.2f} g")
 else:
     print("none")
 
-triggered = [v for v in visits if v["duration"] >= CAMERA_MIN_PRESENT]
+# ------------------------------------------------------------
+# statistics
+# ------------------------------------------------------------
+
+triggered = [
+    v for v in visits
+    if v["stay"] >= CAMERA_MIN_PRESENT
+]
 
 print()
 print("Visit statistics")
@@ -152,13 +188,13 @@ print(f"camera trigger : {len(triggered)}")
 print(f"oversize       : {len(oversize)}")
 
 if visits:
-    durations = [v["duration"] for v in visits]
+    d = [v["stay"] for v in visits]
     print()
     print("Visit durations")
     print("----------------")
-    print(f"minimum : {min(durations):.2f} s")
-    print(f"maximum : {max(durations):.2f} s")
-    print(f"mean    : {sum(durations)/len(durations):.2f} s")
+    print(f"minimum : {min(d):.2f} s")
+    print(f"maximum : {max(d):.2f} s")
+    print(f"mean    : {sum(d)/len(d):.2f} s")
 
 print()
 print("Camera trigger simulation")
@@ -166,7 +202,14 @@ print("-------------------------")
 print(f"threshold : {CAMERA_MIN_PRESENT:.2f} s")
 print(f"triggered : {len(triggered)}")
 
-idle = [r["weight"] for r in rows if r["state"] == "IDLE"]
+# ------------------------------------------------------------
+# idle
+# ------------------------------------------------------------
+
+idle = [
+    r["weight"] for r in rows
+    if r["state"] == "IDLE"
+]
 
 if idle:
     print()
@@ -183,8 +226,16 @@ print("--------")
 found = False
 
 for r in rows:
-    if r["state"] == "IDLE" and abs(r["weight"]) > 5:
-        print(f"IDLE outside ±5 g at {r['time']} ({r['weight']:.2f} g)")
+    if (
+        r["state"] == "IDLE"
+        and abs(r["weight"]) > threshold_off
+    ):
+        print(
+            f"IDLE outside threshold_off "
+            f"({threshold_off:.2f} g) "
+            f"at {r['time']} "
+            f"({r['weight']:.2f} g)"
+        )
         found = True
         break
 
@@ -201,12 +252,18 @@ print("-------")
 print(f"visits   : {len(visits)}")
 
 if visits:
-    peaks = [v["peak"] for v in visits]
-    durations = [v["duration"] for v in visits]
-    print(f"mean stay: {sum(durations)/len(durations):.1f} s")
-    print(f"longest  : {max(durations):.1f} s")
-    print(f"highest  : {max(peaks):.2f} g")
+    print(
+        f"mean stay: "
+        f"{sum(v['stay'] for v in visits)/len(visits):.1f} s"
+    )
+    print(
+        f"longest  : "
+        f"{max(v['stay'] for v in visits):.1f} s"
+    )
+    print(
+        f"highest  : "
+        f"{max(v['peak'] for v in visits):.2f} g"
+    )
 
 if oversize:
     print(f"oversize : {len(oversize)}")
-    print(f"max size : {max(x['peak'] for x in oversize):.2f} g")

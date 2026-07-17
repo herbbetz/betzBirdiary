@@ -30,6 +30,8 @@ from configBird3 import (
 )
 import msgBird as ms
 
+WEIGHTTHRESHOLD_off = 0.7 * weightThreshold
+
 @dataclass
 class Sample:
 
@@ -43,6 +45,8 @@ class Sample:
 
     state: int = 0
     peak: float = 0.0
+
+    boot_load: float = 0.0
 
     note: str = ""
 
@@ -88,9 +92,9 @@ class MedianFilter:
 # ============================================================
 # BASELINE (offset management and raw → weight conversion)
 # ============================================================
-STARTUP_SETTLE_TIME = 1.2
-OFFSET_STEP = 0.02      # adapt 2 % each update
-OFFSET_PERIOD = 100     # every 100 samples (~15 s)
+STARTUP_SETTLE_TIME = 5.0
+OFFSET_STEP = 0.005    # adapt 0.5 % each update
+OFFSET_PERIOD = 200     # every 200 samples (~30 s)
 
 class Baseline:
 
@@ -127,12 +131,14 @@ class Baseline:
         # the old stored offset.
 
         boot_load = False
+        sample.boot_load = 0.0
         if previous_offset is not None:
             load = (
                 measured_offset - previous_offset
             ) / hxScale
+            sample.boot_load = load
 
-            if abs(load) > weightThreshold:
+            if abs(load) > WEIGHTTHRESHOLD_off: # A bird can produce + or - values depending on HX711 polarity / hxScale.
                 boot_load = True
                 ms.log(
                     f"Boot load detected: {load:.1f} g"
@@ -153,7 +159,7 @@ class Baseline:
             )
 
         sample.offset = self.offset
-        sample.weight = 0.0
+        sample.weight = (measured_offset - self.offset) / hxScale
 
         return boot_load
 
@@ -207,9 +213,7 @@ class WeightFSM:
         self.state = STATE_IDLE
 
         self.threshold_on = weightThreshold
-        self.threshold_off = (
-            weightThreshold * 0.7
-        )
+        self.threshold_off = WEIGHTTHRESHOLD_off
 
         # consecutive samples above/below threshold
         self.above_count = 0 # count consecutive measurements above arrival threshold
@@ -496,6 +500,9 @@ class SignalLogger:
         )
 
         with open(self.file, "w") as f:
+            f.write("# weightThreshold={}\n".format(weightThreshold))
+            f.write("# threshold_off={:.2f}\n".format(WEIGHTTHRESHOLD_off))
+            f.write("# hxScale={}\n".format(hxScale))
             f.write(
                 "time,mono_t,raw,offset,weight,state,event,peak,note\n"
             )
@@ -532,7 +539,8 @@ class TraceRecorder:
             with open(self.file, "w") as f:
                 f.write(
                     "event_id,time,reason,"
-                    "weight,peak,state,note\n"
+                    "weight,peak,state,note,"
+                    "offset,boot_load\n"
                 )
 
     def dump_event(self, reason: str, sample: Sample):
@@ -540,7 +548,6 @@ class TraceRecorder:
         self.event_id += 1
 
         with open(self.file, "a", buffering=1) as f:
-
             f.write(
                 f"{self.event_id},"
                 f"{readable_time()},"
@@ -548,7 +555,9 @@ class TraceRecorder:
                 f"{sample.weight:.2f},"
                 f"{sample.peak:.2f},"
                 f"{STATE_NAME[sample.state]},"
-                f"{sample.note}\n"
+                f"{sample.note},"
+                f"{sample.offset:.1f},"
+                f"{sample.boot_load:.2f}\n"
             )
 
 # ============================================================
@@ -630,7 +639,7 @@ try:
 
         sample.state = fsm.state
         sample.peak = fsm.peak
-        if sample.state == STATE_IDLE and abs(sample.weight) < weightThreshold: # 2) not adapting offset when bird on the scale
+        if sample.state == STATE_IDLE and abs(sample.weight) < WEIGHTTHRESHOLD_off: # 2) not adapting offset when bird on the scale
             baseline.adapt_offset(sample)
 
         # 5. record everything
