@@ -9,6 +9,10 @@ Only physical quantities:
     weight
 
 No signal, energy, stability models.
+
+- old hxOffset and thereby BOOT_LOAD_DETECT not suitable. By environment hxOffset can vary more than a bird weight.
+- SignalLogger output processed offline by hx_signalanalyzer.py
+- later: cmd line arg "test" to activate SignalLogger and TraceRecorder only for debugging
 """
 
 
@@ -24,7 +28,7 @@ import numpy as np
 
 from sharedBird import fifoExists, writePID, clearPID
 from configBird3 import (
-    birdpath, hxDataPin, hxClckPin, hxScale, hxOffset,
+    birdpath, hxDataPin, hxClckPin, hxScale,
     weightThreshold, weightlimit,
     update_config_json
 )
@@ -46,7 +50,10 @@ class Sample:
     state: int = 0
     peak: float = 0.0
 
-    boot_load: float = 0.0
+    startup_spread: int = 0
+    startup_attempts: int = 0
+    startup_maxspread: int = 0
+    startup_delay: float = 0.0
 
     note: str = ""
 
@@ -107,6 +114,7 @@ class Baseline:
         self.hx = hx
         self.offset = 0.0
         self.count = 0
+        self.idle_bad_count = 0 # weight far from zero while state IDLE
 
     # --------------------------------------------------------
     # startup calibration
@@ -117,6 +125,10 @@ class Baseline:
 
         time.sleep(STARTUP_SETTLE_TIME)
 
+        t0 = time.monotonic()
+        attempts = 0
+        maxspread = 0
+
         while True:
 
             values = [
@@ -125,6 +137,8 @@ class Baseline:
             ]
 
             spread = max(values) - min(values)
+            attempts += 1
+            maxspread = max(maxspread, spread)
 
             if spread <= STARTUP_SPREAD_LIMIT:
                 break
@@ -132,7 +146,6 @@ class Baseline:
             ms.log(
                 f"Startup unstable spread={spread}"
             )
-
             time.sleep(0.5)
 
         self.offset = float(
@@ -142,10 +155,15 @@ class Baseline:
         sample.offset = self.offset
         sample.weight = 0.0
 
+        sample.startup_spread = spread
+        sample.startup_attempts = attempts
+        sample.startup_maxspread = maxspread
+        sample.startup_delay = time.monotonic() - t0
         sample.note = (
-            f"STARTUP_ZERO spread={spread}"
+            f"STARTUP_ZERO "
+            f"spread={spread} "
+            f"attempts={attempts}"
         )
-
         ms.log(
             f"Startup accepted spread={spread}"
         )
@@ -158,12 +176,31 @@ class Baseline:
     def process(self, sample: Sample):
 
         sample.offset = self.offset
-
         sample.weight = (
             sample.raw - self.offset
         ) / hxScale
+    # --------------------------------------------------------
+    # connect Baseline and FSM IDLE in main():
+    # --------------------------------------------------------
+    def supervise(self, sample, idle=False):
+        if not idle:
+            self.idle_bad_count = 0
+            return
 
+        if abs(sample.weight) > WEIGHTTHRESHOLD_off: # large deviation of IDLE weight
 
+            self.idle_bad_count += 1
+            if self.idle_bad_count > 20:
+                self.offset = sample.raw
+                sample.offset = self.offset
+                sample.weight = 0.0
+
+                self.count = 0
+                self.idle_bad_count = 0
+                sample.note = "BASELINE_RESET"
+        else:                                       # small deviation of IDLE weight
+            self.idle_bad_count = 0
+            self.adapt_offset(sample)
     # --------------------------------------------------------
     # slowly follow long-term zero drift
     # --------------------------------------------------------
@@ -534,7 +571,10 @@ class TraceRecorder:
                 f.write(
                     "event_id,time,reason,"
                     "weight,peak,state,note,"
-                    "offset,boot_load\n"
+                    "offset,startup_spread,"
+                    "startup_attempts,"
+                    "startup_maxspread,"
+                    "startup_delay\n"
                 )
 
     def dump_event(self, reason: str, sample: Sample):
@@ -551,8 +591,10 @@ class TraceRecorder:
                 f"{STATE_NAME[sample.state]},"
                 f"{sample.note},"
                 f"{sample.offset:.1f},"
-                f"{sample.boot_load:.2f}\n"
-            )
+                f"{sample.startup_spread},"
+                f"{sample.startup_attempts},"
+                f"{sample.startup_maxspread},"
+                f"{sample.startup_delay:.2f}\n"     )
 
 # ============================================================
 # MAIN PROGRAM
@@ -630,22 +672,28 @@ try:
 
         sample.state = fsm.state
         sample.peak = fsm.peak
-        if sample.state == STATE_IDLE and abs(sample.weight) < WEIGHTTHRESHOLD_off: # 2) not adapting offset when bird on the scale
-            baseline.adapt_offset(sample)
+        # 5. baseline supervision, not zeroing baseline outside of STATE IDLE
+        baseline.supervise(
+            sample,
+            idle=(fsm.state == STATE_IDLE)
+        )
+        if sample.note == "BASELINE_RESET":
+            trace.dump_event("BASELINE_RESET", sample)
+            ms.log("BASELINE_RESET")
+            sample.note = ""
 
-        # 5. record everything
+        # 6. record everything
         signal_logger.log(
             sample,
             event
         )
-
         if event:
             trace.dump_event(
                 event,
                 sample
             )
 
-        # 6. communicate event
+        # 7. communicate event
         if fsm.camera_trigger():
             send_fifo(sample.peak)
         elif event == "DEPARTURE":

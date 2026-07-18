@@ -28,8 +28,11 @@ with open(sys.argv[1]) as f:
         if not line:
             break
         if line.startswith("#"):
-            k, v = line[1:].strip().split("=")
-            meta[k] = float(v)
+            k, v = line[1:].strip().split("=", 1)
+            try:
+                meta[k] = float(v)
+            except ValueError:
+                meta[k] = v
         else:
             header = line.strip().split(",")
             break
@@ -145,6 +148,11 @@ idle_offsets = [
     if r["state"] == "IDLE"
 ]
 
+baseline_resets = [
+    r for r in rows
+    if r["note"] == "BASELINE_RESET"
+]
+
 if idle_offsets:
     print()
     print("Baseline statistics")
@@ -153,6 +161,19 @@ if idle_offsets:
         f"idle offset change : "
         f"{max(idle_offsets)-min(idle_offsets):.1f}"
     )
+
+if baseline_resets:
+    print()
+    print("Baseline maintenance")
+    print("--------------------")
+    print(f"baseline resets : {len(baseline_resets)}")
+
+    for i, r in enumerate(baseline_resets, 1):
+        print(
+            f"  {i}. {r['time']} "
+            f"weight={r['weight']:.2f} g "
+            f"offset={r['offset']}"
+        )
 # ------------------------------------------------------------
 # visits
 # ------------------------------------------------------------
@@ -238,25 +259,38 @@ if idle:
     print(f"minimum     : {min(idle):.2f} g")
     print(f"maximum     : {max(idle):.2f} g")
 
+# ------------------------------------------------------------
+# warnings
+# ------------------------------------------------------------
+reset_warnings = []
+bad = False
+
+for r in rows:
+
+    outside = (
+        r["state"] == "IDLE"
+        and abs(r["weight"]) > threshold_off
+    )
+
+    if outside and not bad:
+        reset_warnings.append(r)
+
+    bad = outside
+
 print()
 print("Warnings")
 print("--------")
 
 found = False
 
-for r in rows:
-    if (
-        r["state"] == "IDLE"
-        and abs(r["weight"]) > threshold_off
-    ):
-        print(
-            f"IDLE outside threshold_off "
-            f"({threshold_off:.2f} g) "
-            f"at {r['time']} "
-            f"({r['weight']:.2f} g)"
-        )
-        found = True
-        break
+for r in reset_warnings:
+    print(
+        f"IDLE outside threshold_off "
+        f"({threshold_off:.2f} g) "
+        f"started at {r['time']}. "
+        "Check trace_events.csv for BASELINE_RESET."
+    )
+    found = True
 
 if oversize:
     print(f"Oversize events detected: {len(oversize)}")
@@ -264,7 +298,9 @@ if oversize:
 
 if not found:
     print("none")
-
+# ------------------------------------------------------------
+# summary
+# ------------------------------------------------------------
 print()
 print("Summary")
 print("-------")
