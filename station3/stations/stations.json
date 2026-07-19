@@ -1,0 +1,289 @@
+[
+  {
+    "name": "Arkadia KI-Festival",
+    "station_id": "82e7bbce-6b45-4477-8594-2d30e7f5b124",
+    "lastMovement": {
+      "start_date": "2026-07-03 13:40:07.878710"
+    }
+  },
+  {
+    "name": "Betzbirdiary",
+    "station_id": "87bab185-7630-461c-85e6-c04cf5bab180",
+    "lastMovement": {
+      "start_date": "2026-07-19 12:33:21.987454"
+    }
+  },
+  {
+    "name": "Brauer44",
+    "station_id": "224f0a30-29e6-4404-a468-7f41391724ef",
+    "lastMovement": {
+      "start_date": "2026-07-14 21:04:26"
+    }
+  },
+  {
+    "name": "BW17",
+    "station_id": "a9e97197-c10a-4c0d-929c-85c03d727f2c",
+    "lastMovement": {
+      "start_date": "2026-07-17 16:14:26.302825"
+    }
+  },
+  {
+    "name": "Digitallabor",
+    "station_id": "fc81902e-17e8-487a-bfb2-f63d818e0940",
+    "lastMovement": {
+      "start_date": "2026-07-19 17:39:56.282602"
+    }
+  },
+  {
+    "name": "Farnweg",
+    "station_id": "6ec944ee-e296-46f8-a9d0-03ce7474c9ff",
+    "lastMovement": {
+      "start_date": "2026-07-19 19:24:41.372703"
+    }
+  },
+  {
+    "name": "Fly-In",
+    "station_id": "605f0687-c559-4712-a991-c137cc038d7d",
+    "lastMovement": {
+      "start_date": "2026-07-19 16:41:42.289178"
+    }
+  },
+  {
+    "name": "Grabfeld",
+    "station_id": "1bf5cd60-e700-4c3e-8def-bc2b396e6f47",
+    "lastMovement": {
+      "start_date": "2026-07-19 20:25:19.114450"
+    }
+  },
+  {
+    "name": "Günter Makerspace Duisburg",
+    "station_id": "3c4f734d-7740-41ac-a358-831b7d24d546",
+    "lastMovement": {
+      "start_date": "2026-07-19 20:22:49"
+    }
+  },
+  {
+    "name": "Hardeland",
+    "station_id": "a85ea21e-31fb-4ea9-9e36-5838515b5b47",
+    "lastMovement": {
+      "start_date": "2026-07-19 19:38:42.446637"
+    }
+  },
+  {
+    "name": "Hattropholsen",
+    "station_id": "37a44ee0-6377-4a2e-9481-d1029c00d83f",
+    "lastMovement": {
+      "start_date": "2026-07-15 06:34:26.190998"
+    }
+  },
+  {
+    "name": "Heilbronn Arkadia x AIM x re:edu #1",
+    "station_id": "1292a46b-b8ce-449e-b50b-112f0c864e50",
+    "lastMovement": {
+      "start_date": "2026-06-28 20:08:24.735143"
+    }
+  },
+  {
+    "name": "Heilbronn Arkadia x AIM x re:edu #2",
+    "station_id": "1f4f6586-67c8-4dd2-aa5d-2aa4c0dba94d",
+    "lastMovement": {
+      "start_date": "2026-07-19 20:52:55.983381"
+    }
+  },
+  {
+    "name": "Heilbronn Arkadia x AIM x re:edu #3",
+    "station_id": "aec5edea-0a4f-4ab7-b0b1-77eb98552a0d",
+    "lastMovement": {
+      "start_date": "2026-07-19 12:54:33.156162"
+    }
+  },
+  {
+    "name": "Heilbronn Arkadia x AIM x re:edu #4",
+    "station_id": "f5ad4530-e3b0-43cf-8b00-c6a9d5e4e4e2",
+    "lastMovement": {
+      "start_date": "2026-06-20 18:13:04.008981"
+    }
+  },
+  {
+    "name": "Heilbronn Arkadia x AIM x re:edu #5",
+    "station_id": "d893d5aa-8a47-4054-9c97-e60b8fdb622b",
+    "lastMovement": {
+      "start_date": "2026-06-18 15:34:47.371290"
+    }
+  },
+  {
+    "name": "Kreislehrgarten Steinfurt",
+    "station_id": "60086d57-6ff7-4382-b988-92de5b76309b",
+    "lastMovement": {
+      "start_date": "2026-07-10 03:52:28.878306"
+    }
+  },
+  {
+    "name": "Landsitz Lotte",
+    "station_id": "916c48da-19f6-4af4-80f3-8bf0abef02c7",
+    "lastMovement": {
+      "start_date": "2026-06-02 18:56:26.421582"
+    }
+  },
+  {
+    "name": "Marienviertel_Buffet",
+    "station_id": "74828223-f0fc-44db-87ca-47321662b834",
+    "lastMovement": {
+      "start_date": "2026-07-19 18:11:47.709832"
+    }
+  },
+  {
+    "name": "Mc Fly",
+    "station_id": "2344cf3b-c65c-4560-abe4-e16a545d23dd",
+    "lastMovement": {
+      "start_date": "2026-07-19 19:11:52.604317"
+    }
+  },
+  {
+    "name": "MUG",
+    "station_id": "29f3448d-5666-407d-b98f-97002b099c51",
+    "lastMovement": {
+      "start_date": "2026-07-11 22:11:45.814797"
+    }
+  },
+  {
+    "name": "Mühlenfeld",
+    "station_id": "fbc09158-cfb3-46ed-b5fe-b2a77f2e2637",
+    "lastMovement": {
+      "start_date": "2026-07-19 18:08:31.968191"
+    }
+  },
+  {
+    "name": "Open Space Heilbronn",
+    "station_id": "699b7f2c-3855-4273-af7f-ed61a54541f9",
+    "lastMovement": {
+      "start_date": "2026-07-18 07:32:27.556203"
+    }
+  },
+  {
+    "name": "Ornitograph Duissern",
+    "station_id": "f2ac2e34-7067-4275-8d55-440001852513",
+    "lastMovement": {
+      "start_date": "2026-07-03 15:48:25"
+    }
+  },
+  {
+    "name": "Philosophenweg",
+    "station_id": "c2fb6889-abb7-45dc-a224-b201fadab9ff",
+    "lastMovement": {
+      "start_date": "2026-07-09 13:30:29"
+    }
+  },
+  {
+    "name": "Piepmaschine",
+    "station_id": "4d4dcb67-8217-4a3d-9cd2-4e807c23fdbd",
+    "lastMovement": {
+      "start_date": "2026-07-19 19:08:11.307847"
+    }
+  },
+  {
+    "name": "Prinzen-Garten",
+    "station_id": "0fcc0b0d-73fc-4b2f-9949-c50ae1c43fed",
+    "lastMovement": {
+      "start_date": "2026-07-19 10:09:15.426244"
+    }
+  },
+  {
+    "name": "RaderBird",
+    "station_id": "9b1342a0-af0e-4147-9f44-6574148ca878",
+    "lastMovement": {
+      "start_date": "2026-07-19 21:40:51"
+    }
+  },
+  {
+    "name": "RheinBird",
+    "station_id": "b15071e2-fd58-4898-8445-a66e381cbcc4",
+    "lastMovement": {
+      "start_date": "2026-07-18 21:36:48"
+    }
+  },
+  {
+    "name": "Rheingarten",
+    "station_id": "f4f61b9b-4390-4de1-987d-bf72220158e4",
+    "lastMovement": {
+      "start_date": "2026-06-26 11:57:55"
+    }
+  },
+  {
+    "name": "Rooftop Bar WAV205",
+    "station_id": "02b48a0a-5047-481a-8b43-20fb541de126",
+    "lastMovement": {
+      "start_date": "2026-07-14 19:57:07.703628"
+    }
+  },
+  {
+    "name": "Rotkarlchen",
+    "station_id": "39ec6c0b-5686-49d2-b14d-60ec5a0d7ded",
+    "lastMovement": {
+      "start_date": "2026-07-04 05:53:35"
+    }
+  },
+  {
+    "name": "Scheunenhof",
+    "station_id": "fcff566a-9192-4d8c-a1cb-3a0db51c3b4b",
+    "lastMovement": {
+      "start_date": "2026-07-13 15:17:07.817845"
+    }
+  },
+  {
+    "name": "Seidenweber",
+    "station_id": "f451c9b9-cb31-4f9b-9704-f1d8b4c8a03e",
+    "lastMovement": {
+      "start_date": "2026-07-19 17:19:29.795764"
+    }
+  },
+  {
+    "name": "Sontheim Lauffener Straße",
+    "station_id": "b09ab6a3-8d47-4936-a251-e1c40bfe8d88",
+    "lastMovement": {
+      "start_date": "2026-07-19 19:18:48.230988"
+    }
+  },
+  {
+    "name": "test",
+    "station_id": "20c44e32-3a4c-4723-9d3e-dcb8d949f253",
+    "lastMovement": {
+      "start_date": "2026-06-13 14:36:19.808752"
+    }
+  },
+  {
+    "name": "TreeMountainView",
+    "station_id": "6ad61509-788c-4350-8ea1-81d0a1e5bd0a",
+    "lastMovement": {
+      "start_date": "2026-07-19 20:04:44.301891"
+    }
+  },
+  {
+    "name": "Verbird",
+    "station_id": "13193ccc-5f65-4028-9dd5-5894682ac5ec",
+    "lastMovement": {
+      "start_date": "2026-07-19 19:46:08"
+    }
+  },
+  {
+    "name": "Vogelhaus Ellernbruch",
+    "station_id": "d2d2e91f-7efa-46be-a145-583018d7bf67",
+    "lastMovement": {
+      "start_date": "2026-07-18 14:01:57"
+    }
+  },
+  {
+    "name": "Vogelvilla Hagen",
+    "station_id": "03c8cd91-dea5-4015-b426-dc4a66871b0a",
+    "lastMovement": {
+      "start_date": "2026-06-07 15:37:51.091098"
+    }
+  },
+  {
+    "name": "Wasservogel",
+    "station_id": "68476c6e-05d2-4d6f-8a4f-c0ef53b7eb3d",
+    "lastMovement": {
+      "start_date": "2026-07-19 13:31:27"
+    }
+  }
+]

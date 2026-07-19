@@ -1,11 +1,11 @@
 '''
 find interesting videos of manually validated rarer birds on "https://wiediversistmeingarten.org/api/movement/"
-using german bird labels from "webserver-main2026-04-18/nginx/data_visualization/src/helpers/labels.js"
+manually using german bird labels from "webserver-main2026-04-18/nginx/data_visualization/src/helpers/labels.js", see germanLabels.js
 '''
 import requests
 from datetime import datetime
 import time
-import json
+# import json
 from sharedBird import prev_month
 
 # Global API endpoint and state variables
@@ -13,16 +13,13 @@ BASE_URL = "https://wiediversistmeingarten.org/api/movement/"
 STATION_ID = ""
 STATION_NAME = ""
 API_URL = ""
-API_URL = f"{BASE_URL}{STATION_ID}"
 month_back = 3
 
-# Sets are scanned faster than lists or tuples, and they don't allow duplicates, so a set is appropriate here.
-# bird names need to be taken manually from germanLabels.js
+# Frequent bird labels filter
 FREQUENT_BIRDS = {"Haussperling", "Feldsperling", "Gimpel", "Blaumeise", "Kohlmeise", "Rotkehlchen", "Buchfink", "Gruenfink", "Kleiber"}
 
-# Create a persistent session object at the top level of your rb script
+# Persistent session pool configuration
 session = requests.Session()
-# Configure the session to close connections cleanly instead of leaving them in TIME_WAIT
 session.headers.update({"Connection": "close"}) 
 
 def setStation(station_name, station_id):
@@ -30,92 +27,54 @@ def setStation(station_name, station_id):
     Sets the station name and ID received from the server.
     """
     global STATION_NAME, STATION_ID, API_URL
-    # Fallback to empty string if None is passed
     STATION_NAME = station_name if station_name else "Unknown Station"
     STATION_ID = station_id if station_id else "No ID"
     API_URL = f"{BASE_URL}{STATION_ID}"
 
-def get_movements():
-    print(f"Sending API request to: {API_URL} ...") # Watch this in your Python terminal
-    try:
-        response = session.get(API_URL, timeout=30)
-        response.raise_for_status()
-        movements = response.json()
-        if not isinstance(movements, list):
-            print("API response format unexpected. Expected a list.")
-            return []
-        return movements
-    except Exception as e:
-        print(f"Error fetching data: {e}")
-        return []
-
-def get_dated_movements(target_url, earliest_date):
+def get_dated_movements_paginated(target_url, earliest_date):
+    """
+    Fetches movements using the native ?from=YYYY-MM-DD pagination parameter.
+    """
     start_time = time.time()
-    print(f"\n[TIMING 1] Entering get_dated_movements. Target URL: {target_url}")
+    print(f"\n[API PAGINATION] Entering data retrieval. Earliest Date Target: {earliest_date}")
+    
+    filtered_movements = []
+    # Format our starting parameter for the API call
+    from_date_str = earliest_date.strftime("%Y-%m-%d")
+    
+    # Target URL constructed with parameter flag
+    paginated_url = f"{target_url}?from={from_date_str}"
+    print(f"[API PAGINATION] Fetching targeted timeline window via: {paginated_url}")
     
     try:
-        print("[TIMING 1.1] Initiating stream GET request via session pool...")
-        
-        # Open the request as a live connection stream
-        response = session.get(target_url, timeout=30, stream=True)
-        
+        # Request the entire filtered subset natively parsed by the server side
+        response = session.get(paginated_url, timeout=30)
         network_duration = time.time() - start_time
-        print(f"[TIMING 1.2] Connection stream opened in {network_duration:.2f} seconds. Status: {response.status_code}")
+        print(f"[API PAGINATION] Response received in {network_duration:.2f} seconds. Status: {response.status_code}")
         
         response.raise_for_status()
+        movements = response.json()
         
-        print("[TIMING 1.3] Iterating stream chunks and decoding JSON objects natively...")
-        decoder = json.JSONDecoder()
-        buffer = ""
-        filtered_movements = []
-        should_abort = False
-        total_objects_scanned = 0
+        if not isinstance(movements, list):
+            print("[API PAGINATION.ERROR] Expected JSON payload array list structure. Received incompatible type.")
+            return []
+            
+        print(f"[API PAGINATION] Server returned {len(movements)} records within timeline filter constraint boundaries.")
         
-        # Read the raw TCP data incrementally in 16KB text blocks
-        for chunk in response.iter_content(chunk_size=16384, decode_unicode=True):
-            if not chunk:
+        # Double check date bounds inside the payload just in case server parameters fluctuate
+        for mov in movements:
+            start_date_str = mov.get("start_date")
+            if not start_date_str:
                 continue
-                
-            buffer += chunk
-            buffer = buffer.lstrip(r'[,\s')
             
-            while buffer:
-                try:
-                    # Snip exactly ONE individual JSON object out of the text buffer
-                    obj, idx = decoder.raw_decode(buffer)
-                    buffer = buffer[idx:].lstrip(r'[,\s')
-                    total_objects_scanned += 1
-                    
-                    start_date_str = obj.get("start_date")
-                    if not start_date_str:
-                        continue
-                        
-                    # Evaluate the object's creation date
-                    movement_date = datetime.strptime(start_date_str.split(" ")[0], "%Y-%m-%d").date()
-                    
-                    if movement_date >= earliest_date:
-                        filtered_movements.append(obj)
-                    else:
-                        # Optimization: We hit historical logs older than our threshold!
-                        # Break out and cut off the connection immediately.
-                        print(f"[TIMING 1.3.5] Reached historical boundary date ({movement_date}). Tripping early abort.")
-                        should_abort = True
-                        break
-                        
-                except json.JSONDecodeError:
-                    # Buffer cut off mid-object, break while loop to fetch the next chunk from the wire
-                    break
-            
-            if should_abort:
-                response.close() # Safely close the remote socket stream immediately
-                break
+            movement_date = datetime.strptime(start_date_str.split(" ")[0], "%Y-%m-%d").date()
+            if movement_date >= earliest_date:
+                filtered_movements.append(mov)
                 
-        print(f"[TIMING 1.4.5] Streaming process finished. Scanned {total_objects_scanned} total items.")
-        print(f"[TIMING 1.6] Kept {len(filtered_movements)} items matching timeframe.")
         return filtered_movements
 
     except Exception as e:
-        print(f"[TIMING 1.ERROR] Failed to fetch data: {e}")
+        print(f"[API PAGINATION.ERROR] Target sequence retrieval execution failed: {e}")
         return []
     
 def getReport():
@@ -130,11 +89,11 @@ def getReport():
         current_month = prev_month(current_month)
     earliest_date = datetime.strptime(f"{current_month}-01", "%Y-%m-%d").date()
     
-    # BUILD THE TARGET URL LOCALLY HERE USING THE CURRENT GLOBAL CONFIG
+    # Build the base target path explicitly
     target_url = f"{BASE_URL}{STATION_ID}"
     
-    # Pass the variable explicitly into the worker function
-    movements = get_dated_movements(target_url, earliest_date)
+    # Execute the updated native paginated filter function
+    movements = get_dated_movements_paginated(target_url, earliest_date)
     
     print(f"[TIMING 2] Returned from data fetching. Proceeding to HTML serialization...")
     loop_start = time.time()
@@ -142,7 +101,7 @@ def getReport():
     frequent_counts = {}  
     rare_birds_links = [] 
 
-    # 3. Time the validation parsing loop
+    # Process validation loops exactly as before
     for mov in movements:
         validation_data = mov.get("validation", {})
         validations = validation_data.get("validations", []) if validation_data else []
@@ -166,14 +125,13 @@ def getReport():
 
     print(f"[TIMING 3] Validation loops finished processing in {time.time() - loop_start:.4f} seconds.")
 
-    # Instead of building a massive HTML string, return a clean dictionary
     report_data = {
         "station_name": STATION_NAME,
         "station_id": STATION_ID,
         "earliest_date": str(earliest_date),
         "current_day": current_day,
-        "frequent_birds": frequent_counts, # e.g., {"Kohlmeise": 12, "Blaumeise": 5}
-        "rare_birds": rare_birds_links     # List of pre-formatted <a> tags or raw video URLs
+        "frequent_birds": frequent_counts, 
+        "rare_birds": rare_birds_links     
     }
     
     print(f"================== [FINISHED Data Processing in {time.time() - total_start:.2f}s] ==================\n")

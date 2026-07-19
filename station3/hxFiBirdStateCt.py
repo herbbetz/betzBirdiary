@@ -102,7 +102,7 @@ class MedianFilter:
 
 STARTUP_SETTLE_TIME = 5.0
 STARTUP_SAMPLES = 60
-STARTUP_SPREAD_LIMIT = 2000   # HX711 raw units, tune on hardware
+STARTUP_SPREAD_LIMIT = 3000   # HX711 raw units, tune on hardware
 
 OFFSET_STEP = 0.005
 OFFSET_PERIOD = 200
@@ -234,7 +234,8 @@ STATE_NAME = {
     STATE_DEPARTURE: "DEPARTURE",
     STATE_OVERSIZE: "OVERSIZE"
 }
-CAMERA_DELAY = 1.0 # 1 sec for the bird to sit before calling the camera by fifo
+CAMERA_DELAY = 2.0 # 2 sec for the bird to sit before calling the camera by fifo
+ARRIVAL_CONFIRM_SAMPLES = 10
 
 class WeightFSM:
 
@@ -398,7 +399,9 @@ class WeightFSM:
 
         self.above_count += 1
 
-        if self.above_count >= 5:
+        # ARRIVAL->PRESENT Qualification
+        if (self.above_count >= ARRIVAL_CONFIRM_SAMPLES
+            and self.peak > weightThreshold + 2.0): # keep weightThreshold sensitive for all other states
 
             return self._transition(
                 STATE_PRESENT,

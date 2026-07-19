@@ -262,8 +262,12 @@ if idle:
 # ------------------------------------------------------------
 # warnings
 # ------------------------------------------------------------
-reset_warnings = []
-bad = False
+IDLE_BAD_TIME = 5.0
+
+idle_warnings = []
+
+bad_start = None
+bad_max = 0.0
 
 for r in rows:
 
@@ -272,10 +276,56 @@ for r in rows:
         and abs(r["weight"]) > threshold_off
     )
 
-    if outside and not bad:
-        reset_warnings.append(r)
+    if outside:
 
-    bad = outside
+        if bad_start is None:
+            bad_start = r
+            bad_max = abs(r["weight"])
+
+        else:
+            bad_max = max(
+                bad_max,
+                abs(r["weight"])
+            )
+
+    else:
+
+        if bad_start is not None:
+
+            duration = (
+                r["mono_t"]
+                - bad_start["mono_t"]
+            )
+
+            if duration >= IDLE_BAD_TIME:
+                idle_warnings.append(
+                    (
+                        bad_start,
+                        duration,
+                        bad_max
+                    )
+                )
+
+            bad_start = None
+            bad_max = 0.0
+
+
+# still bad until end of file
+if bad_start is not None:
+
+    duration = (
+        rows[-1]["mono_t"]
+        - bad_start["mono_t"]
+    )
+
+    if duration >= IDLE_BAD_TIME:
+        idle_warnings.append(
+            (
+                bad_start,
+                duration,
+                bad_max
+            )
+        )
 
 print()
 print("Warnings")
@@ -283,11 +333,12 @@ print("--------")
 
 found = False
 
-for r in reset_warnings:
+for r, duration, maximum in idle_warnings:
     print(
         f"IDLE outside threshold_off "
-        f"({threshold_off:.2f} g) "
-        f"started at {r['time']}. "
+        f"started at {r['time']} "
+        f"duration={duration:.1f}s "
+        f"max={maximum:.2f} g. "
         "Check trace_events.csv for BASELINE_RESET."
     )
     found = True

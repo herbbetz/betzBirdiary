@@ -21,6 +21,7 @@ import io
 
 # PYTHON = "/home/pi/birdvenv/bin/python3"
 PYTHON = "/usr/bin/python3"
+VK_SCRIPT_RUNNING = False # flag OUTSIDE the function context to keep track of state across multiple browser refreshes.
 
 # for timeseries_svg():
 LABELS = {
@@ -355,34 +356,52 @@ def daygallery():
 
 @app.route("/videoking")
 def monthlyking():
+    global VK_SCRIPT_RUNNING # global lock
+    
     today = datetime.today()
     CURRENT_MONTH = today.strftime("%Y-%m")
     TARGET_MONTH = prev_month(CURRENT_MONTH)
     OUTPUT_FILE = f"vk{TARGET_MONTH}.html"
-    OUT_PATH = f"{BASE_DIR}/videoking/{OUTPUT_FILE}"
-    # SCRIPT_PATH = f"{BASE_DIR}/videoking/vk_lastmonth_shared.py"
+    
+    STATIONS_DIR = os.path.join(BASE_DIR, "stations")
+    OUT_PATH = os.path.join(STATIONS_DIR, OUTPUT_FILE)
+    
+    # print(f"\n[FLASK DEBUG] Checking for VideoKing report...")
+    # print(f"[FLASK DEBUG] Expected Path: {OUT_PATH}")
+    # print(f"[FLASK DEBUG] File Exists Status: {os.path.exists(OUT_PATH)}")
+    
+    # If file exists, reset the lock and serve it!
     if os.path.exists(OUT_PATH):
-        return send_from_directory(os.path.dirname(OUT_PATH), os.path.basename(OUT_PATH))
+        VK_SCRIPT_RUNNING = False  # Reset lock for next month
+        # print(f"[FLASK DEBUG] Serving file directly.")
+        return send_from_directory(STATIONS_DIR, OUTPUT_FILE)
+        
     else:
-        # to run the script from here would entail e.g. PID locking to avoid running the script twice at the same time
-        # cmd = f"python3 {SCRIPT_PATH}"
-        # subprocess.Popen(cmd, shell=True) 
-        return """
+        # print(f"[FLASK DEBUG] File not found yet. Lock status: {VK_SCRIPT_RUNNING}")
+        if not VK_SCRIPT_RUNNING:
+            VK_SCRIPT_RUNNING = True
+            SCRIPT_PATH = os.path.join(STATIONS_DIR, "vk_lastmonth_pag.py")
+            cmd = ["python", SCRIPT_PATH]
+            # print(f"[FLASK DEBUG] Launching background process: {cmd}")
+            subprocess.Popen(cmd) 
+
+        return f"""
         <!doctype html>
         <html>
             <head>
-                <meta http-equiv="refresh" content="60;url=/videoking">
+                <meta http-equiv="refresh" content="15;url=/videoking">
                 <meta name="viewport" content="width=device-width, initial-scale=1">
                 <title>Wait...</title>
                 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
                 <link rel="stylesheet" href="/bird.css">
             </head>
             <body>
-                You have not yet run Video-King script for this month (takes some minutes) <br>
-                This page refreshes automatically!
+                <h3>Compiling VideoKing stats for {TARGET_MONTH}...</h3>
+                <p>Expected target location:<br><code>{OUT_PATH}</code></p>
+                <strong>This page updates automatically every 15 seconds. Please wait...</strong>
             </body>
         </html>
-        """        
+        """
 
 @app.route("/api/report-data")
 # selectstations.html submits to layouter '/rarebirds/rb_report.html' with GET parameters station_name and station_id

@@ -65,7 +65,7 @@ sleep 8 # the child process takes time to establish
 #    bash hxFiBirdStart.sh
 #    sleep 2
 # done
-setsid $PYTHON "$APPDIR/hxFiBirdStateCt.py" > /dev/null 2>&1 & # >> "$APPDIR/logs/hxFiBird.log" 2>&1 & # first birdpipe FIFO writer
+setsid $PYTHON "$APPDIR/hxFiBirdStateCt.py" test > /dev/null 2>&1 & # >> "$APPDIR/logs/hxFiBird.log" 2>&1 & # first birdpipe FIFO writer
 sleep 1
 # widgets for wayfire desktop will not work here, because wayfire or vnc/X11 env not yet ready! Moreover no use running it, when no desktop shown.
 # setsid $PYTHON widgets.py &
@@ -73,14 +73,11 @@ STATDIR="$APPDIR/statist"
 cd "$STATDIR" || { log "$STATDIR missing"; exit 1; } # avoids output into wrong path
 bash "$STATDIR/getStats.sh" > /dev/null 2>&1 # >> "$APPDIR/logs/statist.log" 2>&1 # only once at boot, fst contact with birdiary platform
 sleep 1
-KINGDIR="$APPDIR/videoking"
-cd "$KINGDIR" || { log "$KINGDIR missing"; exit 1; } # avoids output into wrong path
-$PYTHON "$KINGDIR/vk_lastmonth_shared.py" > /dev/null 2>&1 # >> "$APPDIR/logs/videoking.log" 2>&1 # once a month takes several minutes to contact all station apis and produce html report for last month's video uploads
-#
-RAREDIR="$APPDIR/rarebirds"
-cd "$RAREDIR" || { log "$RAREDIR missing"; exit 1; } # avoids output into wrong path
-# $PYTHON "$RAREDIR/rarebirds.py" > /dev/null 2>&1
-$PYTHON "$RAREDIR/stations.py" > /dev/null 2>&1
+STATIONSDIR="$APPDIR/stations"
+cd "$STATIONSDIR" || { log "$STATIONSDIR missing"; exit 1; } # avoids output into wrong path
+$PYTHON "$STATIONSDIR/stations.py" > /dev/null 2>&1
+sleep 1
+$PYTHON "$STATIONSDIR/vk_lastmonth_pag.py" > /dev/null 2>&1
 cd "$APPDIR"
 log "startup2stage.sh ended at $(date)"
 exit # status reflects last cmds success
