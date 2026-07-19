@@ -1,5 +1,6 @@
 # Ignore all .log files
 station3/logs/
 station3/debug/
+station3/__pycache__/
 # credentials:
 station3/config.json
