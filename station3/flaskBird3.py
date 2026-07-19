@@ -13,7 +13,7 @@ import msgBird as ms
 from configBird3 import birdpath, update_config_json
 from sharedBird import delFromGallery, prev_month
 # Import the entire module so you can use the module prefix
-import rarebirds.rarebirds4server as rb
+import stations.rarebrds4srvpag as rb
 # for camdata plotting:
 import matplotlib.pyplot as plt
 from collections import defaultdict
