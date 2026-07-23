@@ -1,4 +1,5 @@
 import os
+import psutil
 from flask import Flask, request, jsonify, send_from_directory
 import subprocess
 from datetime import datetime
@@ -9,10 +10,20 @@ from sharedBird import prev_month
 # Initialize Flask app
 # We explicitly set static_folder=None so it doesn't conflict with our custom root route
 app = Flask(__name__)
-
+app = Flask(__name__, static_folder='.')
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0 # disable cacheing
 # Get the absolute path of the directory where server.py lives
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 VK_SCRIPT_RUNNING = False # flag OUTSIDE the function context to keep track of state across multiple browser refreshes.
+
+def has_active_ssh():
+    """Checks for established TCP connections on port 22."""
+    for conn in psutil.net_connections(kind='tcp'):
+        # Check if local or remote port is 22 and state is ESTABLISHED
+        if conn.status == psutil.CONN_ESTABLISHED:
+            if conn.laddr.port == 22 or (conn.raddr and conn.raddr.port == 22):
+                return True
+    return False
 
 @app.route('/')
 def hello():
@@ -25,6 +36,14 @@ def serve_static(filename):
     from the same directory.
     """
     return send_from_directory(BASE_DIR, filename)
+
+@app.route('/shutdown')
+def shutdown():
+    if has_active_ssh():
+        # Active SSH/SFTP connection detected -> return warning page
+        return send_from_directory(app.static_folder, 'shutdownNot.html')
+    else:
+        return send_from_directory(app.static_folder, 'shutdown.html')
 
 @app.route("/api/report-data")
 # selectstations.html submits to layouter '/stations/rb_report.html' with GET parameters station_name and station_id

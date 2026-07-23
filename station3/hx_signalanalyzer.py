@@ -142,6 +142,10 @@ for state,a,b in periods:
 # ------------------------------------------------------------
 # baseline
 # ------------------------------------------------------------
+# ------------------------------------------------------------
+# baseline
+# ------------------------------------------------------------
+
 idle_offsets = [
     float(r["offset"])
     for r in rows
@@ -153,27 +157,67 @@ baseline_resets = [
     if r["note"] == "BASELINE_RESET"
 ]
 
+print()
+print("Baseline statistics")
+print("-------------------")
+
+print(
+    f"startup offset : "
+    f"{meta.get('startup_offset', 0):.1f}"
+)
+
 if idle_offsets:
-    print()
-    print("Baseline statistics")
-    print("-------------------")
     print(
-        f"idle offset change : "
+        f"minimum offset : "
+        f"{min(idle_offsets):.1f}"
+    )
+    print(
+        f"maximum offset : "
+        f"{max(idle_offsets):.1f}"
+    )
+    print(
+        f"offset range   : "
         f"{max(idle_offsets)-min(idle_offsets):.1f}"
     )
+    print(
+        f"idle mean      : "
+        f"{sum(idle_offsets)/len(idle_offsets):.1f}"
+    )
+else:
+    print("no IDLE offset samples")
 
 if baseline_resets:
+
     print()
     print("Baseline maintenance")
     print("--------------------")
     print(f"baseline resets : {len(baseline_resets)}")
 
+    last_offset = None
+
     for i, r in enumerate(baseline_resets, 1):
+
+        offset = float(r["offset"])
+
+        if last_offset is None:
+            delta = 0.0
+        else:
+            delta = offset - last_offset
+
         print(
             f"  {i}. {r['time']} "
-            f"weight={r['weight']:.2f} g "
-            f"offset={r['offset']}"
+            f"offset={offset:.1f} "
+            f"delta={delta:+.1f}"
         )
+
+        last_offset = offset
+
+else:
+
+    print()
+    print("Baseline maintenance")
+    print("--------------------")
+    print("baseline resets : none")
 # ------------------------------------------------------------
 # visits
 # ------------------------------------------------------------
@@ -258,7 +302,7 @@ if idle:
     print(f"mean weight : {sum(idle)/len(idle):.2f} g")
     print(f"minimum     : {min(idle):.2f} g")
     print(f"maximum     : {max(idle):.2f} g")
-
+    print(f"peak-to-peak   : {max(idle)-min(idle):.2f} g")
 # ------------------------------------------------------------
 # warnings
 # ------------------------------------------------------------
