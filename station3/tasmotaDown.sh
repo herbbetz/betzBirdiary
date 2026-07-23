@@ -24,7 +24,8 @@ if ss -tn state established | grep -q ':5900'; then
     exit 0
 fi
 # no shutdown on active ssh (sftp, scp) session:
-if who | grep -q "pts/"; then
+# if who | grep -q "pts/"; then # ONLY for login shell
+if ss -H -tn state established '( dport = :22 or sport = :22 )' | grep -q .; then # for interactive ssh AND sftp/scp
     msg="$(date): SSH active, skipping shutdown."
     log "$msg"
     echo "$msg"
