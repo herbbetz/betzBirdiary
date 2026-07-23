@@ -58,11 +58,12 @@ def main():
     global ACCESS_TOKEN
     deleteMode = False
     if len(sys.argv) > 2 and sys.argv[1] == "delete":
-        ACCESS_TOKEN = sys.argv[2]
+        ACCESS_TOKEN = sys.argv[2].strip()
         if ACCESS_TOKEN and not ACCESS_TOKEN.endswith('X'):
             deleteMode = True
         else:
-            print(f"ACCESS_TOKEN '{ACCESS_TOKEN}' unvalid, not deleting")    
+            print(f"ACCESS_TOKEN '{ACCESS_TOKEN}' unvalid, not deleting")
+
     
     today = datetime.today()
     current_month = today.strftime("%Y-%m")
@@ -102,12 +103,6 @@ def main():
                     if det_latin in ("Aphelocoma californica", "Larus occidentalis"):
                         take_id = True
                         cnt_detect += 1
-            detections = mov.get("detections", [])
-            if detections and detections[0]:
-                det_latin = detections[0].get("latinName", "").strip() if detections[0].get("latinName") else ""
-                if not keep and det_latin in ("Aphelocoma californica", "Larus occidentalis"):
-                    take_id = True
-                    cnt_detect += 1
 
             if take_id:
                 movement_ids.append(mov.get("mov_id"))
@@ -199,6 +194,9 @@ def main():
         all_deleted_count = len(oldmovement_ids)
         del_ratio = deleted_count / all_deleted_count if oldmovement_ids else 0
         print(f"Deleted {deleted_count} out of {all_deleted_count} movements ({del_ratio:.2f}) before incl. {oldtime_date}.")
+        tokenlength = len(ACCESS_TOKEN)
+        if tokenlength != 32:
+            print(f"ACCESS_TOKEN {ACCESS_TOKEN} has {tokenlength} digits - normal is 32!")
     print("Done.")
 
 if __name__ == "__main__":
