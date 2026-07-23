@@ -28,6 +28,7 @@ DEPENDENCIES=(
     python3-flask
     python3-markdown
     python3-matplotlib
+    python3-psutil
 )
 
 echo "--- Checking and installing dependencies ---"

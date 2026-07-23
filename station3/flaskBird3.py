@@ -4,6 +4,7 @@
 from flask import Flask, jsonify, request, send_from_directory, abort, Response
 import logging # Werkzeug logger handles Flask's server output
 import json # for reading in json file
+import psutil # for detecting ssh/sftp/scp on port 22
 import subprocess
 import os # for os.remove() and BASE_DIR
 import threading, time # for client inactivity monitoring
@@ -38,6 +39,15 @@ lock = threading.Lock()
 timeout = 5  # seconds
 last_activity = time.time()
 client_active = 1
+
+def has_active_ssh():
+    """Checks for established TCP connections on port 22."""
+    for conn in psutil.net_connections(kind='tcp'):
+        # Check if local or remote port is 22 and state is ESTABLISHED
+        if conn.status == psutil.CONN_ESTABLISHED:
+            if conn.laddr.port == 22 or (conn.raddr and conn.raddr.port == 22):
+                return True
+    return False
 
 def monitor_inactivity():
    global last_activity, client_active
@@ -173,10 +183,14 @@ def reboot():
 
 @app.route('/shutdown')
 def shutdown():
-   # cmd = "sudo shutdown -h +1"
-   cmd = f"{birdpath['appdir']}/tasmotaDown.sh orderedDown"
-   subprocess.call(cmd, shell=True)
-   return send_from_directory(app.static_folder, 'shutdown.html')
+    if has_active_ssh():
+        # Active SSH/SFTP connection detected -> return warning page
+        return send_from_directory(app.static_folder, 'shutdownNot.html')
+    else:
+        # cmd = "sudo shutdown -h +1"
+        cmd = f"{birdpath['appdir']}/tasmotaDown.sh orderedDown"
+        subprocess.call(cmd, shell=True)
+        return send_from_directory(app.static_folder, 'shutdown.html')
 
 @app.route('/upload') # no button for this, good for testing
 def upload():
