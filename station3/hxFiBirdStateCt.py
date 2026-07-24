@@ -239,12 +239,9 @@ class Baseline:
         # normal idle supervision
         # ----------------------------------------------------
         if abs(sample.weight) > WEIGHTTHRESHOLD_off:
-
             self.idle_bad_count += 1
-
-
+            sample.note = f"BAD_IDLE {self.idle_bad_count} {sample.weight:.2f}"
             if self.idle_bad_count > 20:
-
                 self.do_reset(sample)
         else:
             self.idle_bad_count = 0
