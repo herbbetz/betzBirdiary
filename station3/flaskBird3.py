@@ -40,12 +40,13 @@ timeout = 5  # seconds
 last_activity = time.time()
 client_active = 1
 
-def has_active_ssh():
-    """Checks for established TCP connections on port 22."""
+def has_active_session():
+    """Checks for established TCP connections on SSH (22) or VNC_0 (5900) ports."""
+    MONITORED_PORTS = {22, 5900}
     for conn in psutil.net_connections(kind='tcp'):
-        # Check if local or remote port is 22 and state is ESTABLISHED
         if conn.status == psutil.CONN_ESTABLISHED:
-            if conn.laddr.port == 22 or (conn.raddr and conn.raddr.port == 22):
+            # Check if either local or remote port matches our monitored ports
+            if conn.laddr.port in MONITORED_PORTS or (conn.raddr and conn.raddr.port in MONITORED_PORTS):
                 return True
     return False
 
@@ -183,8 +184,8 @@ def reboot():
 
 @app.route('/shutdown')
 def shutdown():
-    if has_active_ssh():
-        # Active SSH/SFTP connection detected -> return warning page
+    if has_active_session():
+        # Active SSH/SFTP/VNC_0 connection detected -> return warning page
         return send_from_directory(app.static_folder, 'shutdownNot.html')
     else:
         # cmd = "sudo shutdown -h +1"

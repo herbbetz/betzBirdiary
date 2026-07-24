@@ -111,24 +111,38 @@ OFFSET_PERIOD = 200
 class Baseline:
 
     def __init__(self, hx: HX711_CT):
+
         self.hx = hx
+
         self.offset = 0.0
         self.count = 0
-        self.idle_bad_count = 0 # weight far from zero while state IDLE
 
+        # idle supervision
+        self.idle_bad_count = 0
+
+        # ----------------------------------------------------
+        # automatic reset verification
+        # ----------------------------------------------------
+        self.reset_pending = False
+        self.reset_attempt = 0
+
+        self.reset_error_before = 0.0
+        self.reset_offset = 0.0
+
+        self.verify_count = 0
+
+        # tune these later
+        self.VERIFY_SAMPLES = 10
+        self.MAX_RESET_ATTEMPTS = 3
     # --------------------------------------------------------
     # startup calibration
     # --------------------------------------------------------
     def startup(self, sample: Sample):
-
         ms.log("Startup zeroing...")
-
         time.sleep(STARTUP_SETTLE_TIME)
-
         t0 = time.monotonic()
         attempts = 0
         maxspread = 0
-
         while True:
 
             values = [
@@ -137,6 +151,7 @@ class Baseline:
             ]
 
             spread = max(values) - min(values)
+
             attempts += 1
             maxspread = max(maxspread, spread)
 
@@ -151,14 +166,14 @@ class Baseline:
         self.offset = float(
             np.median(values)
         )
-
         sample.offset = self.offset
         sample.weight = 0.0
-
         sample.startup_spread = spread
         sample.startup_attempts = attempts
         sample.startup_maxspread = maxspread
-        sample.startup_delay = time.monotonic() - t0
+        sample.startup_delay = (
+            time.monotonic() - t0
+        )
         sample.note = (
             f"STARTUP_ZERO "
             f"spread={spread} "
@@ -167,56 +182,104 @@ class Baseline:
         ms.log(
             f"Startup accepted spread={spread}"
         )
-
         return True
-
     # --------------------------------------------------------
-    # normal measurement conversion
+    # raw -> weight conversion
     # --------------------------------------------------------
     def process(self, sample: Sample):
-
         sample.offset = self.offset
         sample.weight = (
             sample.raw - self.offset
         ) / hxScale
     # --------------------------------------------------------
-    # connect Baseline and FSM IDLE in main():
+    # baseline supervision
     # --------------------------------------------------------
     def supervise(self, sample, idle=False):
         if not idle:
             self.idle_bad_count = 0
+            self.reset_pending = False
+            self.reset_attempt = 0
             return
+        # ----------------------------------------------------
+        # verify a previous reset
+        # ----------------------------------------------------
+        if self.reset_pending:
+            self.verify_count += 1
+            if self.verify_count >= self.VERIFY_SAMPLES:
 
-        if abs(sample.weight) > WEIGHTTHRESHOLD_off: # large deviation of IDLE weight
+                if abs(sample.weight) <= WEIGHTTHRESHOLD_off:
+
+                    # reset successful
+                    sample.note = (
+                        "BASELINE_RESET_OK "
+                        f"attempt={self.reset_attempt}"
+                    )
+
+                    self.reset_pending = False
+                    self.reset_attempt = 0
+                else:
+                    # reset failed
+                    if self.reset_attempt < self.MAX_RESET_ATTEMPTS:
+
+                        sample.note = (
+                            "BASELINE_RESET_RETRY "
+                            f"attempt={self.reset_attempt}"
+                            f" error={sample.weight:.2f}"
+                        )
+                        self.do_reset(sample)
+                    else:
+                        sample.note = (
+                            "BASELINE_RESET_GIVEUP "
+                            f"error={sample.weight:.2f}"
+                        )
+                        self.reset_pending = False
+                        self.reset_attempt = 0
+            return
+        # ----------------------------------------------------
+        # normal idle supervision
+        # ----------------------------------------------------
+        if abs(sample.weight) > WEIGHTTHRESHOLD_off:
 
             self.idle_bad_count += 1
-            if self.idle_bad_count > 20:
-                self.offset = sample.raw
-                sample.offset = self.offset
-                sample.weight = 0.0
 
-                self.count = 0
-                self.idle_bad_count = 0
-                sample.note = "BASELINE_RESET"
-        else:                                       # small deviation of IDLE weight
+
+            if self.idle_bad_count > 20:
+
+                self.do_reset(sample)
+        else:
             self.idle_bad_count = 0
             self.adapt_offset(sample)
+    # --------------------------------------------------------
+    # perform baseline reset
+    # --------------------------------------------------------
+    def do_reset(self, sample):
+        self.reset_attempt += 1
+        self.reset_error_before = abs(sample.weight)
+        self.reset_offset = sample.raw
+        self.offset = sample.raw
+        sample.offset = self.offset
+        sample.weight = 0.0
+        self.count = 0
+        self.idle_bad_count = 0
+        self.verify_count = 0
+        self.reset_pending = True
+        sample.note = (
+            "BASELINE_RESET "
+            f"attempt={self.reset_attempt} "
+            f"before={self.reset_error_before:.2f} "
+            f"offset={self.offset:.0f}"
+        )
     # --------------------------------------------------------
     # slowly follow long-term zero drift
     # --------------------------------------------------------
     def adapt_offset(self, sample):
-
         self.count += 1
-
         if self.count < OFFSET_PERIOD:
             return
-
         self.count = 0
-
         self.offset += (
             sample.raw - self.offset
         ) * OFFSET_STEP
-
 # ============================================================
 # FSM (pure state machine, no I/O, no logging)
 # ============================================================

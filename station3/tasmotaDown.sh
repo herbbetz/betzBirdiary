@@ -14,23 +14,24 @@ else
     msg=$1
 fi
 
+#### the following is already done inside flaskBird endpoint '/shutdown' using python3-psutil in has_active_session()
 # Check for active WayVNC sessions
 # the kind of '...vnc' is shown by 'ps aux | grep -i vnc'
 # the VNC port 5900 is found out by 'sudo lsof -iTCP -sTCP:LISTEN -P -n | grep wayvnc'
-if ss -tn state established | grep -q ':5900'; then
-    msg="$(date): VNC active, skipping shutdown."
-    log "$msg"
-    echo "$msg"
-    exit 0
-fi
+# if ss -tn state established | grep -q ':5900'; then
+#     msg="$(date): VNC active, skipping shutdown."
+#     log "$msg"
+#     echo "$msg"
+#     exit 0
+# fi
 # no shutdown on active ssh (sftp, scp) session:
 # if who | grep -q "pts/"; then # ONLY for login shell
-if ss -H -tn state established '( dport = :22 or sport = :22 )' | grep -q .; then # for interactive ssh AND sftp/scp
-    msg="$(date): SSH active, skipping shutdown."
-    log "$msg"
-    echo "$msg"
-    exit 0
-fi
+# if ss -H -tn state established '( dport = :22 or sport = :22 )' | grep -q .; then # for interactive ssh AND sftp/scp
+#     msg="$(date): SSH active, skipping shutdown."
+#     log "$msg"
+#     echo "$msg"
+#     exit 0
+# fi
 
 tasmota_ip=$(jq -r '.tasmota_ip' "$config_file")
 bash "$APPDIR/mdroid.sh" "$msg"
