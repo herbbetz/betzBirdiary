@@ -405,9 +405,7 @@ class WeightFSM:
     # --------------------------------------------------------
 
     def state_idle(self, weight, sample):
-
         if weight > self.threshold_on:
-
             self.above_count += 1
 
             if self.above_count >= 3:
@@ -629,7 +627,7 @@ class TraceRecorder:
     def __init__(self):
 
         self.event_id = 0
-
+        self.raw_jump_count = 0
         self.file = os.path.join(
             birdpath["ramdisk"],
             "trace_events.csv"
@@ -734,17 +732,18 @@ try:
                 sample.raw_sample - last_raw_sample
             )
 
-            if abs(sample.raw_delta) > 500:
+        if abs(sample.raw_delta) > 500:
+            trace.raw_jump_count += 1
 
+            if trace.raw_jump_count % 100 == 0:
                 sample.note = (
-                    "HX711_RAW_JUMP "
-                    f"raw={sample.raw_sample} "
-                    f"last={last_raw_sample} "
-                    f"delta={sample.raw_delta}"
+                    "HX711_RAW_JUMP_SUMMARY "
+                    f"count={trace.raw_jump_count} "
+                    f"last_delta={sample.raw_delta}"
                 )
 
                 trace.dump_event(
-                    "HX711_RAW_JUMP",
+                    "HX711_RAW_JUMP_SUMMARY",
                     sample
                 )
 
@@ -766,6 +765,16 @@ try:
             sample,
             idle=(fsm.state == STATE_IDLE)
         )
+
+        if (
+            fsm.state == STATE_IDLE
+            and sample.weight > weightThreshold
+            and sample.note == ""
+        ):
+            sample.note = (
+                "IDLE_WEIGHT_ABOVE_THRESHOLD "
+                f"{sample.weight:.2f}g"
+            )
 
         if sample.note.startswith("BASELINE_RESET"):
             trace.dump_event(
