@@ -68,7 +68,7 @@ def get_data():
             for idx, station in enumerate(stations, start=1):
                 station_name = station.get("name", "Unknown")
                 station_id = station.get("station_id")
-                last_mov = station.get("lastMovement", {})
+                last_mov = station.get("lastMovement") or {}
                 start_date = last_mov.get("start_date", "")
                 
                 log_debug(f"\n[DEBUG] Processing Station {idx}/{total_stations}: '{station_name}' ({station_id})")
@@ -117,10 +117,10 @@ def get_data():
                             
                             if cnt_move > 0:
                                 results.append({
+                                    "name": station_name,
                                     "station_id": station_id,
                                     "lat": station.get("location", {}).get("lat") if station.get("location") else None,
                                     "lng": station.get("location", {}).get("lng") if station.get("location") else None,
-                                    "name": station_name,
                                     "cnt_move": cnt_move,
                                     "cnt_validated": cnt_validated
                                 })
@@ -160,17 +160,23 @@ def generate_html(data):
         rank += 1
         # Use fallback map logic if locations are missing from lean JSON cache data layouts
         lat, lng = entry.get('lat'), entry.get('lng')
-        if lat and lng:
+        if lat is not None and lng is not None: # lat or lng can be 0 (Equator/Prime Meridian)
             map_link = f"https://www.google.com/maps/place/{lat},{lng}/@{lat},{lng},7.5z"
         else:
             map_link = "#"
-            
-        html_content += f"""    <tr>
+
+        validated = entry['cnt_validated']
+        if validated > 0:
+            rb_layouter = f"/stations/rb_report.html?station_id={entry['station_id']}&station_name={entry['name']}"
+            rbird_link = f'<a href="{rb_layouter}" target="_blank">{validated}</a>'
+        else:
+            rbird_link = "0"
+        html_content += f"""<tr>
         <td>{rank}</td><td><a href="{map_link}" target="_blank">{entry['name']}</a></td>
         <td>{entry['cnt_move']}</td>
-        <td>{entry['cnt_validated']}</td>
-    </tr>
-"""
+        <td>{rbird_link}</td>
+        </tr>
+        """
     html_content += "</table></body></html>"
     with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
         f.write(html_content)

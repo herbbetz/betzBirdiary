@@ -8,38 +8,19 @@
  * This library can be loaded in Python via ctypes.
  */
 
-#define _POSIX_C_SOURCE 200809L
-#include <stdio.h>
-#include <stdlib.h>
-#include <time.h>
-#include <limits.h>
-#include <stdint.h>
-#include <lgpio.h>
-
 #ifdef HX711_DEBUG
-#include <stdarg.h>
-static long debug_last_value = LONG_MIN;
-static long debug_candidate = LONG_MIN;
-static long debug_candidate_delta = 0;
-static int debug_candidate_count = 0;
-static unsigned long debug_sample_count = 0;
-
-static void debug_log(const char *fmt,...)
-{
-    struct timespec ts;
-    va_list args;
-    clock_gettime(CLOCK_MONOTONIC,&ts);
-    fprintf(stderr,"[%ld.%06ld] ",(long)ts.tv_sec,ts.tv_nsec/1000);
-    va_start(args,fmt);
-    vfprintf(stderr,fmt,args);
-    va_end(args);
-    fflush(stderr);
-}
-
 #define DEBUG_LOG(...) debug_log(__VA_ARGS__)
 #else
 #define DEBUG_LOG(...)
 #endif
+
+#define _POSIX_C_SOURCE 200809L
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
+#include <limits.h>
+#include <lgpio.h>
 
 static int chip = -1;
 static int dout_pin = -1;
@@ -79,67 +60,36 @@ static long read_raw_once(void)
 {
     if (wait_ready(1.0) < 0)
         return LONG_MIN;
-    uint32_t raw = 0;
+
+    long value = 0;
     for (int i=0; i<24; i++)
     {
         lgGpioWrite(chip, sck_pin, 1);
-        int bit = lgGpioRead(chip, dout_pin);
-        raw = (raw << 1) | bit;
+        // Fast direct read prevents bit-slipping propagation delays
+        value = (value << 1) | lgGpioRead(chip, dout_pin); 
         lgGpioWrite(chip, sck_pin, 0);
+        sleep_us(1); 
     }
-    for (int i=0; i<3; i++)
+
+    #ifdef HX711_DEBUG
+    DEBUG_LOG("bits=0x%06x\n", value);
+    #endif
+
+    for (int i=0; i<3; i++) // gain=64 configuration pulses
     {
         lgGpioWrite(chip, sck_pin, 1);
+        sleep_us(1);
         lgGpioWrite(chip, sck_pin, 0);
+        sleep_us(1);
     }
-    long value = raw;
+
     if (value & 0x800000)
+        // value -= 1 << 24; // is int, better use long:
         value |= ~0xFFFFFF;
-#ifdef HX711_DEBUG
-    debug_sample_count++;
-    if (debug_last_value != LONG_MIN)
-    {
-        long delta = value - debug_last_value;
-        if (labs(delta) > 2000)
-        {
-            if (debug_candidate == LONG_MIN)
-            {
-                debug_candidate = value;
-                debug_candidate_count = 1;
-                debug_candidate_delta = delta;
-            }
-            else
-            {
-                if (labs(value - debug_candidate) < 500)
-                {
-                    debug_candidate_count++;
-                }
-                else
-                {
-                    debug_candidate = value;
-                    debug_candidate_count = 1;
-                    debug_candidate_delta = delta;
-                }
-            }
-            if (debug_candidate_count == 5)
-            {
-                DEBUG_LOG(
-                    "SHIFT n=%lu raw=0x%06x value=%ld delta=%ld\n",
-                    debug_sample_count,
-                    (unsigned)raw,
-                    value,
-                    debug_candidate_delta
-                );
-                debug_candidate = LONG_MIN;
-                debug_candidate_count = 0;
-                debug_candidate_delta = 0;
-            }
-        }
-    }
-    debug_last_value = value;
-#endif
+
     return value;
 }
+
 /* ---------- Exported API ---------- */
 
 /* initialize GPIO and discard first readings */

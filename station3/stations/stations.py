@@ -1,3 +1,8 @@
+'''
+Builds from https://wiediversistmeingarten.org/api/station
+- stations.js as a single JS object (not a js array) for use in selectstations.html
+- stations.json a slimmed copy of the station API for using in vk_lastmonth_pag.py
+'''
 import json
 import requests
 import os
@@ -34,6 +39,7 @@ def export_stations():
         for s in stations:
             name = s.get("name", "").strip()
             station_id = s.get("station_id", "").strip()
+            location = s.get("location", "")
             
             if not name or not station_id:
                 continue
@@ -51,6 +57,7 @@ def export_stations():
                 lean_station = {
                     "name": name,
                     "station_id": station_id,
+                    "location": location,
                     "lastMovement": {
                         "start_date": start_date
                     }

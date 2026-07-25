@@ -65,7 +65,8 @@ sleep 8 # the child process takes time to establish
 #    bash hxFiBirdStart.sh
 #    sleep 2
 # done
-setsid $PYTHON "$APPDIR/hxFiBirdStateCt.py" test > /dev/null 2>&1 & # >> "$APPDIR/logs/hxFiBird.log" 2>&1 & # first birdpipe FIFO writer
+# setsid $PYTHON "$APPDIR/hxFiBirdStateCt.py" test > /dev/null 2>&1 & # >> "$APPDIR/logs/hxFiBird.log" 2>&1 & # first birdpipe FIFO writer
+setsid $PYTHON "$APPDIR/hxFiBirdStateCt.py" test >> "$APPDIR/ramdisk/hxFiBird.log" 2>&1 &
 sleep 1
 # widgets for wayfire desktop will not work here, because wayfire or vnc/X11 env not yet ready! Moreover no use running it, when no desktop shown.
 # setsid $PYTHON widgets.py &

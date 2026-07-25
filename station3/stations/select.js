@@ -4,12 +4,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const hiddenInput = document.getElementById("selected-station-id");
   const form = document.querySelector("form");
 
-  // --- 1. Populate Dropdown dynamically ---
-  if (typeof stationData !== "undefined" && Array.isArray(stationData)) {
-    stationData.forEach(stationObj => {
-      const stationName = Object.keys(stationObj)[0];
-      const stationId = stationObj[stationName];
-
+  // --- 1. Populate Dropdown dynamically for an Object ---
+  if (typeof stationData !== "undefined" && stationData !== null) {
+    Object.entries(stationData).forEach(([stationName, stationId]) => {
       const itemDiv = document.createElement("div");
       itemDiv.classList.add("dropdown-item");
       itemDiv.textContent = stationName;

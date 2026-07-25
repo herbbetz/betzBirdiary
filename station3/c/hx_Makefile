@@ -1,0 +1,12 @@
+CC=gcc
+CFLAGS=-std=c17 -Wall -Wextra -O2 -fPIC
+LIBS=-llgpio
+
+all:
+	$(CC) $(CFLAGS) -shared -o libhx711.so libhx711.c $(LIBS)
+
+debug:
+	$(CC) $(CFLAGS) -DHX711_DEBUG -shared -o libhx711_debug.so libhx711.c $(LIBS)
+
+clean:
+	rm -f libhx711.so libhx711_debug.so

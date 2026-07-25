@@ -2,20 +2,32 @@
   {
     "name": "Arkadia KI-Festival",
     "station_id": "82e7bbce-6b45-4477-8594-2d30e7f5b124",
+    "location": {
+      "lat": 49.15579397766282,
+      "lng": 9.207412004470827
+    },
     "lastMovement": {
-      "start_date": "2026-07-03 13:40:07.878710"
+      "start_date": "2026-07-25 10:58:51.262062"
     }
   },
   {
     "name": "Betzbirdiary",
     "station_id": "87bab185-7630-461c-85e6-c04cf5bab180",
+    "location": {
+      "lat": 48.53341471816263,
+      "lng": 12.137505412101747
+    },
     "lastMovement": {
-      "start_date": "2026-07-19 12:33:21.987454"
+      "start_date": "2026-07-25 11:48:15.028686"
     }
   },
   {
     "name": "Brauer44",
     "station_id": "224f0a30-29e6-4404-a468-7f41391724ef",
+    "location": {
+      "lat": 51.43380375931215,
+      "lng": 6.78633749485016
+    },
     "lastMovement": {
       "start_date": "2026-07-14 21:04:26"
     }
@@ -23,62 +35,98 @@
   {
     "name": "BW17",
     "station_id": "a9e97197-c10a-4c0d-929c-85c03d727f2c",
+    "location": {
+      "lat": 50.316068679891394,
+      "lng": 8.868933320045473
+    },
     "lastMovement": {
-      "start_date": "2026-07-17 16:14:26.302825"
+      "start_date": "2026-07-25 11:42:00.265123"
     }
   },
   {
     "name": "Digitallabor",
     "station_id": "fc81902e-17e8-487a-bfb2-f63d818e0940",
+    "location": {
+      "lat": 51.97531797735858,
+      "lng": 7.600468522026445
+    },
     "lastMovement": {
-      "start_date": "2026-07-19 17:39:56.282602"
+      "start_date": "2026-07-25 11:12:09.752074"
     }
   },
   {
     "name": "Farnweg",
     "station_id": "6ec944ee-e296-46f8-a9d0-03ce7474c9ff",
+    "location": {
+      "lat": 52.56932179202084,
+      "lng": 7.301656901836396
+    },
     "lastMovement": {
-      "start_date": "2026-07-19 19:24:41.372703"
+      "start_date": "2026-07-25 11:05:01.670465"
     }
   },
   {
     "name": "Fly-In",
     "station_id": "605f0687-c559-4712-a991-c137cc038d7d",
+    "location": {
+      "lat": 53.14439372983653,
+      "lng": 10.486507197912342
+    },
     "lastMovement": {
-      "start_date": "2026-07-19 16:41:42.289178"
+      "start_date": "2026-07-25 08:17:05.102055"
     }
   },
   {
     "name": "Grabfeld",
     "station_id": "1bf5cd60-e700-4c3e-8def-bc2b396e6f47",
+    "location": {
+      "lat": 50.49854730127623,
+      "lng": 10.389059185981752
+    },
     "lastMovement": {
-      "start_date": "2026-07-19 20:25:19.114450"
+      "start_date": "2026-07-25 08:11:36.289486"
     }
   },
   {
     "name": "Günter Makerspace Duisburg",
     "station_id": "3c4f734d-7740-41ac-a358-831b7d24d546",
+    "location": {
+      "lat": 51.39147727684703,
+      "lng": 6.815101504325867
+    },
     "lastMovement": {
-      "start_date": "2026-07-19 20:22:49"
+      "start_date": "2026-07-22 18:18:33"
     }
   },
   {
     "name": "Hardeland",
     "station_id": "a85ea21e-31fb-4ea9-9e36-5838515b5b47",
+    "location": {
+      "lat": 52.14885163670127,
+      "lng": 7.940999507773086
+    },
     "lastMovement": {
-      "start_date": "2026-07-19 19:38:42.446637"
+      "start_date": "2026-07-25 09:42:06.950717"
     }
   },
   {
     "name": "Hattropholsen",
     "station_id": "37a44ee0-6377-4a2e-9481-d1029c00d83f",
+    "location": {
+      "lat": 51.59496173769927,
+      "lng": 8.058300018310549
+    },
     "lastMovement": {
-      "start_date": "2026-07-15 06:34:26.190998"
+      "start_date": "2026-06-17 09:32:10.178634"
     }
   },
   {
     "name": "Heilbronn Arkadia x AIM x re:edu #1",
     "station_id": "1292a46b-b8ce-449e-b50b-112f0c864e50",
+    "location": {
+      "lat": 48.78719,
+      "lng": 9.08258
+    },
     "lastMovement": {
       "start_date": "2026-06-28 20:08:24.735143"
     }
@@ -86,20 +134,32 @@
   {
     "name": "Heilbronn Arkadia x AIM x re:edu #2",
     "station_id": "1f4f6586-67c8-4dd2-aa5d-2aa4c0dba94d",
+    "location": {
+      "lat": 49.0234921385322,
+      "lng": 9.16039406235707
+    },
     "lastMovement": {
-      "start_date": "2026-07-19 20:52:55.983381"
+      "start_date": "2026-07-25 10:45:25.003670"
     }
   },
   {
     "name": "Heilbronn Arkadia x AIM x re:edu #3",
     "station_id": "aec5edea-0a4f-4ab7-b0b1-77eb98552a0d",
+    "location": {
+      "lat": 48.841619798581256,
+      "lng": 9.35245388069607
+    },
     "lastMovement": {
-      "start_date": "2026-07-19 12:54:33.156162"
+      "start_date": "2026-07-24 04:27:05.076857"
     }
   },
   {
     "name": "Heilbronn Arkadia x AIM x re:edu #4",
     "station_id": "f5ad4530-e3b0-43cf-8b00-c6a9d5e4e4e2",
+    "location": {
+      "lat": 49.1629562925422,
+      "lng": 8.85589017954711
+    },
     "lastMovement": {
       "start_date": "2026-06-20 18:13:04.008981"
     }
@@ -107,6 +167,10 @@
   {
     "name": "Heilbronn Arkadia x AIM x re:edu #5",
     "station_id": "d893d5aa-8a47-4054-9c97-e60b8fdb622b",
+    "location": {
+      "lat": 49.1467584554201,
+      "lng": 9.20784491700075
+    },
     "lastMovement": {
       "start_date": "2026-06-18 15:34:47.371290"
     }
@@ -114,6 +178,10 @@
   {
     "name": "Kreislehrgarten Steinfurt",
     "station_id": "60086d57-6ff7-4382-b988-92de5b76309b",
+    "location": {
+      "lat": 52.1396807706129,
+      "lng": 7.3341089487075815
+    },
     "lastMovement": {
       "start_date": "2026-07-10 03:52:28.878306"
     }
@@ -121,27 +189,54 @@
   {
     "name": "Landsitz Lotte",
     "station_id": "916c48da-19f6-4af4-80f3-8bf0abef02c7",
+    "location": {
+      "lat": 52.25633755626884,
+      "lng": 7.905349731445313
+    },
     "lastMovement": {
       "start_date": "2026-06-02 18:56:26.421582"
     }
   },
   {
+    "name": "Leonberg-Silberberg",
+    "station_id": "785d6318-433f-42bc-9328-8dd02d347fb8",
+    "location": {
+      "lat": 48.79174,
+      "lng": 8.96401
+    },
+    "lastMovement": {
+      "start_date": "2026-07-25 11:31:28.975551"
+    }
+  },
+  {
     "name": "Marienviertel_Buffet",
     "station_id": "74828223-f0fc-44db-87ca-47321662b834",
+    "location": {
+      "lat": 51.08747210072263,
+      "lng": 6.309617757797241
+    },
     "lastMovement": {
-      "start_date": "2026-07-19 18:11:47.709832"
+      "start_date": "2026-07-24 08:11:31.071737"
     }
   },
   {
     "name": "Mc Fly",
     "station_id": "2344cf3b-c65c-4560-abe4-e16a545d23dd",
+    "location": {
+      "lat": 53.77503191602146,
+      "lng": 9.319270849227907
+    },
     "lastMovement": {
-      "start_date": "2026-07-19 19:11:52.604317"
+      "start_date": "2026-07-25 07:39:12.495355"
     }
   },
   {
     "name": "MUG",
     "station_id": "29f3448d-5666-407d-b98f-97002b099c51",
+    "location": {
+      "lat": 50.96319713516679,
+      "lng": 11.028696298599245
+    },
     "lastMovement": {
       "start_date": "2026-07-11 22:11:45.814797"
     }
@@ -149,13 +244,21 @@
   {
     "name": "Mühlenfeld",
     "station_id": "fbc09158-cfb3-46ed-b5fe-b2a77f2e2637",
+    "location": {
+      "lat": 51.888967989165906,
+      "lng": 7.597646713256837
+    },
     "lastMovement": {
-      "start_date": "2026-07-19 18:08:31.968191"
+      "start_date": "2026-07-25 11:39:31.128186"
     }
   },
   {
     "name": "Open Space Heilbronn",
     "station_id": "699b7f2c-3855-4273-af7f-ed61a54541f9",
+    "location": {
+      "lat": 49.151813,
+      "lng": 9.215308
+    },
     "lastMovement": {
       "start_date": "2026-07-18 07:32:27.556203"
     }
@@ -163,6 +266,10 @@
   {
     "name": "Ornitograph Duissern",
     "station_id": "f2ac2e34-7067-4275-8d55-440001852513",
+    "location": {
+      "lat": 51.43426607190245,
+      "lng": 6.780216693878175
+    },
     "lastMovement": {
       "start_date": "2026-07-03 15:48:25"
     }
@@ -170,41 +277,65 @@
   {
     "name": "Philosophenweg",
     "station_id": "c2fb6889-abb7-45dc-a224-b201fadab9ff",
+    "location": {
+      "lat": 51.440092901755,
+      "lng": 6.769788265228272
+    },
     "lastMovement": {
-      "start_date": "2026-07-09 13:30:29"
+      "start_date": "2026-07-24 07:52:58"
     }
   },
   {
     "name": "Piepmaschine",
     "station_id": "4d4dcb67-8217-4a3d-9cd2-4e807c23fdbd",
+    "location": {
+      "lat": 53.601733995068855,
+      "lng": 9.840080738067629
+    },
     "lastMovement": {
-      "start_date": "2026-07-19 19:08:11.307847"
+      "start_date": "2026-07-25 08:04:36.881169"
     }
   },
   {
     "name": "Prinzen-Garten",
     "station_id": "0fcc0b0d-73fc-4b2f-9949-c50ae1c43fed",
+    "location": {
+      "lat": 51.959004064216145,
+      "lng": 7.98986354675293
+    },
     "lastMovement": {
-      "start_date": "2026-07-19 10:09:15.426244"
+      "start_date": "2026-07-25 11:25:12.657817"
     }
   },
   {
     "name": "RaderBird",
     "station_id": "9b1342a0-af0e-4147-9f44-6574148ca878",
+    "location": {
+      "lat": 51.20391103618282,
+      "lng": 6.532702445983888
+    },
     "lastMovement": {
-      "start_date": "2026-07-19 21:40:51"
+      "start_date": "2026-07-21 09:10:18"
     }
   },
   {
     "name": "RheinBird",
     "station_id": "b15071e2-fd58-4898-8445-a66e381cbcc4",
+    "location": {
+      "lat": 51.413054353197595,
+      "lng": 6.712944209575654
+    },
     "lastMovement": {
-      "start_date": "2026-07-18 21:36:48"
+      "start_date": "2026-07-25 11:05:13"
     }
   },
   {
     "name": "Rheingarten",
     "station_id": "f4f61b9b-4390-4de1-987d-bf72220158e4",
+    "location": {
+      "lat": 51.43442896141708,
+      "lng": 6.725735664367677
+    },
     "lastMovement": {
       "start_date": "2026-06-26 11:57:55"
     }
@@ -212,6 +343,10 @@
   {
     "name": "Rooftop Bar WAV205",
     "station_id": "02b48a0a-5047-481a-8b43-20fb541de126",
+    "location": {
+      "lat": 50.89148571135939,
+      "lng": 6.988163497268261
+    },
     "lastMovement": {
       "start_date": "2026-07-14 19:57:07.703628"
     }
@@ -219,6 +354,10 @@
   {
     "name": "Rotkarlchen",
     "station_id": "39ec6c0b-5686-49d2-b14d-60ec5a0d7ded",
+    "location": {
+      "lat": 51.27435433667948,
+      "lng": 6.775256395339981
+    },
     "lastMovement": {
       "start_date": "2026-07-04 05:53:35"
     }
@@ -226,27 +365,43 @@
   {
     "name": "Scheunenhof",
     "station_id": "fcff566a-9192-4d8c-a1cb-3a0db51c3b4b",
+    "location": {
+      "lat": 51.0712431447316,
+      "lng": 13.744025230407717
+    },
     "lastMovement": {
-      "start_date": "2026-07-13 15:17:07.817845"
+      "start_date": "2026-07-25 06:00:32.724170"
     }
   },
   {
     "name": "Seidenweber",
     "station_id": "f451c9b9-cb31-4f9b-9704-f1d8b4c8a03e",
+    "location": {
+      "lat": 51.33500614377564,
+      "lng": 6.547905206680299
+    },
     "lastMovement": {
-      "start_date": "2026-07-19 17:19:29.795764"
+      "start_date": "2026-07-23 18:38:28.784272"
     }
   },
   {
     "name": "Sontheim Lauffener Straße",
     "station_id": "b09ab6a3-8d47-4936-a251-e1c40bfe8d88",
+    "location": {
+      "lat": 49.11539440488334,
+      "lng": 9.185704886913301
+    },
     "lastMovement": {
-      "start_date": "2026-07-19 19:18:48.230988"
+      "start_date": "2026-07-25 10:07:35.780158"
     }
   },
   {
     "name": "test",
     "station_id": "20c44e32-3a4c-4723-9d3e-dcb8d949f253",
+    "location": {
+      "lat": 49.14562303526517,
+      "lng": 9.208173751831056
+    },
     "lastMovement": {
       "start_date": "2026-06-13 14:36:19.808752"
     }
@@ -254,27 +409,43 @@
   {
     "name": "TreeMountainView",
     "station_id": "6ad61509-788c-4350-8ea1-81d0a1e5bd0a",
+    "location": {
+      "lat": 52.03778864321396,
+      "lng": 7.468321323394776
+    },
     "lastMovement": {
-      "start_date": "2026-07-19 20:04:44.301891"
+      "start_date": "2026-07-24 20:14:02.146352"
     }
   },
   {
     "name": "Verbird",
     "station_id": "13193ccc-5f65-4028-9dd5-5894682ac5ec",
+    "location": {
+      "lat": 51.36461535957465,
+      "lng": 6.57010316848755
+    },
     "lastMovement": {
-      "start_date": "2026-07-19 19:46:08"
+      "start_date": "2026-07-25 11:20:46"
     }
   },
   {
     "name": "Vogelhaus Ellernbruch",
     "station_id": "d2d2e91f-7efa-46be-a145-583018d7bf67",
+    "location": {
+      "lat": 51.388697585889034,
+      "lng": 6.814620405194095
+    },
     "lastMovement": {
-      "start_date": "2026-07-18 14:01:57"
+      "start_date": "2026-07-23 10:56:25"
     }
   },
   {
     "name": "Vogelvilla Hagen",
     "station_id": "03c8cd91-dea5-4015-b426-dc4a66871b0a",
+    "location": {
+      "lat": 51.36850042854019,
+      "lng": 7.477975361105865
+    },
     "lastMovement": {
       "start_date": "2026-06-07 15:37:51.091098"
     }
@@ -282,8 +453,12 @@
   {
     "name": "Wasservogel",
     "station_id": "68476c6e-05d2-4d6f-8a4f-c0ef53b7eb3d",
+    "location": {
+      "lat": 51.43624852126216,
+      "lng": 6.774144172668458
+    },
     "lastMovement": {
-      "start_date": "2026-07-19 13:31:27"
+      "start_date": "2026-07-25 08:15:09"
     }
   }
 ]

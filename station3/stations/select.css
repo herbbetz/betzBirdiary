@@ -34,7 +34,7 @@ body {
   border: 1px solid #ccc;
   border-top: none;
   border-radius: 0 0 4px 4px;
-  display: none; /* Hidden by default */
+  display: none;  /* Hidden by default */
   box-sizing: border-box;
   z-index: 10;
 }

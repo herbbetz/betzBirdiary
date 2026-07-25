@@ -43,6 +43,7 @@ class Sample:
 
     raw_sample: int = 0
     raw: int = 0
+    raw_delta = 0
 
     offset: float = 0.0
     weight: float = 0.0
@@ -63,7 +64,7 @@ class Sample:
 
 class HX711_CT:
     def __init__(self):
-        libpath = f"{birdpath['appdir']}/c/libhx711.so"
+        libpath = f"{birdpath['appdir']}/c/libhx711_debug.so"
         self.lib = ctypes.CDLL(libpath)
 
         self.lib.hx711_init.argtypes = [ctypes.c_int, ctypes.c_int]
@@ -150,7 +151,10 @@ class Baseline:
                 for _ in range(STARTUP_SAMPLES)
             ]
 
-            spread = max(values) - min(values)
+            # spread = max(values) - min(values)
+            # Use 10th and 90th percentiles to strip out top/bottom 10% outliers
+            p10, p90 = np.percentile(values, [10, 90])
+            spread = p90 - p10
 
             attempts += 1
             maxspread = max(maxspread, spread)
@@ -262,8 +266,10 @@ class Baseline:
         self.reset_pending = True
         sample.note = (
             "BASELINE_RESET "
+            f"t={time.monotonic():.3f} "
             f"attempt={self.reset_attempt} "
             f"before={self.reset_error_before:.2f} "
+            f"raw={sample.raw:.0f} "
             f"offset={self.offset:.0f}"
         )
     # --------------------------------------------------------
@@ -712,22 +718,42 @@ trace.dump_event(
 # ============================================================
 # MAIN LOOP
 # ============================================================
-try:
 
+last_raw_sample = None
+
+try:
     while True:
 
         sample.t = time.monotonic()
 
-        # 1. raw measurement
         sample.raw_sample = hx.read()
 
-        # 2. remove single raw peaks
+        if last_raw_sample is not None:
+
+            sample.raw_delta = (
+                sample.raw_sample - last_raw_sample
+            )
+
+            if abs(sample.raw_delta) > 500:
+
+                sample.note = (
+                    "HX711_RAW_JUMP "
+                    f"raw={sample.raw_sample} "
+                    f"last={last_raw_sample} "
+                    f"delta={sample.raw_delta}"
+                )
+
+                trace.dump_event(
+                    "HX711_RAW_JUMP",
+                    sample
+                )
+
+        last_raw_sample = sample.raw_sample
+
         median.update(sample)
 
-        # 3. raw -> weight
         baseline.process(sample)
 
-        # 4. state decision
         event = fsm.process_weight(
             sample.weight,
             sample
@@ -735,30 +761,33 @@ try:
 
         sample.state = fsm.state
         sample.peak = fsm.peak
-        # 5. baseline supervision, not zeroing baseline outside of STATE IDLE
+
         baseline.supervise(
             sample,
             idle=(fsm.state == STATE_IDLE)
         )
-        if sample.note == "BASELINE_RESET":
-            trace.dump_event("BASELINE_RESET", sample)
-            ms.log("BASELINE_RESET")
+
+        if sample.note.startswith("BASELINE_RESET"):
+            trace.dump_event(
+                "BASELINE_RESET",
+                sample
+            )
             sample.note = ""
 
-        # 6. record everything
         signal_logger.log(
             sample,
             event
         )
+
         if event:
             trace.dump_event(
                 event,
                 sample
             )
 
-        # 7. communicate event
         if fsm.camera_trigger():
             send_fifo(sample.peak)
+
         elif event == "DEPARTURE":
             send_fifo(-1)
 
