@@ -24,14 +24,27 @@ static long debug_candidate_delta = 0;
 static int debug_candidate_count = 0;
 static unsigned long debug_sample_count = 0;
 
-static void debug_log(const char *fmt,...)
+static void debug_log(const char *fmt, ...)
 {
     struct timespec ts;
+    struct tm tm;
     va_list args;
-    clock_gettime(CLOCK_MONOTONIC,&ts);
-    fprintf(stderr,"[%ld.%06ld] ",(long)ts.tv_sec,ts.tv_nsec/1000);
-    va_start(args,fmt);
-    vfprintf(stderr,fmt,args);
+
+    clock_gettime(CLOCK_REALTIME, &ts);
+    localtime_r(&ts.tv_sec, &tm);
+
+    fprintf(stderr,
+        "[%04d-%02d-%02d %02d:%02d:%02d.%06ld] ",
+        tm.tm_year + 1900,
+        tm.tm_mon + 1,
+        tm.tm_mday,
+        tm.tm_hour,
+        tm.tm_min,
+        tm.tm_sec,
+        ts.tv_nsec / 1000);
+
+    va_start(args, fmt);
+    vfprintf(stderr, fmt, args);
     va_end(args);
     fflush(stderr);
 }
