@@ -98,11 +98,52 @@ static long read_raw_once(void)
     char bits[25];
 #endif
 
-    /* Read 24 data bits, MSB first */
     for (int i = 0; i < 24; i++)
     {
+        struct timespec t0, t1;
+
+        clock_gettime(CLOCK_MONOTONIC, &t0);
+
+        /*
+         * Robertson style:
+         * clock HIGH
+         * wait for DOUT settling
+         * clock LOW
+         * read bit
+         */
+
         lgGpioWrite(chip, sck_pin, 1);
+
+        /*
+         * HX711 timing:
+         * T3 minimum clock high time = 0.2us
+         *
+         * Give lgpio and Linux plenty of margin.
+         */
+        sleep_us(1);
+
         lgGpioWrite(chip, sck_pin, 0);
+
+        clock_gettime(CLOCK_MONOTONIC, &t1);
+
+        long pulse_us =
+            (t1.tv_sec - t0.tv_sec) * 1000000L +
+            (t1.tv_nsec - t0.tv_nsec) / 1000L;
+
+        /*
+         * HX711 enters power-down if SCK stays HIGH > 60us.
+         */
+        if (pulse_us >= 60)
+        {
+            DEBUG_LOG("HX711 timing violation: %ld us\n",
+                      pulse_us);
+            return LONG_MIN;
+        }
+
+        /*
+         * Robertson reads after falling edge.
+         */
+        sleep_us(1);
 
         int bit = lgGpioRead(chip, dout_pin);
 
@@ -111,22 +152,34 @@ static long read_raw_once(void)
 #endif
 
         raw = (raw << 1) | (uint32_t)bit;
+
+        /*
+         * Robertson T4 minimum.
+         */
+        sleep_us(1);
     }
 
 #ifdef HX711_DEBUG
     bits[24] = '\0';
 #endif
 
-    /* Select next conversion: Channel A, Gain 128 */
-    for (int i = 0; i < 3; i++)
-    {
-        lgGpioWrite(chip, sck_pin, 1);
-        lgGpioWrite(chip, sck_pin, 0);
-    }
+
+    /*
+     * Channel A, gain 128:
+     * total pulses = 25
+     * already sent 24,
+     * send one extra pulse.
+     */
+    lgGpioWrite(chip, sck_pin, 1);
+    sleep_us(1);
+    lgGpioWrite(chip, sck_pin, 0);
+
 
     long value = raw;
+
     if (value & 0x800000)
         value |= ~0xFFFFFF;
+
 
 #ifdef HX711_DEBUG
 
@@ -141,23 +194,14 @@ static long read_raw_once(void)
             DEBUG_LOG(
                 "RAW_JUMP "
                 "n=%lu "
-                "bits=%c%c%c%c%c%c%c%c "
-                     "%c%c%c%c%c%c%c%c "
-                     "%c%c%c%c%c%c%c%c "
+                "bits=%s "
                 "prev=%ld(0x%06X) "
                 "curr=%ld(0x%06X) "
                 "delta=%+ld\n",
 
                 debug_sample_count,
 
-                bits[0],  bits[1],  bits[2],  bits[3],
-                bits[4],  bits[5],  bits[6],  bits[7],
-
-                bits[8],  bits[9],  bits[10], bits[11],
-                bits[12], bits[13], bits[14], bits[15],
-
-                bits[16], bits[17], bits[18], bits[19],
-                bits[20], bits[21], bits[22], bits[23],
+                bits,
 
                 debug_last_value,
                 debug_last_raw,
@@ -171,7 +215,7 @@ static long read_raw_once(void)
     }
 
     debug_last_value = value;
-    debug_last_raw   = raw;
+    debug_last_raw = raw;
 
 #endif
 
