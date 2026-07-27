@@ -35,3 +35,6 @@ install -m 644 build/static/libhx711.a /usr/local/lib/
 install -m 644 build/shared/libhx711.so /usr/local/lib/
 install -d /usr/local/include/hx711
 install -m 644 include/*.h /usr/local/include/hx711
+
+----
+

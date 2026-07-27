@@ -582,7 +582,7 @@ class WeightFSM:
         return None
 
 # ============================================================
-# Recorders (may need external analysis tools): SignalLogger, TraceRecorder
+# Recorders (may need external analysis tools): SignalLogger, TraceRecorder, NullRecorder
 # ============================================================
 def readable_time():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -663,6 +663,15 @@ class TraceRecorder:
                 f"{sample.startup_maxspread},"
                 f"{sample.startup_delay:.2f}\n"     )
 
+class NullRecorder:
+    def __init__(self):
+        self.raw_jump_count = 0 # is used here: 'trace.raw_jump_count += 1'
+    # functions of TraceRecorder:
+    def dump_event(self, *args, **kwargs):
+        pass
+    # functions of SignalLogger:
+    def log(self, *args, **kwargs):
+        pass
 # ============================================================
 # MAIN PROGRAM
 # ============================================================
@@ -688,25 +697,29 @@ def send_fifo(value):
 # ============================================================
 
 ms.init()
-ms.log(f"{sys.argv[0]} start {time.ctime()}")
+testmode = False
+if len(sys.argv) > 1 and sys.argv[1] == "test":
+    testmode = True
+    ms.log(f"Testmode of {sys.argv[0]}")
+else:
+    ms.log(sys.argv[0])
+ms.log(f"... starting at {time.ctime()}")
+# ms.log(f"... starting at {datetime.now()}")
 
 writePID(1)
-
 hx = HX711_CT()
-
 sample = Sample()
-
 baseline = Baseline(hx)
-
 baseline.startup(sample)
-
 median = MedianFilter()
-
 fsm = WeightFSM()
 
-signal_logger = SignalLogger()
-
-trace = TraceRecorder()
+if testmode:
+    signal_logger = SignalLogger()
+    trace = TraceRecorder()
+else:
+    signal_logger = NullRecorder()
+    trace = NullRecorder()
 
 trace.dump_event(
     "BOOT",

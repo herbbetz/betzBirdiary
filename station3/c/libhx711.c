@@ -1,6 +1,6 @@
 /*
  * libhx711.c — Robust HX711 driver with fast timeout and single-read throughput.
- *
+ * similar to https://github.com/endail/hx711/blob/master/src/HX711.cpp
  * Build:
  * gcc -std=c17 -Wall -Wextra -O2 -shared -fPIC libhx711.c -llgpio -o libhx711.so
  * header is /usr/include/lgpio.h
@@ -18,10 +18,9 @@
 
 #ifdef HX711_DEBUG
 #include <stdarg.h>
+
 static long debug_last_value = LONG_MIN;
-static long debug_candidate = LONG_MIN;
-static long debug_candidate_delta = 0;
-static int debug_candidate_count = 0;
+static uint32_t debug_last_raw = 0;
 static unsigned long debug_sample_count = 0;
 
 static void debug_log(const char *fmt, ...)
@@ -96,9 +95,9 @@ static long read_raw_once(void)
     for (int i=0; i<24; i++)
     {
         lgGpioWrite(chip, sck_pin, 1);
+        lgGpioWrite(chip, sck_pin, 0);
         int bit = lgGpioRead(chip, dout_pin);
         raw = (raw << 1) | bit;
-        lgGpioWrite(chip, sck_pin, 0);
     }
     for (int i=0; i<3; i++)
     {
@@ -108,50 +107,37 @@ static long read_raw_once(void)
     long value = raw;
     if (value & 0x800000)
         value |= ~0xFFFFFF;
+
 #ifdef HX711_DEBUG
     debug_sample_count++;
+
     if (debug_last_value != LONG_MIN)
     {
         long delta = value - debug_last_value;
+
         if (labs(delta) > 2000)
         {
-            if (debug_candidate == LONG_MIN)
-            {
-                debug_candidate = value;
-                debug_candidate_count = 1;
-                debug_candidate_delta = delta;
-            }
-            else
-            {
-                if (labs(value - debug_candidate) < 500)
-                {
-                    debug_candidate_count++;
-                }
-                else
-                {
-                    debug_candidate = value;
-                    debug_candidate_count = 1;
-                    debug_candidate_delta = delta;
-                }
-            }
-            if (debug_candidate_count == 5)
-            {
-                DEBUG_LOG(
-                    "SHIFT n=%lu raw=0x%06x value=%ld delta=%ld\n",
-                    debug_sample_count,
-                    (unsigned)raw,
-                    value,
-                    debug_candidate_delta
-                );
-                debug_candidate = LONG_MIN;
-                debug_candidate_count = 0;
-                debug_candidate_delta = 0;
-            }
+            DEBUG_LOG(
+                "RAW_JUMP "
+                "n=%lu "
+                "prev=%ld(0x%06X) "
+                "curr=%ld(0x%06X) "
+                "delta=%+ld\n",
+                debug_sample_count,
+                debug_last_value,
+                debug_last_raw,
+                value,
+                raw,
+                delta
+            );
         }
     }
+
     debug_last_value = value;
+    debug_last_raw   = raw;
 #endif
-    return value;
+
+return value;
 }
 /* ---------- Exported API ---------- */
 
