@@ -91,24 +91,45 @@ static long read_raw_once(void)
 {
     if (wait_ready(1.0) < 0)
         return LONG_MIN;
+
     uint32_t raw = 0;
-    for (int i=0; i<24; i++)
+
+#ifdef HX711_DEBUG
+    char bits[25];
+#endif
+
+    /* Read 24 data bits, MSB first */
+    for (int i = 0; i < 24; i++)
     {
         lgGpioWrite(chip, sck_pin, 1);
         lgGpioWrite(chip, sck_pin, 0);
+
         int bit = lgGpioRead(chip, dout_pin);
-        raw = (raw << 1) | bit;
+
+#ifdef HX711_DEBUG
+        bits[i] = bit ? '1' : '0';
+#endif
+
+        raw = (raw << 1) | (uint32_t)bit;
     }
-    for (int i=0; i<3; i++)
+
+#ifdef HX711_DEBUG
+    bits[24] = '\0';
+#endif
+
+    /* Select next conversion: Channel A, Gain 128 */
+    for (int i = 0; i < 3; i++)
     {
         lgGpioWrite(chip, sck_pin, 1);
         lgGpioWrite(chip, sck_pin, 0);
     }
+
     long value = raw;
     if (value & 0x800000)
         value |= ~0xFFFFFF;
 
 #ifdef HX711_DEBUG
+
     debug_sample_count++;
 
     if (debug_last_value != LONG_MIN)
@@ -120,14 +141,30 @@ static long read_raw_once(void)
             DEBUG_LOG(
                 "RAW_JUMP "
                 "n=%lu "
+                "bits=%c%c%c%c%c%c%c%c "
+                     "%c%c%c%c%c%c%c%c "
+                     "%c%c%c%c%c%c%c%c "
                 "prev=%ld(0x%06X) "
                 "curr=%ld(0x%06X) "
                 "delta=%+ld\n",
+
                 debug_sample_count,
+
+                bits[0],  bits[1],  bits[2],  bits[3],
+                bits[4],  bits[5],  bits[6],  bits[7],
+
+                bits[8],  bits[9],  bits[10], bits[11],
+                bits[12], bits[13], bits[14], bits[15],
+
+                bits[16], bits[17], bits[18], bits[19],
+                bits[20], bits[21], bits[22], bits[23],
+
                 debug_last_value,
                 debug_last_raw,
+
                 value,
                 raw,
+
                 delta
             );
         }
@@ -135,9 +172,10 @@ static long read_raw_once(void)
 
     debug_last_value = value;
     debug_last_raw   = raw;
+
 #endif
 
-return value;
+    return value;
 }
 /* ---------- Exported API ---------- */
 
