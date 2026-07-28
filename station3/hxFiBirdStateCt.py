@@ -68,7 +68,7 @@ class HX711_CT:
         self.lib = ctypes.CDLL(libpath)
 
         self.lib.hx711_init.argtypes = [ctypes.c_int, ctypes.c_int]
-        self.lib.hx711_read.restype = ctypes.c_long
+        self.lib.hx711_read.restype = ctypes.c_int64
         self.lib.hx711_close.restype = None
 
         ret = self.lib.hx711_init(hxDataPin, hxClckPin)

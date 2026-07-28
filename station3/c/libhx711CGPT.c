@@ -16,16 +16,13 @@
 #include <stdint.h>
 #include <lgpio.h>
 
-/* Fast sub-microsecond delay using CPU instructions
-    because sleep_us(2) leads to hx711 chip power-down timeout with no count output */
-static inline void delay_ns(void) {
-    for (volatile int i = 0; i < 20; i++) {
-        __asm__ __volatile__("");
-    }
-}
-
+#define HX711_EDGE_DELAY_US 2
 #ifdef HX711_DEBUG
 #include <stdarg.h>
+
+static long debug_last_value = LONG_MIN;
+static uint32_t debug_last_raw = 0;
+static unsigned long debug_sample_count = 0;
 
 static void debug_log(const char *fmt, ...)
 {
@@ -98,43 +95,45 @@ static long read_raw_once(void)
 
     uint32_t raw = 0;
 
-    struct timespec ts_start, ts_end;
-    clock_gettime(CLOCK_MONOTONIC, &ts_start);
+#ifdef HX711_DEBUG
+    char bits[25];
+#endif
 
-    /* 24-Bit Read Loop: Super clean, zero clock overhead inside */
+    /*
+     * Robertson-style read:
+     *
+     *   HIGH
+     *   LOW
+     *   READ DOUT
+     *
+     * One sample per clock.
+     */
     for (int i = 0; i < 24; i++)
     {
         lgGpioWrite(chip, sck_pin, 1);
-        delay_ns();
         lgGpioWrite(chip, sck_pin, 0);
 
         int bit = lgGpioRead(chip, dout_pin);
+
+#ifdef HX711_DEBUG
+        bits[i] = bit ? '1' : '0';
+#endif
+
         raw = (raw << 1) | (uint32_t)bit;
-        delay_ns();
     }
 
-    /* Gain pulses (Channel A, Gain 64) */
-    for (int i = 0; i < 3; i++)
+#ifdef HX711_DEBUG
+    bits[24] = '\0';
+#endif
+
+    /*
+     * Keep exactly the behaviour of the previous driver.
+     * (We will investigate the number of gain pulses separately.)
+     */
+    for (int i = 0; i < 3; i++) // channel A - gain=64 configuration pulses (gain128 not necessary)
     {
         lgGpioWrite(chip, sck_pin, 1);
-        delay_ns();
         lgGpioWrite(chip, sck_pin, 0);
-        delay_ns();
-    }
-
-    /* Check if OS preemption occurred anywhere during the frame */
-    clock_gettime(CLOCK_MONOTONIC, &ts_end);
-    long total_frame_ns = (ts_end.tv_sec - ts_start.tv_sec) * 1000000000L + 
-                           (ts_end.tv_nsec - ts_start.tv_nsec);
-
-    // If reading all 24 bits took longer than 100 microseconds, 
-    // the OS preempted us and the HX711 likely reset/glitched.
-    if (total_frame_ns > 100000L) 
-    {
-#ifdef HX711_DEBUG
-        DEBUG_LOG("HX711_PREEMPTION_DISCARD total_frame_ns=%ld\n", total_frame_ns);
-#endif
-        return LONG_MIN; // Return sentinel so Python discards this single sample
     }
 
     long value = raw;
@@ -142,6 +141,73 @@ static long read_raw_once(void)
     /* Sign extend 24-bit two's complement */
     if (value & 0x800000)
         value |= ~0xFFFFFF;
+
+#ifdef HX711_DEBUG
+
+    debug_sample_count++;
+
+    /*
+     * These values are highly suspicious because they usually indicate
+     * that after some point only '1' bits were received.
+     */
+    if (raw == 0x7FFFFF ||
+        raw == 0x3FFFFF ||
+        raw == 0x1FFFFF ||
+        raw == 0x0FFFFF ||
+        raw == 0x07FFFF ||
+        raw == 0x03FFFF ||
+        raw == 0x01FFFF ||
+        raw == 0xFFFFFF ||
+        raw == 0xFFFFFE ||
+        raw == 0xFFFFFC)
+    {
+        DEBUG_LOG(
+            "HX711_SUSPICIOUS "
+            "n=%lu "
+            "raw=0x%06X "
+            "value=%ld "
+            "bits=%s\n",
+
+            debug_sample_count,
+            raw,
+            value,
+            bits
+        );
+    }
+
+    if (debug_last_value != LONG_MIN)
+    {
+        long delta = value - debug_last_value;
+
+        if (labs(delta) > 2000)
+        {
+            DEBUG_LOG(
+                "RAW_JUMP "
+                "n=%lu "
+                "prev=%ld(0x%06X) "
+                "curr=%ld(0x%06X) "
+                "delta=%+ld "
+                "bits=%s\n",
+
+                debug_sample_count,
+
+                debug_last_value,
+                debug_last_raw,
+
+                value,
+                raw,
+
+                delta,
+
+                bits
+            );
+        }
+    }
+
+    debug_last_value = value;
+    debug_last_raw   = raw;
+
+#endif
 
     return value;
 }
@@ -163,16 +229,20 @@ int hx711_init(int data_pin, int clock_pin)
         return -3;
 
     // Fast-discard startup readings to stabilize the internal capacitor
-    for (int i = 0; i < 5; i++) {
-        read_raw_once(); // Discard, ignore single timeouts/preemptions during warm-up
+    for (int i=0; i<20; i++)
+    {
+        if (read_raw_once() == LONG_MIN)
+            return -4;
     }
+
     return 0;
 }
 
-int64_t hx711_read(void) {
-    long v = read_raw_once();
-    if (v == LONG_MIN) return INT64_MIN; // Explicitly return -9223372036854775808
-    return (int64_t)v;
+/* Clean, optimized, but lightning-fast single-read driver */
+long hx711_read(void)
+{
+    // Aborts in 1 second if disconnected, otherwise returns instantly
+    return read_raw_once(); 
 }
 
 /* software resync if HX711 glitches */
