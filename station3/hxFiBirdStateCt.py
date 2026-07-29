@@ -14,8 +14,6 @@ No signal, energy, stability models.
 - SignalLogger output processed offline by hx_signalanalyzer.py
 - later: cmd line arg "test" to activate SignalLogger and TraceRecorder only for debugging
 """
-
-
 from dataclasses import dataclass
 from collections import deque
 from datetime import datetime
