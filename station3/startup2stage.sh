@@ -60,13 +60,9 @@ sleep 8 # the child process takes time to establish
 # setsid $PYTHON "$APPDIR/dhtBird3.py" > /dev/null 2>&1 & # >> "$APPDIR/logs/dht_sun.log" 2>&1 &
 #
 # first FIFO writer, seems the most critical to init
-# run in foreground inside a bash while loop, being restarted after each selfprogrammed end of process
-# while true; do
-#    bash hxFiBirdStart.sh
-#    sleep 2
-# done
 # setsid $PYTHON "$APPDIR/hxFiBirdStateCt.py" test > /dev/null 2>&1 & # >> "$APPDIR/logs/hxFiBird.log" 2>&1 & # first birdpipe FIFO writer
-setsid $PYTHON "$APPDIR/hxFiBirdStateCt.py" test >> "$APPDIR/ramdisk/hxFiBird.log" 2>&1 &
+# high user space priority: sudo chrt -f 80 <script> (chrt needs root permissions)
+setsid sudo chrt -f 80 $PYTHON "$APPDIR/hxFiBirdStateCt.py" test >> "$APPDIR/ramdisk/hxFiBird.log" 2>&1 &
 sleep 1
 # widgets for wayfire desktop will not work here, because wayfire or vnc/X11 env not yet ready! Moreover no use running it, when no desktop shown.
 # setsid $PYTHON widgets.py &

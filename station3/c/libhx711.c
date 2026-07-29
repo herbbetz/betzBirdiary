@@ -1,11 +1,9 @@
 /*
  * libhx711.c — Robust HX711 driver with fast timeout and single-read throughput.
- * similar to https://github.com/endail/hx711/blob/master/src/HX711.cpp
  * Build:
  * gcc -std=c17 -Wall -Wextra -O2 -shared -fPIC libhx711.c -llgpio -o libhx711.so
  * header is /usr/include/lgpio.h
  * make -f hx_Makefile, make -f hx_Makefile debug, make -f hx_Makefile clean
- * This library can be loaded in Python via ctypes.
  */
 
 #define _POSIX_C_SOURCE 200809L
@@ -16,8 +14,7 @@
 #include <stdint.h>
 #include <lgpio.h>
 
-/* Fast sub-microsecond delay using CPU instructions
-    because sleep_us(2) leads to hx711 chip power-down timeout with no count output */
+/* Fast sub-microsecond delay using CPU instructions */
 static inline void delay_ns(void) {
     for (volatile int i = 0; i < 20; i++) {
         __asm__ __volatile__("");
@@ -84,24 +81,28 @@ static int wait_ready(double timeout_s)
     double start = monotonic_seconds();
     while (lgGpioRead(chip, dout_pin) != 0)
     {
-        if (monotonic_seconds() - start > timeout_s)
+        if (monotonic_seconds() - start > timeout_s) {
+#ifdef HX711_DEBUG
+            DEBUG_LOG("HX711_WAIT_READY_TIMEOUT (DOUT remained HIGH)\n");
+#endif
             return -1;
+        }
         sleep_us(1000);
     }
     return 0;
 }
 
-static long read_raw_once(void)
+static int64_t read_raw_once(void)
 {
     if (wait_ready(1.0) < 0)
-        return LONG_MIN;
+        return INT64_MIN;
 
     uint32_t raw = 0;
 
     struct timespec ts_start, ts_end;
     clock_gettime(CLOCK_MONOTONIC, &ts_start);
 
-    /* 24-Bit Read Loop: Super clean, zero clock overhead inside */
+    /* 24-Bit Read Loop */
     for (int i = 0; i < 24; i++)
     {
         lgGpioWrite(chip, sck_pin, 1);
@@ -122,32 +123,34 @@ static long read_raw_once(void)
         delay_ns();
     }
 
-    /* Check if OS preemption occurred anywhere during the frame */
+    /* Ensure clock line is left explicitly LOW so HX711 does not enter sleep */
+    lgGpioWrite(chip, sck_pin, 0);
+
+    /* Check if OS preemption delayed the entire frame beyond 1.0 ms */
     clock_gettime(CLOCK_MONOTONIC, &ts_end);
     long total_frame_ns = (ts_end.tv_sec - ts_start.tv_sec) * 1000000000L + 
                            (ts_end.tv_nsec - ts_start.tv_nsec);
 
-    // If reading all 24 bits took longer than 100 microseconds, 
-    // the OS preempted us and the HX711 likely reset/glitched.
-    if (total_frame_ns > 100000L) 
+    /* 1,000,000 ns (1.0 ms) threshold allows user-space overhead while catching extreme stalls */
+    if (total_frame_ns > 1000000L) 
     {
 #ifdef HX711_DEBUG
         DEBUG_LOG("HX711_PREEMPTION_DISCARD total_frame_ns=%ld\n", total_frame_ns);
 #endif
-        return LONG_MIN; // Return sentinel so Python discards this single sample
+        return INT64_MIN;
     }
 
-    long value = raw;
+    int32_t value = (int32_t)raw;
 
     /* Sign extend 24-bit two's complement */
     if (value & 0x800000)
-        value |= ~0xFFFFFF;
+        value |= 0xFF000000;
 
-    return value;
+    return (int64_t)value;
 }
+
 /* ---------- Exported API ---------- */
 
-/* initialize GPIO and discard first readings */
 int hx711_init(int data_pin, int clock_pin)
 {
     dout_pin = data_pin;
@@ -162,20 +165,21 @@ int hx711_init(int data_pin, int clock_pin)
     if (lgGpioClaimOutput(chip, 0, sck_pin, 0) < 0)
         return -3;
 
-    // Fast-discard startup readings to stabilize the internal capacitor
+    /* Ensure clock pin initializes LOW */
+    lgGpioWrite(chip, sck_pin, 0);
+
+    /* Discard initial readings to stabilize internal filter */
     for (int i = 0; i < 5; i++) {
-        read_raw_once(); // Discard, ignore single timeouts/preemptions during warm-up
+        read_raw_once();
     }
     return 0;
 }
 
-int64_t hx711_read(void) {
-    long v = read_raw_once();
-    if (v == LONG_MIN) return INT64_MIN; // Explicitly return -9223372036854775808
-    return (int64_t)v;
+int64_t hx711_read(void)
+{
+    return read_raw_once();
 }
 
-/* software resync if HX711 glitches */
 int hx711_resync(void)
 {
     if (chip >= 0)
@@ -190,7 +194,6 @@ int hx711_resync(void)
     return hx711_init(dout_pin, sck_pin);
 }
 
-/* cleanup */
 void hx711_close(void)
 {
     if (chip >= 0)
