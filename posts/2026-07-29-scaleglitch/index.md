@@ -29,6 +29,16 @@ SCK  -> SPI MOSI (Pin 19 / GPIO 10)
 ```
 Zwar werden die SPI0-Pins belegt, aber instabiles Software-Bit-Banging und das ungewollte Einschlafen des HX711-Chips entfallen. Die kontinuierlichen ~15 mA (statt 1,5 mA im Sleep-Zustand) durch die Wheatstone-Brücke fallen bei Netzbetrieb kaum ins Gewicht.
 
+**Testaufbau**
+
+- Die Station lief über Stunden im Wohnzimmer, um definiert die Sitzstange unbelastet zu lassen (oder sie definiert zu belasten).
+- Das `hxFiBirdStateCt.py` bekam ein Kommandozeilenargument `test` zum Aktivieren von Debugging Code. Ebenso bekam `libhx711.c` ein `make -f hx_Makefile debug`.
+- Um über Stunden Werte in einem auswertbaren Format (für Mensch oder begrenzten KI-Upload) aufzuzeichnen, braucht es 
+	- 1) programm-interne *Event Recorder* , die nur wichtige Änderungen aufzeichnen (TraceRecorder),
+	- 2) SignalLogger, die sekündlich alle Signale aufzeichnen und dann durch ein externes Skript wie `hx_signalanalyzer.py` offline zusammengefasst werden,
+	- 3) ein externes `hx_sig_trace_analyzer.py`, das 1) und 2) anhand ihrer Zeitstempel korreliert,
+	- 4) die Zeitstempel der Auslösung von Leervideos im Vergleich mit 1) bis 3) später im Einsatztest draussen .
+
 Mit dieser Darstellung möchte ich andeuten, wieviel Zeit und Tokens in der Entwicklung eines verlässlichen hx711 Treibers unter *Raspberry Trixie* stecken.
 
 Feedback an *herber7be7z@gmail.com*. Happy Birding!
