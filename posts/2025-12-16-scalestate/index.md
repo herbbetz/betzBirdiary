@@ -10,7 +10,7 @@ Im Dezember 2025 bemerkte ich plötzlich eine Reihe Fehlauslösungen meiner Voge
 
 **Ausgangslage**
 
-- Der Wäagebalken ist eine Aluminiumstange mit aufgeklebter Widerstandsbrücke. Die reagiert nicht nur auf Gewicht, sondern auch auf schnelle Wärmeschwankungen oder elektrische Instabilität (Messausreißer, Kaltlötstellen, Diskonnektion). Die HX711-Platine verwandelt den Strom durch die Widerstandsbrücke in digitale Messwerte, die über eine Treibersoftware ausgelesen werden.
+- Der Wägebalken ist eine Aluminiumstange mit aufgeklebter Widerstandsbrücke. Die reagiert nicht nur auf Gewicht, sondern auch auf schnelle Wärmeschwankungen oder elektrische Instabilität (Messausreißer, Kaltlötstellen, Diskonnektion). Die HX711-Platine verwandelt den Strom durch die Widerstandsbrücke in digitale Messwerte, die über eine Treibersoftware ausgelesen werden.
 - Für jedes Waagensystem muss dann ermittelt werden, welcher digitale Werte 0 Gramm entspricht (Variable `hxOffset`) und um wieviel sich der digitale Wert pro Gramm verändert (Variable `hxScale`).
 -  Diskonnektion zeigt sich in *exakt* demselben Messwert nahe 0.0 oder über 100.0 über viele Messzyklen ohne die üblichen Minischwankungen.
 - Immer wieder sind auch einzelne Messausreißer ("signal noise") unter den sonst ruhigen Baseline-Messungen zu beobachten. Die seien laut chatGPT charakteristisch für ein Timingproblem des hx711-Treibers (*300–400 g is a classic “one bit shifted” value.*).
