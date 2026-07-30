@@ -18,7 +18,7 @@ Wie schon am Ende von Blog "2025-12-16-scalestate" befürchtet, fand ich die X-t
 **C-Treiber Userspace Problem**
 - *Trixie*  ist kein *Real Time Linux* oder RTOS wie FreeRTOS auf Mikrocontrollern. Es wird den unter User *Pi* laufenden Treiber der hx711-Platine immer mal wieder ausbremsen, um andere Aufgaben vorzuziehen. Dies kann durch Prioritätsbefehle wie `nice` oder noch besser `chrt` gemildert werden. Userspace Treiber leiden unter sog. `userspace bit banging`.
 
-- Das betrifft auch den Kontroller der hx711-Platine. Merkt er, dass er 60 usecs nicht zu tun hat, dann legt er sich schlafen und kann anschließend bis 400 millisecs(!) zum Aufwachen benötigen. Während dieser Zeiten liefert er korrupte Werte (Glitches), die ausgefiltert werden müssen.
+- Das betrifft auch den Kontroller der hx711-Platine. Merkt er, dass er 60 usecs nicht zu tun hat, dann legt er sich schlafen und kann anschließend bis 400 millisecs(!) zum Aufwachen benötigen. Während der Schlafübergänge liefert er korrupte Werte, die der C-Treiber auszufiltern versucht anhand der verlängerten Lesezeit der 24 Bits. Gelegentliches Versagen dieser Ausfilterung resultiert in **seltenen, plötzlichen Glitches von 4000 counts (ca. 7 g) im C-Treiber unabhängig von der Wägezelle**.
 
 - Durch ein `dts overlay` könnte in *Trixie* auch der `iio Kerneltreiber` für den hx711 aktiviert werden. Diese Overlays sind aber schwierig zu debuggen und kommen einem Hacking von Processorregistern gleich, denen für RPi 4 und 5 unterschiedliche Prozessoren zugrunde lägen. Keine eigenen Erfahrung beim Debuggen von *Root Linux* oder *Yocto*.
 

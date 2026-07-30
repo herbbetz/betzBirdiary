@@ -787,13 +787,6 @@ try:
                 f"{sample.weight:.2f}g"
             )
 
-        if sample.note.startswith("BASELINE_RESET"):
-            trace.dump_event(
-                "BASELINE_RESET",
-                sample
-            )
-            sample.note = ""
-
         signal_logger.log(
             sample,
             event
