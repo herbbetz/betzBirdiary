@@ -31,7 +31,7 @@ from configBird3 import (
     update_config_json
 )
 import msgBird as ms
-
+testmode = False
 WEIGHTTHRESHOLD_off = 0.7 * weightThreshold
 
 @dataclass
@@ -62,7 +62,10 @@ class Sample:
 
 class HX711_CT:
     def __init__(self):
-        libpath = f"{birdpath['appdir']}/c/libhx711_debug.so"
+        global testmode
+        if testmode:
+            libpath = f"{birdpath['appdir']}/c/libhx711_debug.so"
+        else: libpath = f"{birdpath['appdir']}/c/libhx711.so"
         self.lib = ctypes.CDLL(libpath)
 
         self.lib.hx711_init.argtypes = [ctypes.c_int, ctypes.c_int]
@@ -695,7 +698,7 @@ def send_fifo(value):
 # ============================================================
 
 ms.init()
-testmode = False
+
 if len(sys.argv) > 1 and sys.argv[1] == "test":
     testmode = True
     ms.log(f"Testmode of {sys.argv[0]}")

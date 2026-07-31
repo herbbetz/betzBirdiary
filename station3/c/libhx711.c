@@ -3,7 +3,7 @@
  * Build:
  * gcc -std=c17 -Wall -Wextra -O2 -shared -fPIC libhx711.c -llgpio -o libhx711.so
  * header is /usr/include/lgpio.h
- * make -f hx_Makefile, make -f hx_Makefile debug, make -f hx_Makefile clean
+ * make -f hx_Makefile, make -f hx_Makefile debug (or both), make -f hx_Makefile clean
  */
 
 #define _POSIX_C_SOURCE 200809L

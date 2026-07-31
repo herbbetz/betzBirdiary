@@ -90,6 +90,7 @@
 - **betzbird**: [index](docs/posts/2026-01-10-debianpkg/index.md), [index](docs/posts/2026-02-10-tflite/index.md)
 - **bitbanging**: [index](docs/posts/2026-07-29-scaleglitch/index.md)
 - **blog**: [index](docs/posts/2025-08-09-2bookworm/index.md), [index](docs/posts/2025-10-17-2trixie/index.md), [index](docs/posts/2025-12-16-scalestate/index.md), [index](docs/posts/2026-01-10-debianpkg/index.md), [index](docs/posts/2026-02-10-tflite/index.md), [index](docs/posts/2026-07-29-scaleglitch/index.md)
+- **blogposts**: [blogposts](docs/posts/blogposts.md)
 - **booterror**: [bootdebug](docs/bootdebug/bootdebug.md)
 - **card_image_build**: [buildimg](docs/buildimg/buildimg.md)
 - **config.json**: [configjson](configjson.md)
