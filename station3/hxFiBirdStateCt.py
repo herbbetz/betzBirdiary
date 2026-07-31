@@ -106,8 +106,8 @@ STARTUP_SETTLE_TIME = 5.0
 STARTUP_SAMPLES = 60
 STARTUP_SPREAD_LIMIT = 3000   # HX711 raw units, tune on hardware
 
-OFFSET_STEP = 0.005
-OFFSET_PERIOD = 200
+OFFSET_STEP = 0.05    
+OFFSET_PERIOD = 20    # adapt every 3 seconds for not being outpaced by solar drift
 
 
 class Baseline:
@@ -246,19 +246,30 @@ class Baseline:
         if abs(sample.weight) > WEIGHTTHRESHOLD_off:
             self.idle_bad_count += 1
             sample.note = f"BAD_IDLE {self.idle_bad_count} {sample.weight:.2f}"
-            if self.idle_bad_count > 20:
+            
+            # NEW: If we are in IDLE and weight is borderline (thermal drift), 
+            # force adapt_offset to gently follow it down rather than letting it trigger ARRIVAL
+            if self.idle_bad_count < 20:
+                self.adapt_offset(sample)
+            else:
+                self.idle_bad_count = 0
                 self.do_reset(sample)
-        else:
-            self.idle_bad_count = 0
-            self.adapt_offset(sample)
+
     # --------------------------------------------------------
     # perform baseline reset
     # --------------------------------------------------------
     def do_reset(self, sample):
         self.reset_attempt += 1
         self.reset_error_before = abs(sample.weight)
-        self.reset_offset = sample.raw
-        self.offset = sample.raw
+
+        # sample.raw is ALREADY median-filtered by main loop's `median.update(sample)`!
+        new_offset = sample.raw        
+        # Read 5 fresh samples directly from self.hx and compute median
+        # raw_samples = [self.hx.read() for _ in range(5)]
+        # new_offset = float(np.median(raw_samples))
+        self.offset = new_offset
+        self.reset_offset = new_offset
+
         sample.offset = self.offset
         sample.weight = 0.0
         self.count = 0
@@ -624,16 +635,14 @@ class SignalLogger:
             )
 
 class TraceRecorder:
-
     def __init__(self):
-
         self.event_id = 0
         self.raw_jump_count = 0
+        self.raw_jump_events = 0
         self.file = os.path.join(
             birdpath["ramdisk"],
             "trace_events.csv"
         )
-
         if not os.path.exists(self.file):
             with open(self.file, "w") as f:
                 f.write(
@@ -646,9 +655,7 @@ class TraceRecorder:
                 )
 
     def dump_event(self, reason: str, sample: Sample):
-
         self.event_id += 1
-
         with open(self.file, "a", buffering=1) as f:
             f.write(
                 f"{self.event_id},"
@@ -662,13 +669,39 @@ class TraceRecorder:
                 f"{sample.startup_spread},"
                 f"{sample.startup_attempts},"
                 f"{sample.startup_maxspread},"
-                f"{sample.startup_delay:.2f}\n"     )
+                f"{sample.startup_delay:.2f}\n"
+            )
+
+    def dump_raw_jump(self, sample: Sample, previous_raw: int):
+        self.event_id += 1
+        self.raw_jump_events += 1
+        with open(self.file, "a", buffering=1) as f:
+            f.write(
+                f"{self.event_id},"
+                f"{readable_time()},"
+                f"HX711_RAW_JUMP,"
+                f"{sample.weight:.2f},"
+                f"{sample.peak:.2f},"
+                f"{STATE_NAME[sample.state]},"
+                f"before={previous_raw} "
+                f"after={sample.raw_sample} "
+                f"filtered={sample.raw} "
+                f"delta={sample.raw_delta},"
+                f"{sample.offset:.1f},"
+                f"{sample.startup_spread},"
+                f"{sample.startup_attempts},"
+                f"{sample.startup_maxspread},"
+                f"{sample.startup_delay:.2f}\n"
+            )
 
 class NullRecorder:
     def __init__(self):
         self.raw_jump_count = 0 # is used here: 'trace.raw_jump_count += 1'
+        self.raw_jump_events = 0
     # functions of TraceRecorder:
     def dump_event(self, *args, **kwargs):
+        pass
+    def dump_raw_jump(self,*args,**kwargs):
         pass
     # functions of SignalLogger:
     def log(self, *args, **kwargs):
@@ -746,16 +779,18 @@ try:
                 sample.raw_sample - last_raw_sample
             )
 
-        if abs(sample.raw_delta) > 500:
+        RAW_JUMP_LIMIT = 2500
+        RAW_JUMP_LIMIT_SMALL = 500
+        if abs(sample.raw_delta) > RAW_JUMP_LIMIT:
+            trace.dump_raw_jump(sample, last_raw_sample)
+        elif abs(sample.raw_delta) > RAW_JUMP_LIMIT_SMALL:
             trace.raw_jump_count += 1
-
             if trace.raw_jump_count % 100 == 0:
                 sample.note = (
                     "HX711_RAW_JUMP_SUMMARY "
                     f"count={trace.raw_jump_count} "
                     f"last_delta={sample.raw_delta}"
                 )
-
                 trace.dump_event(
                     "HX711_RAW_JUMP_SUMMARY",
                     sample

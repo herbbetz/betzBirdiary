@@ -12,7 +12,7 @@ Reads metadata from SignalLogger header:
 FSM states:
     IDLE ARRIVAL PRESENT OVERSIZE DEPARTURE
 """
-import matplotlib.pyplot as plt
+
 import sys
 
 if len(sys.argv) != 2:
@@ -393,21 +393,6 @@ if oversize:
 
 if not found:
     print("none")
-
-print()
-print("Offset discontinuities")
-print("--------------------")
-
-JUMP_G = 1.0
-
-last = float(rows[0]["offset"])
-
-for r in rows[1:]:
-    off = float(r["offset"])
-    delta_g = (last - off) / abs(hxScale)
-    if abs(delta_g) > JUMP_G:
-        print(f"{r['time']} jump={delta_g:+.2f} g state={r['state']}")
-    last = off
 # ------------------------------------------------------------
 # summary
 # ------------------------------------------------------------
@@ -432,41 +417,3 @@ if visits:
 
 if oversize:
     print(f"oversize : {len(oversize)}")
-
-# ------------------------------------------------------------
-# plot
-# ------------------------------------------------------------
-t = [(r["mono_t"]-rows[0]["mono_t"])/60.0 for r in rows]
-w = [r["weight"] for r in rows]
-
-startup_offset = meta.get("startup_offset", 0)
-offset_g = [
-    (startup_offset - float(r["offset"])) / abs(hxScale)
-    for r in rows
-]
-
-fig, ax = plt.subplots(figsize=(11,4))
-
-ax.plot(t, w, label="weight", linewidth=1)
-ax.plot(t, offset_g, label="offset drift (g)", linewidth=1)
-
-ax.axhline(weightThreshold, color="r", linestyle="--", alpha=0.7)
-ax.axhline(threshold_off, color="g", linestyle="--", alpha=0.7)
-
-for state, a, b in periods:
-    if state != "IDLE":
-        ax.axvspan(t[a], t[b], alpha=0.08)
-
-for i in range(1, len(rows)):
-    delta_g = (float(rows[i-1]["offset"]) - float(rows[i]["offset"])) / abs(hxScale)
-    if abs(delta_g) > JUMP_G:
-        ax.axvline(t[i], linestyle=":", alpha=0.8)
-
-ax.set_xlabel("minutes from start")
-ax.set_ylabel("grams")
-ax.legend(loc="upper left")
-ax.grid(True, alpha=0.3)
-
-plt.tight_layout()
-plt.savefig("signal_timeline.svg")
-print("timeline plot written to signal_timeline.svg")
