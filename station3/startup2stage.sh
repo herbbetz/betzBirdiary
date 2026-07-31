@@ -61,9 +61,9 @@ sleep 8 # the child process takes time to establish
 #
 # first FIFO writer, seems the most critical to init
 # setsid $PYTHON "$APPDIR/hxFiBirdStateCt.py" test > /dev/null 2>&1 & # >> "$APPDIR/logs/hxFiBird.log" 2>&1 & # first birdpipe FIFO writer
-# high user space priority: sudo chrt -f 80 <script> (chrt needs root permissions, nonetheless can be run as pi user)
-setsid sudo chrt -f 80 -u pi $PYTHON "$APPDIR/hxFiBirdStateCt.py" test >> "$APPDIR/ramdisk/hxFiBird.log" 2>&1 &
-# setsid sudo chrt -f 80 -u pi $PYTHON "$APPDIR/hxFiBirdStateCt.py" >> "$APPDIR/ramdisk/hxFiBird.log" 2>&1 &
+# high user space priority: sudo chrt -f 80 <script> (chrt needs root permissions, later run 'sudo python hxFiBirdStateCt.py test' as 'ramdisk/hxFiPID.txt' will belong to root)
+setsid sudo chrt -f 80 $PYTHON "$APPDIR/hxFiBirdStateCt.py" test >> "$APPDIR/ramdisk/hxFiBird.log" 2>&1 &
+# setsid sudo chrt -f 80 $PYTHON "$APPDIR/hxFiBirdStateCt.py" >> "$APPDIR/ramdisk/hxFiBird.log" 2>&1 &
 sleep 1
 # widgets for wayfire desktop will not work here, because wayfire or vnc/X11 env not yet ready! Moreover no use running it, when no desktop shown.
 # setsid $PYTHON widgets.py &
