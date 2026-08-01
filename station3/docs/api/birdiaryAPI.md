@@ -1,4 +1,4 @@
-<!--keywords[API,Statistik_API]-->
+<!--keywords[API,delete_movements,Löschen_Movements,Statistik_API]-->
 
 siehe die [API Doc](https://wiediversistmeingarten.org/doc/) auf https://wiediversistmeingarten.org/doc/
 
@@ -49,10 +49,16 @@ Die Birdiary API hat bereits einige Parameter, um nicht immer den kompletten Dat
 
 
 
+**Löschen von Movements**
+
+- siehe `python .\del_movements.py` und `python .\del_movements.py delete <ACCESS_TOKEN>`
+- Nach einem *delete* ist das Movement zwar nicht mehr auf `https://wiediversistmeingarten.org/api/movement/87bab185-7630-461c-85e6-c04cf5bab180`, aber der zuvor dokumentierte Videolink ist immer noch abrufbar. Zum Beispiel wurde  `https://wiediversistmeingarten.org/api/uploads/videos/2026-08-01_113538.519572.mp4` mit 'kein Vogel' validiert und mit dem Skript aus dem Movement API gelöscht, aber auch andere Browser zeigen das Video weiterhin. Wann wird das Video denn gelöscht, nachdem es gar nicht mehr referenziert ist?
+
 
 
 **movements API Beispiel**
 (https://wiediversistmeingarten.org/api/movement/87bab185-7630-461c-85e6-c04cf5bab180)
+
 ```
 [
   {
