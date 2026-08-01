@@ -52,7 +52,7 @@ weightThreshold = meta.get("weightThreshold", 0)
 threshold_off = meta.get("threshold_off", weightThreshold * 0.7)
 hxScale = meta.get("hxScale", 0)
 
-CAMERA_MIN_PRESENT = 1.0
+CAMERA_MIN_PRESENT = 1.0 # should match hxFiBirdStateCt.py (CAMERA_DELAY in WeightFSM)
 
 print()
 print(f"samples : {len(rows)}")
@@ -139,9 +139,6 @@ for state,a,b in periods:
             visits.append(current)
             current = None
 
-# ------------------------------------------------------------
-# baseline
-# ------------------------------------------------------------
 # ------------------------------------------------------------
 # baseline
 # ------------------------------------------------------------
@@ -395,10 +392,9 @@ if not found:
     print("none")
 
 print()
-print("Offset discontinuities")
+JUMP_G = 3.0
+print(f"Offset discontinuities (threshold: {JUMP_G} g)")
 print("--------------------")
-
-JUMP_G = 1.0
 
 last = float(rows[0]["offset"])
 
