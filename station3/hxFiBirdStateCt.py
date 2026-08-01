@@ -3,7 +3,7 @@ hxFiBirdStateCt.py
 
 HX711 -> Sample -> Baseline -> FSM -> Recorders
 
-Only physical quantities:
+Core physical quantities:
     raw
     offset
     weight
@@ -41,7 +41,7 @@ class Sample:
 
     raw_sample: int = 0
     raw: int = 0
-    raw_delta = 0
+    raw_delta: int = 0
 
     offset: float = 0.0
     weight: float = 0.0
@@ -102,79 +102,68 @@ class MedianFilter:
 # BASELINE (offset management and raw → weight conversion)
 # ============================================================
 
-STARTUP_SETTLE_TIME = 5.0
-STARTUP_SAMPLES = 120
-STARTUP_SPREAD_LIMIT = 10000
+STARTUP_SETTLE_TIME = 2.0
+STABLE_SAMPLES = 60
+STABLE_SPREAD_LIMIT = 10000
 STARTUP_MAX_TIME = 30.0
 OFFSET_ALPHA = 0.0025
-
 class Baseline:
     def __init__(self, hx: HX711_CT):
         self.hx = hx
         self.offset = 0.0
-
-    def startup(self, sample):
-
-        ms.log("Startup zeroing...")
-
-        t0 = time.monotonic()
-
-        values = []
-
-        while len(values) < STARTUP_SAMPLES:
-
-            values.append(self.hx.read())
-
-            if time.monotonic() - t0 > STARTUP_MAX_TIME:
-                break
-
-            time.sleep(0.02)
-
-        values = np.array(values)
-        p10, p90 = np.percentile(values, [10,90])
-
-        stable_values = values[
-            (values >= p10) &
-            (values <= p90)
-        ]
-
-        self.offset = float(np.median(stable_values))
-
+        self.stable_buf = deque(maxlen=STABLE_SAMPLES)
+    def update_stable_buffer(self, raw):
+        self.stable_buf.append(raw)
+    def stable_raw(self):
+        if len(self.stable_buf) < STABLE_SAMPLES:
+            return None
+        values = np.array(self.stable_buf)
+        p10, p90 = np.percentile(values, [10, 90])
         spread = p90 - p10
-
-        sample.offset = self.offset
-        sample.weight = 0
-
-        sample.startup_spread = spread
-        sample.startup_attempts = 1
-        sample.startup_delay = time.monotonic() - t0
-
-        sample.note = (
-            f"STARTUP_ZERO spread={spread:.0f}"
-        )
-
-        ms.log(
-            f"Startup accepted spread={spread:.0f}"
-        )
-
-        return True
-
-    def process(self, sample: Sample):
+        if spread > STABLE_SPREAD_LIMIT:
+            return None
+        return float(np.median(values))
+    def stable_spread(self):
+        if len(self.stable_buf) == 0:
+            return 0
+        values = np.array(self.stable_buf)
+        p10, p90 = np.percentile(values, [10, 90])
+        return p90 - p10
+    def startup(self, sample):
+        time.sleep(STARTUP_SETTLE_TIME)
+        ms.log("Startup zeroing...")
+        t0 = time.monotonic()
+        attempts = 0
+        self.stable_buf.clear()
+        while time.monotonic() - t0 < STARTUP_MAX_TIME:
+            raw = self.hx.read()
+            self.update_stable_buffer(raw)
+            attempts += 1
+            raw_value = self.stable_raw()
+            if raw_value is not None:
+                self.offset = raw_value
+                sample.offset = self.offset
+                sample.weight = 0.0
+                sample.startup_spread = self.stable_spread()
+                sample.startup_attempts = attempts
+                sample.startup_maxspread = STABLE_SPREAD_LIMIT
+                sample.startup_delay = time.monotonic() - t0
+                sample.note = f"STARTUP_ZERO spread={sample.startup_spread:.0f}"
+                ms.log(sample.note)
+                return True
+            time.sleep(0.02)
+        raise RuntimeError("HX711 startup did not stabilize")
+    def process(self, sample):
         sample.offset = self.offset
         sample.weight = (sample.raw - self.offset) / hxScale
-
-    # continuous EMA:
     def follow_idle(self, sample):
-        self.offset += (
-            sample.raw - self.offset
-        ) * OFFSET_ALPHA
-
-    def adopt_current_raw(self, sample: Sample):
-        self.offset = float(sample.raw)
+        self.offset += (sample.raw - self.offset) * OFFSET_ALPHA
+    def adopt_raw_value(self, raw_value, sample):
+        self.offset = raw_value
+        self.stable_buf.clear()
         sample.offset = self.offset
         sample.weight = 0.0
-
-# ============================================================
+# ============================================================        
 # FSM (pure state machine, no I/O, no logging)
 # ============================================================
 
@@ -242,11 +231,31 @@ class WeightFSM:
         self.camera_sent = True
         return True
 
-    def check_timeout(self, sample):
+    def check_timeout(self, sample, baseline):
+        # Only stable states can become the new IDLE.
         if self.state in (STATE_ARRIVAL, STATE_PRESENT, STATE_DEPARTURE):
             if time.monotonic() - self.state_t0 > STATE_TIMEOUT:
-                sample.note = f"STATE_TIMEOUT {STATE_NAME[self.state]}"
-                return "STATE_TIMEOUT"
+                raw_value = baseline.stable_raw()
+                if raw_value is not None:
+                    old_state = STATE_NAME[self.state]
+                    baseline.adopt_raw_value(raw_value, sample)
+                    self.force_idle()
+                    sample.note = f"STATE_TIMEOUT {old_state} → IDLE"
+                    return "STATE_TIMEOUT"
+            return None
+
+        # IDLE may reset its baseline if it has drifted away.
+        if self.state == STATE_IDLE:
+            if abs(sample.weight) > WEIGHTTHRESHOLD_off:
+                raw_value = baseline.stable_raw()
+                if raw_value is not None:
+                    baseline.adopt_raw_value(raw_value, sample)
+                    self.reset(keep_peak=False)
+                    sample.note = "IDLE_BASELINE_RESET"
+                    return "IDLE_BASELINE_RESET"
+            return None
+
+        # OVERSIZE: never auto-calibrate.
         return None
 
     def process_weight(self, weight, sample):
@@ -373,28 +382,24 @@ def readable_time():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 class SignalLogger:
-
-    def __init__(self):
-
+    def __init__(self, sample):
         self.file = os.path.join(
             birdpath["ramdisk"],
             f"signal_{datetime.now():%Y-%m-%d_%H-%M-%S}.csv"
         )
-
         with open(self.file, "w") as f:
             f.write("# weightThreshold={}\n".format(weightThreshold))
             f.write("# threshold_off={:.2f}\n".format(WEIGHTTHRESHOLD_off))
             f.write("# hxScale={}\n".format(hxScale))
             f.write("# startup_offset={:.1f}\n".format(sample.offset))
             f.write("# startup_note={}\n".format(sample.note))
-            f.write(
-                "time,mono_t,raw,offset,weight,state,event,peak,note\n"
-            )
-
+            f.write("# startup_spread={}\n".format(sample.startup_spread))
+            f.write("# startup_attempts={}\n".format(sample.startup_attempts))
+            f.write("# startup_maxspread={}\n".format(sample.startup_maxspread))
+            f.write("# startup_delay={:.2f}\n".format(sample.startup_delay))
+            f.write("time,mono_t,raw,offset,weight,state,event,peak,note\n")
     def log(self, sample, event=""):
-
         with open(self.file, "a", buffering=1) as f:
-
             f.write(
                 f"{readable_time()},"
                 f"{sample.t:.3f},"
@@ -519,12 +524,12 @@ sample = Sample()
 baseline = Baseline(hx)
 baseline.startup(sample)
 median = MedianFilter()
-for _ in range(7):
-    median.buf.append(int(baseline.offset))
+for value in baseline.stable_buf:
+    median.buf.append(int(value))
 fsm = WeightFSM()
 
 if testmode:
-    signal_logger = SignalLogger()
+    signal_logger = SignalLogger(sample)
     trace = TraceRecorder()
 else:
     signal_logger = NullRecorder()
@@ -548,31 +553,6 @@ try:
 
         sample.raw_sample = hx.read()
 
-        if last_raw_sample is not None:
-
-            sample.raw_delta = (
-                sample.raw_sample - last_raw_sample
-            )
-
-        RAW_JUMP_LIMIT = 2500
-        RAW_JUMP_LIMIT_SMALL = 500
-        if abs(sample.raw_delta) > RAW_JUMP_LIMIT:
-            trace.dump_raw_jump(sample, last_raw_sample)
-        elif abs(sample.raw_delta) > RAW_JUMP_LIMIT_SMALL:
-            trace.raw_jump_count += 1
-            if trace.raw_jump_count % 100 == 0:
-                sample.note = (
-                    "HX711_RAW_JUMP_SUMMARY "
-                    f"count={trace.raw_jump_count} "
-                    f"last_delta={sample.raw_delta}"
-                )
-                trace.dump_event(
-                    "HX711_RAW_JUMP_SUMMARY",
-                    sample
-                )
-
-        last_raw_sample = sample.raw_sample
-
         median.update(sample)
 
         baseline.process(sample)
@@ -582,35 +562,28 @@ try:
             sample
         )
 
-        # Recover from any state that has become implausibly long.
-        timeout_event = fsm.check_timeout(sample)
-        if timeout_event:
-            old_state = STATE_NAME[fsm.state]
-            baseline.adopt_current_raw(sample)
-            fsm.force_idle()
-            sample.state = fsm.state
-            sample.peak = fsm.peak
-            sample.note = f"STATE_TIMEOUT {old_state} → IDLE"
-            signal_logger.log(sample, timeout_event)
-            trace.dump_event(timeout_event, sample)
-
         sample.state = fsm.state
         sample.peak = fsm.peak
 
         if fsm.state == STATE_IDLE:
             if abs(sample.weight) < WEIGHTTHRESHOLD_off:
+                baseline.update_stable_buffer(sample.raw)
                 baseline.follow_idle(sample)
 
-        signal_logger.log(
+        timeout_event = fsm.check_timeout(
             sample,
-            event
+            baseline
         )
 
+        if timeout_event:
+            event = timeout_event
+
+
+        signal_logger.log(sample,event)
+
         if event:
-            trace.dump_event(
-                event,
-                sample
-            )
+            trace.dump_event(event,sample)
+
 
         if fsm.camera_trigger():
             send_fifo(sample.peak)
@@ -623,7 +596,6 @@ try:
             f"{STATE_NAME[sample.state]}",
             terminal=False
         )
-
         time.sleep(0.15)
 # ============================================================
 # CLEAN EXIT

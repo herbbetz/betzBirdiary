@@ -4,7 +4,7 @@ title: "hx711 Signalfehler"
 date: 2026-07-29
 permalink: /posts/2026-07-29-scaleglitch/
 ---
-<!--keywords[bitbanging,blog,Fehlvideo,hx711,SPI_Trick,state_maschine,userspace,Waage]-->
+<!--keywords[bitbanging,blog,Fehlvideo,hx711,Medianfilter,SPI_Trick,state_maschine,Userspace_Treiber,Waage]-->
 
 Wie schon am Ende von Blog "2025-12-16-scalestate" befürchtet, fand ich die X-te Version der Software für die Waage nötig. Dabei reichte diesmal die KI allein nicht mehr aus, sondern es bedurfte auch der Vorlage des etablierten C-Treibers von [Robertson](https://github.com/endail/hx711) (endail).
 
@@ -20,7 +20,9 @@ Wie schon am Ende von Blog "2025-12-16-scalestate" befürchtet, fand ich die X-t
 
 - Das betrifft auch den Kontroller der hx711-Platine. Merkt er, dass er 60 usecs nicht zu tun hat, dann legt er sich schlafen und kann anschließend bis 400 millisecs(!) zum Aufwachen benötigen. Während der Schlafübergänge liefert er korrupte Werte, die der C-Treiber auszufiltern versucht anhand der verlängerten Lesezeit der 24 Bits. Gelegentliches Versagen dieser Ausfilterung resultiert in **seltenen, plötzlichen Glitches von 4000 counts (ca. 7 g) im C-Treiber unabhängig von der Wägezelle**.
 
-- Durch ein `dts overlay` könnte in *Trixie* auch der `iio Kerneltreiber` für den hx711 aktiviert werden. Diese Overlays sind aber schwierig zu debuggen und kommen einem Hacking von Processorregistern gleich, denen für RPi 4 und 5 unterschiedliche Prozessoren zugrunde lägen. Keine eigenen Erfahrung beim Debuggen von *Root Linux* oder *Yocto*.
+- Durch ein `dts overlay` könnte in *Trixie* auch der `iio Kerneltreiber` für den hx711 aktiviert werden. Diese Overlays sind aber schwierig zu debuggen und kommen einem Hacking von Processorregistern gleich, denen für RPi 4 und 5 unterschiedliche Prozessoren zugrunde lägen.
+
+- Keine eigenen Erfahrung beim Debuggen von *Root Linux* oder *Yocto*, die ebenfalls Kerneltreiber (iio) einzubinden pflegen.
 
 - Weniger Aufwand würde der **SPI Port Trick** in Trixie machen. Hier wird der hx711 Kontroller als SPI Device "mißbraucht". Das erfordert SPI Aktivierung und einen speziellen Python Treiber (Modul `spidev` oder `c-periphery`) und die folgende Verdrahtung:
 ```
@@ -39,6 +41,16 @@ Zwar werden die SPI0-Pins belegt, aber instabiles Software-Bit-Banging und das u
 	- 3) ein externes `hx_sig_trace_analyzer.py`, das 1) und 2) anhand ihrer Zeitstempel korreliert,
 	- 4) die Zeitstempel der Auslösung von Leervideos im Vergleich mit 1) bis 3) später im Einsatztest draussen .
 
-Mit dieser Darstellung möchte ich andeuten, wieviel Zeit und Tokens in der Entwicklung eines verlässlichen hx711 Treibers unter *Raspberry Trixie* stecken.
+**Softwarekonzepte**
+
+Die KI ist zwar eine hervorragende Kodierhilfe. Sie nimmt es aber nicht ab, stabil gemessene *raw counts* (C Treiber) dann in Python auch sachgerecht zu interpretieren.
+
+- Nach morgendlichem Systemboot kann die Sitzstange leer sein oder durch Vogelgezappel oder einen sitzenden Vogel beeinflusst. Die Temperatur kann viel kühler sein als noch am aufgeheizten Vorabend. Die erste Entscheidung ist, das bisherige hxOffset (Nullinie = *baseline*) zu verwerfen und durch eine Neukalibrierung zu ersetzen, die erst stabile Werte (im *Spreadlimit*) abwartet und einen ruhig sitzenden Vogel "wegkalibriert". Verschwindet der ruhig sitzende Vogel anschließend, löst die konstant abgefallene *baseline* ein Timeout mit Neukalibrierung aus.
+- Eine minimale Sitzzeit von 2 secs wird festgelegt, ab der die Kamera getriggert wird (über FIFO). Die (lokale) KI benötigt eine gewisse Anwesenheitsdauer zur Vogelerkennung. Nicht jeder Windstoß oder fallende Regentropfen an der Stange soll ein Video auslösen. *Spread* und *Outlier* werden statistisch ermittelt (*Perzentile, Medianfilter* oder *Kalmanfilter*).
+- Die Finite State Maschine (*FSM*) definiert States der Sitzstange wie IDLE, ARRIVAL, PRESENT, DEPARTURE, OVERWEIGHT. Im laufenden Betrieb wird immer wieder überprüft, ob IDLE noch der Nullinie entspricht und ob die anderen States nach einem stabilen Timeout nicht als das neue IDLE angesehen werden müssen.
+
+
+
+Mit dieser Darstellung möchte ich andeuten, wieviel Zeit und Tokens in der Entwicklung eines verlässlichen hx711 Treibers (in C und Python) unter *Raspberry Trixie* stecken.
 
 Feedback an *herber7be7z@gmail.com*. Happy Birding!
