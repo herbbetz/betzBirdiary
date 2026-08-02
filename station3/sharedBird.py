@@ -1,5 +1,5 @@
 # shared functions
-import os, subprocess
+import os, sys, subprocess
 
 app_dir = '/home/pi/station3/'
 PIDfile = ["mainPID.txt", "hxFiPID.txt"] # PIDfile ids for programms
@@ -23,23 +23,48 @@ def fifoExists(pipefile):
         return False
 
 def readPID(id):
-    # read main program PID
-    fname = PIDdir + PIDfile[id]
-    if not os.path.exists(fname): return -1
-    with open(fname, 'r') as f:
-        thepid = f.read()
-    return thepid
+    """Returns the PID as an integer, or -1 on any error (missing file, permission error)."""
+    fname = os.path.join(PIDdir, PIDfile[id])
+    try:
+        with open(fname, 'r') as f:
+            return int(f.read().strip())
+    except (FileNotFoundError, PermissionError, ValueError) as e:
+        # Silently return -1 or log if necessary
+        return -1
+    except Exception as e:
+        print(f"Unexpected error reading PID file {fname}: {e}", file=sys.stderr)
+        return -1
 
 def writePID(id):
-    # write main program PID
+    """Returns True if successful, False on failure."""
     thepid = os.getpid()
-    fname = PIDdir + PIDfile[id]
-    with open(fname, 'w') as f:
-        f.write(str(thepid))
+    fname = os.path.join(PIDdir, PIDfile[id])
+    try:
+        # Ensure parent directory exists
+        os.makedirs(os.path.dirname(fname), exist_ok=True)
+        with open(fname, 'w') as f:
+            f.write(str(thepid))
+        return True
+    except PermissionError:
+        print(f"Permission denied writing PID to {fname}. Try sudo", file=sys.stderr)
+        return False
+    except Exception as e:
+        print(f"Error writing PID to {fname}: {e}", file=sys.stderr)
+        return False
 
 def clearPID(id):
-    fname = PIDdir + PIDfile[id]
-    os.remove(fname)
+    """Safely removes the PID file. Returns True if removed, False otherwise."""
+    fname = os.path.join(PIDdir, PIDfile[id])
+    try:
+        if os.path.exists(fname):
+            os.remove(fname)
+        return True
+    except PermissionError:
+        print(f"Permission denied removing PID file {fname}. Try sudo", file=sys.stderr)
+        return False
+    except Exception as e:
+        print(f"Error removing PID file {fname}: {e}", file=sys.stderr)
+        return False
 
 def chg_punct(oldstr):
     # change punctuation in string according to following dict:

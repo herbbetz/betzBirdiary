@@ -46,16 +46,30 @@ if [ -f "$TEMPLATE_DIR/birdlogrotate" ]; then
 fi
 
 echo "--- 3. Installing Systemd Services ---"
-SERVICES=("bird-startup.service" "bird15m.service" "bird15m.timer")
-for service in "${SERVICES[@]}"; do
-    cp "$TEMPLATE_DIR/$service" /etc/systemd/system/
-    chown root:root "/etc/systemd/system/$service"
-    chmod 644 "/etc/systemd/system/$service"    
-    systemctl enable "$service"
-    systemctl start "$service"
-    echo "[SUCCESS] Service $service enabled and started."
+# Copy all unit files first
+ALL_UNITS=("bird-startup.service" "bird15m.service" "bird15m.timer" "premidnight.service" "premidnight.timer")
+
+for unit in "${ALL_UNITS[@]}"; do
+    if [ -f "$TEMPLATE_DIR/$unit" ]; then
+        cp "$TEMPLATE_DIR/$unit" /etc/systemd/system/
+        chown root:root "/etc/systemd/system/$unit"
+        chmod 644 "/etc/systemd/system/$unit"
+        echo "[SUCCESS] Unit $unit installed."
+    else
+        echo "[ERROR] $unit not found in $TEMPLATE_DIR" >&2
+    fi
 done
+
+# Reload systemd BEFORE enabling/starting units so it recognizes the new files
 systemctl daemon-reload
+
+# Enable and start ONLY timers and standalone boot services (do NOT start oneshot target services directly)
+UNITS_TO_ENABLE=("bird-startup.service" "bird15m.timer" "premidnight.timer")
+
+for unit in "${UNITS_TO_ENABLE[@]}"; do
+    systemctl enable --now "$unit"
+    echo "[SUCCESS] $unit enabled and active."
+done
 
 echo "--- 4. Creating Desktop Link ---"
 DESKTOP_DIR="/home/pi/Desktop"
@@ -140,8 +154,8 @@ else
     echo "[SKIP] Sudo override already exists."
 fi
 
-# Run this script only from inside its own directory:
-cd /home/pi/station3 && python3 build_md_contents.py
+# Run this script only from inside its own directory, do not run build_md_contents.py as root:
+cd /home/pi/station3 && sudo -u pi python3 /home/pi/station3/build_md_contents.py
 echo "--- All System Configurations Complete ---"
 sleep 2
 echo "--- rebooting ... ---"

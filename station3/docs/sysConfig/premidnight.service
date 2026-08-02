@@ -1,0 +1,8 @@
+[Unit]
+Description=premidnight reboot for bird station
+After=network.target
+
+[Service]
+Type=oneshot
+User=pi
+ExecStart=/home/pi/station3/reboot.sh
