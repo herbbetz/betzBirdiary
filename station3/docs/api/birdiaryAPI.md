@@ -1,6 +1,9 @@
 <!--keywords[API,delete_movements,Löschen_Movements,Statistik_API]-->
 
-siehe die [API Doc](https://wiediversistmeingarten.org/doc/) auf https://wiediversistmeingarten.org/doc/
+siehe die [API Doc](https://wiediversistmeingarten.org/doc/) auf https://wiediversistmeingarten.org/doc/,
+siehe [example_requests.py](https://github.com/Birdiary/webserver/blob/main/api/example_requests.py) auf Github
+siehe [Vogel-Labels](https://github.com/Birdiary/webserver/blob/main/nginx/data_visualization/src/helpers/labels.js) des Webservers in `/nginx/data_visualization/src/helpers/labels.js`
+
 
 Das REST-API akzeptiert CRUD (create-read-update-delete) Kommandos von *request* Modul. Wird ein Access-Key (apikey) benötigt, ist er als "Stationsschlüssel" nach dem Einloggen zu sehen. Im Skript wird er dann folgendermaßen eingesetzt (kein `Authorization Header` nötig):
 
@@ -52,7 +55,7 @@ Die Birdiary API hat bereits einige Parameter, um nicht immer den kompletten Dat
 **Löschen von Movements**
 
 - siehe `python .\del_movements.py` und `python .\del_movements.py delete <ACCESS_TOKEN>`
-- Nach einem *delete* ist das Movement zwar nicht mehr auf `https://wiediversistmeingarten.org/api/movement/87bab185-7630-461c-85e6-c04cf5bab180`, aber der zuvor dokumentierte Videolink ist immer noch abrufbar. Zum Beispiel wurde  `https://wiediversistmeingarten.org/api/uploads/videos/2026-08-01_113538.519572.mp4` mit 'kein Vogel' validiert und mit dem Skript aus dem Movement API gelöscht, aber auch andere Browser zeigen das Video weiterhin. Wann wird das Video denn gelöscht, nachdem es gar nicht mehr referenziert ist?
+- Vor 4.8.2026 war nach einem *delete* das Movement zwar nicht mehr auf `https://wiediversistmeingarten.org/api/movement/87bab185-7630-461c-85e6-c04cf5bab180`, aber der zuvor dokumentierte Videolink immer noch abrufbar. Unreferenzierte Videos wurden nicht gelöscht ohne `?apikey={ACCESS_TOKEN}&deleteData=True`. Das wurde aber dann geändert und `deleteData` überflüssig.
 
 
 
@@ -324,7 +327,7 @@ Die Birdiary API hat bereits einige Parameter, um nicht immer den kompletten Dat
 
 **stations API Beispiel** 
 (https://wiediversistmeingarten.org/api/station)
-```
+``` 
 [
   {
     "station_id": "916c48da-19f6-4af4-80f3-8bf0abef02c7",

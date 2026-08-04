@@ -300,7 +300,9 @@ def daygallery():
     images = sorted([
         f for f in os.listdir(dayimg_dir)
         if f.lower().endswith(".jpg") and "_" in f # only .jpg filenames containing "_" (which monitor jpg have not)
-    ]) # needs be sorted to compare common fst part of filename
+        ],
+        reverse=True  # Newest files / groups first
+    ) # needs be sorted to compare common fst part of filename
     # start HTML:
     html_segments = ["""
     <!DOCTYPE html>
@@ -334,7 +336,8 @@ def daygallery():
         namesplits = img.split(".")
         prefix = namesplits[0]  
         comb_prefix = f"{prefix}.{namesplits[1]}"  
-        vidURL = f"https://wiediversistmeingarten.org/api/uploads/videos/{comb_prefix}.mp4"
+        # vidURL = f"https://wiediversistmeingarten.org/api/uploads/videos/{comb_prefix}.mp4"
+        vidURL = f"./validate/validate.html?vidkey={comb_prefix}"
         
         if prefix != currentprefix:
             # 1. End the PREVIOUS group's div/link (if it's not the first loop)

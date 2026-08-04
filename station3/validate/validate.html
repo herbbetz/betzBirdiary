@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Video</title>
+  <!-- replace all later with server links: -->
+  <link rel="stylesheet" href="../select/select.css">
+  <script src="testlabels.js"></script>
+</head>
+<body>
+  <div>
+    <video width="800" height="600" controls>
+      <source id="vidsrc" src="" type="video/mp4">
+      Your browser does not support the video tag.
+    </video>
+  </div>
+<hr>
+  <p>
+    <h3>Validation</h3>
+    <form action="valid_confirm.html" method="GET">
+      <div class="dropdown">
+        <input type="text" class="dropdown-input" name="selectkey" placeholder="Search bird...">
+        <input type="hidden" id="selectvalue" name="selectvalue">
+        <div class="dropdown-list"></div>
+      </div>
+
+      <button type="submit">Submit</button>
+    </form>
+  </p>
+
+  <script src="../select/genselect.js"></script>
+  <script>
+    // no XSS Defence needed when getting vidurl as get parameter from the same server
+    const urlParams = new URLSearchParams(window.location.search);
+    const vidkey = urlParams.get('vidkey');
+    const targetUrl = vidkey ? `https://wiediversistmeingarten.org/api/uploads/videos/${vidkey}.mp4` : null;
+
+    if (targetUrl) {
+      const vidsrc = document.getElementById('vidsrc');
+      vidsrc.src = targetUrl;
+    }
+  </script>
+
+</body>
+</html>

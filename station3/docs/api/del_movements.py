@@ -163,6 +163,8 @@ def main():
             for mov_id in movement_ids:
                 try:
                     # Per OpenAPI docs: /api/movement/{station_id}/{movement_id}
+                    # without deleteData=True videos were kept unreferenced until 08/2026.
+                    # url = f"{API_URL}/{mov_id}?apikey={ACCESS_TOKEN}&deleteData=True"
                     url = f"{API_URL}/{mov_id}?apikey={ACCESS_TOKEN}"
                     response = session.delete(url, timeout=10)
                     response.raise_for_status()

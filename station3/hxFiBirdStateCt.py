@@ -1,18 +1,35 @@
 """
 hxFiBirdStateCt.py
+dependent on c/libhx711.so
 
-HX711 -> Sample -> Baseline -> FSM -> Recorders
+HX711 -> MedianFilter -> Baseline -> WeightFSM -> Recorders
 
-Core physical quantities:
-    raw
-    offset
-    weight
+raw      : median-filtered HX711 reading
+offset   : current zero reference (baseline)
+weight   : (raw - offset) / hxScale
 
-No signal, energy, stability models.
+- Baseline calibration is based on current stable raw values only.
+- No hxOffset history or BOOT_LOAD_DETECT logic is used. By environment hxOffset can vary more than a bird weight.
+- Startup establishes the initial baseline from a stable sample window.
+- During IDLE, the baseline follows slow environmental drift.
+- Self-calibration is allowed only from stable IDLE measurements.
+- A state timeout can recover from a stuck ARRIVAL/PRESENT/DEPARTURE state
+  by adopting a stable idle baseline and forcing a return to IDLE.
+- OVERSIZE never triggers automatic baseline recalibration.
 
-- old hxOffset and thereby BOOT_LOAD_DETECT not suitable. By environment hxOffset can vary more than a bird weight.
-- SignalLogger output processed offline by hx_signalanalyzer.py
-- later: cmd line arg "test" to activate SignalLogger and TraceRecorder only for debugging
+Finite-state machine
+--------------------
+IDLE -> ARRIVAL -> PRESENT -> DEPARTURE -> IDLE
+
+ARRIVAL requires repeated confirmation samples.
+PRESENT represents a confirmed bird visit.
+Camera triggering occurs after CAMERA_DELAY seconds in PRESENT.
+DEPARTURE confirms unloading before returning to IDLE.
+
+The optional command line argument
+    test
+enables SignalLogger and TraceRecorder for debugging -> on ramdisk: signal_hx.csv, trace_events.csv, hxFiBird.log (C driver on stderr)
+Offline analysis of these files with hx_signalanalyzer.py and hx_sig_trace_analyzer.py .
 """
 from dataclasses import dataclass
 from collections import deque
@@ -103,19 +120,28 @@ class MedianFilter:
 # ============================================================
 
 STARTUP_SETTLE_TIME = 2.0
-STABLE_SAMPLES = 60
-STABLE_SPREAD_LIMIT = 10000
 STARTUP_MAX_TIME = 30.0
+STABLE_SAMPLES = 60 # seconds of continuous flatness required
+STABLE_SPREAD_LIMIT = 3000 # hxScale is ~ -600 raw/g, so this is ~ 5 g
+IDLE_RECAL_WINDOW = 60       # seconds of continuous flatness required
+IDLE_RECAL_SPREAD_LIMIT = 3000 # tighter than STABLE_SPREAD_LIMIT if you want more confidence
 OFFSET_ALPHA = 0.0025
 class Baseline:
     def __init__(self, hx: HX711_CT):
         self.hx = hx
         self.offset = 0.0
         self.stable_buf = deque(maxlen=STABLE_SAMPLES)
+
+    def stable_buf_reset(self):
+        self.stable_buf.clear()
+
     def update_stable_buffer(self, raw):
+        if len(self.stable_buf) >= STABLE_SAMPLES:
+            self.stable_buf.popleft()
         self.stable_buf.append(raw)
+
     def stable_raw(self):
-        if len(self.stable_buf) < STABLE_SAMPLES:
+        if len(self.stable_buf) < STABLE_SAMPLES: # window not full yet
             return None
         values = np.array(self.stable_buf)
         p10, p90 = np.percentile(values, [10, 90])
@@ -247,12 +273,13 @@ class WeightFSM:
         # IDLE may reset its baseline if it has drifted away.
         if self.state == STATE_IDLE:
             if abs(sample.weight) > WEIGHTTHRESHOLD_off:
-                raw_value = baseline.stable_raw()
-                if raw_value is not None:
-                    baseline.adopt_raw_value(raw_value, sample)
-                    self.reset(keep_peak=False)
-                    sample.note = "IDLE_BASELINE_RESET"
-                    return "IDLE_BASELINE_RESET"
+                if time.monotonic() - self.state_t0 > STATE_TIMEOUT:
+                    raw_value = baseline.stable_raw()
+                    if raw_value is not None:
+                        baseline.adopt_raw_value(raw_value, sample)
+                        self.reset(keep_peak=False)
+                        sample.note = "IDLE_BASELINE_TIMEOUT"
+                        return "IDLE_BASELINE_TIMEOUT"
             return None
 
         # OVERSIZE: never auto-calibrate.
@@ -385,7 +412,7 @@ class SignalLogger:
     def __init__(self, sample):
         self.file = os.path.join(
             birdpath["ramdisk"],
-            f"signal_{datetime.now():%Y-%m-%d_%H-%M-%S}.csv"
+            "signal_hx.csv" # f"signal_{datetime.now():%Y-%m-%d_%H-%M-%S}.csv"
         )
         with open(self.file, "w") as f:
             f.write("# weightThreshold={}\n".format(weightThreshold))
@@ -566,9 +593,17 @@ try:
         sample.peak = fsm.peak
 
         if fsm.state == STATE_IDLE:
-            if abs(sample.weight) < WEIGHTTHRESHOLD_off:
-                baseline.update_stable_buffer(sample.raw)
+            baseline.update_stable_buffer(sample.raw)
+            candidate = baseline.stable_raw()
+            if candidate is not None and abs(candidate - baseline.offset) > 0:
+                baseline.adopt_raw_value(candidate, sample)
+                sample.note = "IDLE_STABLE_RECAL"
+                event = "IDLE_STABLE_RECAL"
+            # keep follow_idle for genuinely small drift near a *correct* baseline
+            elif abs(sample.weight) < WEIGHTTHRESHOLD_off:
                 baseline.follow_idle(sample)
+        else:
+            baseline.stable_buf_reset()
 
         timeout_event = fsm.check_timeout(
             sample,
