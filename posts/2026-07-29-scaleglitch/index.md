@@ -31,6 +31,8 @@ SCK  -> SPI MOSI (Pin 19 / GPIO 10)
 ```
 Zwar werden die SPI0-Pins belegt, aber instabiles Software-Bit-Banging und das ungewollte Einschlafen des HX711-Chips entfallen. Die kontinuierlichen ~15 mA (statt 1,5 mA im Sleep-Zustand) durch die Wheatstone-Brücke fallen bei Netzbetrieb kaum ins Gewicht.
 
+- Mit **SCHED_FIFO** ist es möglich, den dritten CPU Core des RPi4 exklusiv zu isolieren (`isolcpus=3` in `/boot/firmware/cmdline.txt`) und im C Treiber des hx711 für den eigenen Thread zu reservieren (nur als root).
+
 **Testaufbau**
 
 - Die Station lief über Stunden im Wohnzimmer, um definiert die Sitzstange unbelastet zu lassen (oder sie definiert zu belasten).

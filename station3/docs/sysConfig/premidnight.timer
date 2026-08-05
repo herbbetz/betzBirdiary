@@ -3,7 +3,8 @@ Description=Trigger premidnight reboot daily at 23:55
 
 [Timer]
 OnCalendar=*-*-* 23:55:00
-Persistent=true
+# Set to false or omit (default=false) so missed runs are NOT triggered on morning boot
+Persistent=false
 
 [Install]
 WantedBy=timers.target

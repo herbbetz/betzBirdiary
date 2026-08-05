@@ -328,7 +328,7 @@ def daygallery():
 
     currentprefix = None
     current_comb_prefix = None  
-    groupIdx = len(set(img.split('.')[0] for img in images)) # Count unique prefixes for group index
+    groupIdx = len(set(img.split('.')[0] for img in images)) + 1 # Count unique prefixes for group index
     vidURL_prev = ""
 
     # Build the sequential body
