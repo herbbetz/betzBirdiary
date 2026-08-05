@@ -188,7 +188,8 @@ def deleteMovement(url, stationid, movid, apiKey):
 
 def addValidation(payload, url, stationid, movid):
     #payload = {"validation": {"latinName": "test2"}}
-    r = requests.put(url + "/api/validate/"+ stationid, + "/" + movid, json=payload)
+    theurl = url + "/api/validate/"+ stationid + "/" + movid
+    r = requests.put(theurl, json=payload)
     print(r)
 
 run_function()
@@ -337,5 +338,3 @@ def station_id():
     
     # Closing file
     f.close()
-
-

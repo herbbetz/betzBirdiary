@@ -328,7 +328,7 @@ def daygallery():
 
     currentprefix = None
     current_comb_prefix = None  
-    groupIdx = 0
+    groupIdx = len(set(img.split('.')[0] for img in images)) # Count unique prefixes for group index
     vidURL_prev = ""
 
     # Build the sequential body
@@ -348,7 +348,7 @@ def daygallery():
                # html += f'lastDEBUG: groupIdx={groupIdx}: csv={current_comb_prefix}, video={vidURL_prev}, videolinktext={currentprefix}'
 
             # 2. Start the NEW group's row
-            groupIdx += 1
+            groupIdx -= 1 # descending order, so first group is the highest number
             html_segments.append('<div class="rowed">')
             currentprefix = prefix
             current_comb_prefix = comb_prefix
