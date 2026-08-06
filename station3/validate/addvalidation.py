@@ -10,8 +10,9 @@ import json
 boxId = "87bab185-7630-461c-85e6-c04cf5bab180"  # Replace with actual boxId
 boxName = "your_box_name_here"  # Replace with actual boxName
 
-BASE_URL = "https://wiediversistmeingarten.org/api/movement/"
+MOVEMENT_BASE_URL = "https://wiediversistmeingarten.org/api/movement/"
 VIDEO_BASE_URL = "https://wiediversistmeingarten.org/api/uploads/videos/"
+VALIDATION_BASE_URL = "https://wiediversistmeingarten.org/api/validate/"
 VIDEO_ID = ""
 
 def set_video_id(video_id):
@@ -28,7 +29,7 @@ def get_today_movements(station_id):
     today = datetime.now().date()
     today_str = today.strftime("%Y-%m-%d")
  
-    paginated_url = f"{BASE_URL}{station_id}?from={today_str}"
+    paginated_url = f"{MOVEMENT_BASE_URL}{station_id}?from={today_str}"
     print(f"[API PAGINATION] Fetching {paginated_url}")
     start_time = time.time()
     try:
@@ -56,13 +57,13 @@ def find_id_4video(movements, video_id):
     for movement in movements:
         if movement.get("video") == video_id:
             mov_id = movement.get("mov_id")
-            validation_status = movement.get("validation", {}).get("val_yes", "val_no")  # Default to "val_no" if not found
-            return mov_id, validation_status  # Return the movement ID and validation status associated with the video
+            # validation_status = movement.get("validation", {}).get("val_yes", "val_no")  # Default to "val_no" if not found
+            return mov_id
     return None
 
-def addValidation(payload, url, stationid, movid):
+def addValidation(payload, stationid, movid):
     #payload = {"validation": {"latinName": "test2"}}
-    theurl = url + "/api/validate/"+ stationid + "/" + movid
+    theurl = VALIDATION_BASE_URL + stationid + "/" + movid
     r = requests.put(theurl, json=payload)
     print(r)
 
@@ -77,9 +78,9 @@ if __name__ == "__main__":
         print("No video ID to search for")
         exit(1)
     video_url = f"{VIDEO_BASE_URL}{VIDEO_ID}"
-    mov_id, validation_status = find_id_4video(movements_today, video_url)
+    mov_id = find_id_4video(movements_today, video_url)
     if mov_id:
-        print(f"{video_id} found in {mov_id} with validation status: {validation_status}")
+        print(f"{video_id} found in {mov_id}")
     else:
         print(f"No movement found for {video_url}")
         exit(0)
@@ -91,12 +92,7 @@ if __name__ == "__main__":
         exit(1)
 
     payload = {"validation": {"latinName": latinName, "germanName": germanName}}
-    '''
-    if validation_status == "val_no":
-        payload = {"validation": {"val_yes": True, "latinName": latinName, "germanName": germanName}}
-        print(f"Video {video_id} is already validated. No action taken.")
-    '''
     print(f"try adding to {mov_id}: {payload}")
-    addValidation(payload, "https://wiediversistmeingarten.org", boxId, mov_id)
+    addValidation(payload, boxId, mov_id)
 
     

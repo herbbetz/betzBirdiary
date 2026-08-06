@@ -57,6 +57,11 @@ Die Birdiary API hat bereits einige Parameter, um nicht immer den kompletten Dat
 - siehe `python .\del_movements.py` und `python .\del_movements.py delete <ACCESS_TOKEN>`
 - Vor 4.8.2026 war nach einem *delete* das Movement zwar nicht mehr auf `https://wiediversistmeingarten.org/api/movement/87bab185-7630-461c-85e6-c04cf5bab180`, aber der zuvor dokumentierte Videolink immer noch abrufbar. Unreferenzierte Videos wurden nicht gelöscht ohne `?apikey={ACCESS_TOKEN}&deleteData=True`. Das wurde aber dann geändert und `deleteData` überflüssig.
 
+**PUT APIs**
+
+- Validation Add API: `https://wiediversistmeingarten.org/api/validate/` erstellt Obergruppe `validation`, falls noch nicht vorhanden, und darin neues `validations`- Element und dessen `timestamp`.
+- Video API: `https://wiediversistmeingarten.org/api/uploads/videos`
+
 
 
 **movements API Beispiel**

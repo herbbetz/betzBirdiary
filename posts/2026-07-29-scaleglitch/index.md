@@ -31,7 +31,31 @@ SCK  -> SPI MOSI (Pin 19 / GPIO 10)
 ```
 Zwar werden die SPI0-Pins belegt, aber instabiles Software-Bit-Banging und das ungewollte Einschlafen des HX711-Chips entfallen. Die kontinuierlichen ~15 mA (statt 1,5 mA im Sleep-Zustand) durch die Wheatstone-Brücke fallen bei Netzbetrieb kaum ins Gewicht.
 
-- Mit **SCHED_FIFO** ist es möglich, den dritten CPU Core des RPi4 exklusiv zu isolieren (`isolcpus=3` in `/boot/firmware/cmdline.txt`) und im C Treiber des hx711 für den eigenen Thread zu reservieren (nur als root).
+- Mit **SCHED_FIFO** ist es möglich, den *dritten CPU Core* des RPi4 exklusiv zu isolieren (`isolcpus=3` in `/boot/firmware/cmdline.txt`) und im C Treiber des hx711 für den eigenen Thread zu reservieren (nur als root). Auch in Python gibt es einen Befehl, um das Skript mit *CPU Core 3* zu betreiben: `os.sched_setaffinity(0, {3})`.
+
+- dasselbe kann auch durch OS commands zusammen mit `isolcpus=3 (cmdline.txt)` erreicht werden: `sudo chrt -f 99 taskset -c 3 python3 any.py` oder auch in einem `systemd hx711.service` :
+
+  ````
+  [Unit]
+  Description=HX711 Real-Time Driver
+  After=network.target
+  
+  [Service]
+  Type=simple
+  ExecStart=/home/pi/station3/hxFiBirdStatCt.py
+  Restart=always
+  
+  # --- OS Dedicated Core & Real-time Settings ---
+  CPUAffinity=3
+  CPUSchedulingPolicy=fifo
+  CPUSchedulingPriority=99
+  
+  [Install]
+  WantedBy=multi-user.target
+  ```
+  ````
+
+- Monitoring des *CPU core3 binding* mit `top, htop`, nachdem in ihnen die Anzeige relevanter Spalten (`Processor, Priority`) konfiguriert und pro User gespeichert wurden. siehe auch `station3/prioty.sh`
 
 **Testaufbau**
 
