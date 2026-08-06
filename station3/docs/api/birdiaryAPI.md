@@ -59,7 +59,7 @@ Die Birdiary API hat bereits einige Parameter, um nicht immer den kompletten Dat
 
 **PUT APIs**
 
-- Validation Add API: `https://wiediversistmeingarten.org/api/validate/` erstellt Obergruppe `validation`, falls noch nicht vorhanden, und darin neues `validations`- Element und dessen `timestamp`.
+- Validation Add API: `https://wiediversistmeingarten.org/api/validate/` erstellt Obergruppe `validation`, falls noch nicht vorhanden, und darin neues `validations`- Element und dessen `timestamp(GMT)`.
 - Video API: `https://wiediversistmeingarten.org/api/uploads/videos`
 
 

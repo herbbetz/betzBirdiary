@@ -4,10 +4,38 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Validate</title>
+  <style>
+      #loading { font-style: italic; color: #666; }
+      .hidden { display: none; }
+  </style>
 </head>
 <body>
-  <h1>Validation Confirmation</h1>
-  <p>Thank you for your submission. Your validation has been recorded.</p>
+
+  <div id="meta-info">Loading station details...</div>
+  <div id="loading">⏳ Fetching bird movements from server... This may take up to 3 minutes for heavy stations. Please wait.</div>
+
+  <div id="content" class="hidden">
+    <h3>Validation Confirmation</h3>
+    <p>Thank you for your submission. Your validation has been recorded.</p>
+  </div>  
   <a href="validate.html">Back to Validation</a>
+  <script>
+      // Automatically fire the background network request when the page paints
+      const currentQueryParams = window.location.search;
+      console.log("Current Query Params:", currentQueryParams);
+      fetch(`/api/validation-data${currentQueryParams}`)
+          .then(response => response.json())
+          .then(data => {
+              document.getElementById('loading').classList.add('hidden');
+              document.getElementById('content').classList.remove('hidden');
+
+              document.getElementById('meta-info').innerHTML = 
+                  `Validation set for ${data.video_id} in ${data.mov_id} to ${data.german_name}: ${data.latin_name}`;
+          })
+          .catch(err => {
+              document.getElementById('loading').textContent = "❌ Error loading validation data.";
+              console.error("Fetch error:", err);
+          });
+  </script>
 </body>
 </html>

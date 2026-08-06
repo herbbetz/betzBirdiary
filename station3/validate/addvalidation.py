@@ -72,7 +72,7 @@ if __name__ == "__main__":
     movements_today = get_today_movements(boxId)
     print(f"Movements today for station {boxName}: {len(movements_today)}")
 
-    video_id = "2026-08-05_064245.880350"  # example: "2026-04-20_090658.863742"
+    video_id = "2026-08-06_131547.055933"  # example: "2026-04-20_090658.863742"
     set_video_id(video_id)
     if not VIDEO_ID:
         print("No video ID to search for")

@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Video</title>
   <!-- replace all later with server links: -->
-  <link rel="stylesheet" href="../select/select.css">
+  <link rel="stylesheet" href="/select/select.css">
   <script src="testlabels.js"></script>
 </head>
 <body>
@@ -18,10 +18,11 @@
 <hr>
   <p>
     <h3>Validation</h3>
-    <form action="valid_confirm.html" method="GET">
+    <form action="/validate/valid_confirm.html" method="GET">
       <div class="dropdown">
         <input type="text" class="dropdown-input" name="selectkey" placeholder="Search bird...">
         <input type="hidden" id="selectvalue" name="selectvalue">
+        <input type="hidden" id="videoid" name="videoid">
         <div class="dropdown-list"></div>
       </div>
 
@@ -29,7 +30,7 @@
     </form>
   </p>
 
-  <script src="../select/genselect.js"></script>
+  <script src="/select/genselect.js"></script>
   <script>
     // no XSS Defence needed when getting vidurl as get parameter from the same server
     const urlParams = new URLSearchParams(window.location.search);
@@ -38,6 +39,8 @@
 
     if (targetUrl) {
       const vidsrc = document.getElementById('vidsrc');
+      const videoidInput = document.getElementById('videoid');
+      videoidInput.value = vidkey;
       vidsrc.src = targetUrl;
     }
   </script>

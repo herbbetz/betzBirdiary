@@ -337,7 +337,7 @@ def daygallery():
         prefix = namesplits[0]  
         comb_prefix = f"{prefix}.{namesplits[1]}"  
         # vidURL = f"https://wiediversistmeingarten.org/api/uploads/videos/{comb_prefix}.mp4"
-        vidURL = f"./validate/validate.html?vidkey={comb_prefix}"
+        vidURL = f"/validate/validate.html?vidkey={comb_prefix}"
         
         if prefix != currentprefix:
             # 1. End the PREVIOUS group's div/link (if it's not the first loop)
@@ -432,6 +432,22 @@ def api_rarebirds():
     rb.setStation(station_name, station_id)
     report_data = rb.getReport()
     return jsonify(report_data)
+
+@app.route("/api/validation-data")
+def api_validation_data():
+    video_id = request.args.get('videoid')
+    german_name = request.args.get('selectkey')
+    latin_name = request.args.get('selectvalue')
+    print(f"--- Flask Received for Validation: Name={german_name}, Latin={latin_name}, ID={video_id} ---")
+    # rb.setStation(video_id, german_name, latin_name)
+    # validation_data = rb.getValidationData()
+    validation_data = {
+        "video_id": video_id,
+        "german_name": german_name,
+        "latin_name": latin_name,
+        "mov_id": "pending"  # Placeholder for actual validation status
+    }
+    return jsonify(validation_data)
 
 # remove mp4 and record from gallery.js, 'del' button in gallery3.html handled by it's sendDelRec(recId):
 @app.route('/delrecord', methods=['POST'])
