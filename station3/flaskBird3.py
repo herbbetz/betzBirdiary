@@ -435,7 +435,7 @@ def api_rarebirds():
 
 @app.route("/api/validation-data")
 def api_validation_data():
-    video_id = request.args.get('videoid')
+    video_id = request.args.get('vidkey')
     german_name = request.args.get('selectkey')
     latin_name = request.args.get('selectvalue')
     print(f"--- Flask Received for Validation: Name={german_name}, Latin={latin_name}, ID={video_id} ---")

@@ -98,11 +98,7 @@ document.addEventListener("DOMContentLoaded", () => {
       event.preventDefault(); 
       input.classList.add("input-error");
       alert("Please select a valid item from the dropdown menu before submitting.");
-    } else {
-      console.log(`[Form Submitting] Payload -> selectkey: ${input.value}, selectvalue: ${hiddenInput.value}`);
-      
-      event.preventDefault(); 
-      window.location.href = `${form.action}?selectkey=${encodeURIComponent(input.value)}&selectvalue=${encodeURIComponent(hiddenInput.value)}`;
     }
+    // No else block needed! The browser will naturally submit all form inputs.
   });
 });

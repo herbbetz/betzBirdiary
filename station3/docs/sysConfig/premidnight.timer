@@ -3,6 +3,8 @@ Description=Trigger premidnight reboot daily at 23:55
 
 [Timer]
 OnCalendar=*-*-* 23:55:00
+# prevents default 1-minute catch-up window (still old system time just after boot):
+AccuracySec=1us
 # Set to false or omit (default=false) so missed runs are NOT triggered on morning boot
 Persistent=false
 

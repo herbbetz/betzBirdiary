@@ -6,7 +6,7 @@
   <title>Video</title>
   <!-- replace all later with server links: -->
   <link rel="stylesheet" href="/select/select.css">
-  <script src="testlabels.js"></script>
+  <script src="/validate/birdlabels.js"></script>
 </head>
 <body>
   <div>
@@ -22,7 +22,8 @@
       <div class="dropdown">
         <input type="text" class="dropdown-input" name="selectkey" placeholder="Search bird...">
         <input type="hidden" id="selectvalue" name="selectvalue">
-        <input type="hidden" id="videoid" name="videoid">
+        <!-- FIXED: Updated name attribute to "vidkey" -->
+        <input type="hidden" id="videoid" name="vidkey">
         <div class="dropdown-list"></div>
       </div>
 
@@ -30,7 +31,6 @@
     </form>
   </p>
 
-  <script src="/select/genselect.js"></script>
   <script>
     // no XSS Defence needed when getting vidurl as get parameter from the same server
     const urlParams = new URLSearchParams(window.location.search);
@@ -40,10 +40,14 @@
     if (targetUrl) {
       const vidsrc = document.getElementById('vidsrc');
       const videoidInput = document.getElementById('videoid');
+      
       videoidInput.value = vidkey;
       vidsrc.src = targetUrl;
+      
+      // FIXED: Reload video element so source change takes effect
+      vidsrc.parentElement.load();
     }
   </script>
-
+  <script src="/select/genselect.js"></script>
 </body>
 </html>
