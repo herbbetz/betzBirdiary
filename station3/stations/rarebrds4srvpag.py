@@ -5,7 +5,6 @@ manually using german bird labels from "webserver-main2026-04-18/nginx/data_visu
 import requests
 from datetime import datetime
 import time
-# import json
 from sharedBird import prev_month
 
 # Global API endpoint and state variables

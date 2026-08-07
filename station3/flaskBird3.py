@@ -14,7 +14,9 @@ import msgBird as ms
 from configBird3 import birdpath, update_config_json
 from sharedBird import delFromGallery, prev_month
 # Import the entire module so you can use the module prefix
-import stations.rarebrds4srvpag as rb
+# these sometimes need __init__.py in their dirs, when first imported
+import stations.rarebrds4srvpag as rb # rare birds
+import validate.validation4srv as av # add validation
 # for camdata plotting:
 import matplotlib.pyplot as plt
 from collections import defaultdict
@@ -438,15 +440,16 @@ def api_validation_data():
     video_id = request.args.get('vidkey')
     german_name = request.args.get('selectkey')
     latin_name = request.args.get('selectvalue')
-    print(f"--- Flask Received for Validation: Name={german_name}, Latin={latin_name}, ID={video_id} ---")
-    # rb.setStation(video_id, german_name, latin_name)
-    # validation_data = rb.getValidationData()
+    # print(f"--- Flask Received for Validation: Name={german_name}, Latin={latin_name}, ID={video_id} ---")
+    validation_data = av.getValidationData(video_id, german_name, latin_name)
+    '''
     validation_data = {
         "video_id": video_id,
         "german_name": german_name,
         "latin_name": latin_name,
         "mov_id": "pending"  # Placeholder for actual validation status
     }
+    '''
     return jsonify(validation_data)
 
 # remove mp4 and record from gallery.js, 'del' button in gallery3.html handled by it's sendDelRec(recId):
