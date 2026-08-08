@@ -70,9 +70,10 @@ def export_stations():
             json.dump(sorted_vk_backend, json_file, ensure_ascii=False, indent=2)
 
         # Save Target 2: Frontend JS Map Object
+        # /select/genselect.js expects a JS object named 'selectData' with keys as station names and values as station IDs
         sorted_js_map = {k: js_frontend_map[k] for k in sorted(js_frontend_map.keys(), key=lambda s: s.lower())}
         with open(OUTPUT_JS, mode="w", encoding="utf-8") as js_file:
-            js_file.write(f"const stationData = {json.dumps(sorted_js_map, ensure_ascii=False)};\n")
+            js_file.write(f"const selectData = {json.dumps(sorted_js_map, ensure_ascii=False)};\n")
             
         print(f"\n[EXPORT COMPLETE]")
         print(f" -> Saved {len(sorted_vk_backend)} slim records to 'stations.json'.")

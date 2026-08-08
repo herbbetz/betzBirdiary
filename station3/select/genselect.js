@@ -1,3 +1,5 @@
+// genselect.js needs any.js in format 'const selectData = { "key1": "value1", ...};' and writes after URL the get params 'selectkey=key1&selectvalue=value1' on form submit. 
+// It also handles manual typing and click selection, with validation and logging.
 document.addEventListener("DOMContentLoaded", () => {
   const input = document.querySelector(".dropdown-input");
   const list = document.querySelector(".dropdown-list");
@@ -58,7 +60,7 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // --- 4. Handle item selection via click ---
-  list.addEventListener("click", (event) => {
+  list.addEventListener("mousedown", (event) => {
     const targetItem = event.target.closest(".dropdown-item");
     if (targetItem) {
       // ✅ FIXED: Renamed variables to match usage
