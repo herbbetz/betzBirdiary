@@ -36,8 +36,13 @@
                     document.getElementById('content').classList.remove('hidden');
 
                     //2. Populate the metadata
-                    document.getElementById('meta-info').innerHTML = 
-                        `Human validations of station <b>${data.station_name}</b> (${data.station_id})<br>from ${data.earliest_date} to ${data.current_day}`;
+                    const metaInfo = document.getElementById('meta-info');
+                    metaInfo.textContent = `Human validations of station <b>${data.station_name}</b> (${data.station_id})<br>from ${data.earliest_date} to ${data.current_day}`;
+                    
+                    if (data.msg) {
+                        metaInfo.appendChild(document.createElement('br'));
+                        metaInfo.appendChild(document.createTextNode(data.msg));
+                    }
 
                     // 3. Render the frequent birds list
                     const freqList = document.getElementById('frequent-birds');

@@ -167,7 +167,7 @@ def generate_html(data):
 
         validated = entry['cnt_validated']
         if validated > 0:
-            rb_layouter = f"/stations/rb_report.html?station_id={entry['station_id']}&station_name={entry['name']}"
+            rb_layouter = f"/stations/rb_report.html?selectkey={entry['name']}&selectvalue={entry['station_id']}"
             rbird_link = f'<a href="{rb_layouter}" target="_blank">{validated}</a>'
         else:
             rbird_link = "0"

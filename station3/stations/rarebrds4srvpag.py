@@ -9,33 +9,21 @@ from sharedBird import prev_month
 
 # Global API endpoint and state variables
 BASE_URL = "https://wiediversistmeingarten.org/api/movement/"
-STATION_ID = ""
-STATION_NAME = ""
-API_URL = ""
 month_back = 3
 
 # Frequent bird labels filter
-FREQUENT_BIRDS = {"Haussperling", "Feldsperling", "Gimpel", "Blaumeise", "Kohlmeise", "Rotkehlchen", "Buchfink", "Gruenfink", "Kleiber"}
+FREQUENT_BIRDS = {"Haussperling", "Feldsperling", "Gimpel", "Blaumeise", "Kohlmeise", "Rotkehlchen", "Buchfink", "Gruenfink", "Kleiber", "Ringeltaube"}
 
 # Persistent session pool configuration
 session = requests.Session()
 session.headers.update({"Connection": "close"}) 
 
-def setStation(station_name, station_id):
-    """
-    Sets the station name and ID received from the server.
-    """
-    global STATION_NAME, STATION_ID, API_URL
-    STATION_NAME = station_name if station_name else "Unknown Station"
-    STATION_ID = station_id if station_id else "No ID"
-    API_URL = f"{BASE_URL}{STATION_ID}"
-
-def get_dated_movements_paginated(target_url, earliest_date):
+def get_dated_movements_paginated(target_url, earliest_date, log_messages):
     """
     Fetches movements using the native ?from=YYYY-MM-DD pagination parameter.
     """
     start_time = time.time()
-    print(f"\n[API PAGINATION] Entering data retrieval. Earliest Date Target: {earliest_date}")
+    # print(f"\n[API PAGINATION] Entering data retrieval. Earliest Date Target: {earliest_date}")
     
     filtered_movements = []
     # Format our starting parameter for the API call
@@ -43,22 +31,22 @@ def get_dated_movements_paginated(target_url, earliest_date):
     
     # Target URL constructed with parameter flag
     paginated_url = f"{target_url}?from={from_date_str}"
-    print(f"[API PAGINATION] Fetching targeted timeline window via: {paginated_url}")
+    # print(f"[API PAGINATION] Fetching targeted timeline window via: {paginated_url}")
     
     try:
         # Request the entire filtered subset natively parsed by the server side
         response = session.get(paginated_url, timeout=30)
         network_duration = time.time() - start_time
-        print(f"[API PAGINATION] Response received in {network_duration:.2f} seconds. Status: {response.status_code}")
+        log_messages.append(f"MOV_URL {response.status_code}, {network_duration:.2f}s")
         
         response.raise_for_status()
         movements = response.json()
         
         if not isinstance(movements, list):
-            print("[API PAGINATION.ERROR] Expected JSON payload array list structure. Received incompatible type.")
+            log_messages.append("MOV_URL: no JSON list")
             return []
             
-        print(f"[API PAGINATION] Server returned {len(movements)} records within timeline filter constraint boundaries.")
+        log_messages.append(f"{len(movements)} movs")
         
         # Double check date bounds inside the payload just in case server parameters fluctuate
         for mov in movements:
@@ -73,12 +61,34 @@ def get_dated_movements_paginated(target_url, earliest_date):
         return filtered_movements
 
     except Exception as e:
-        print(f"[API PAGINATION.ERROR] Target sequence retrieval execution failed: {e}")
+        log_messages.append(f"MOV_URL: {e}")
         return []
     
-def getReport():
-    total_start = time.time()
-    print("\n================== [STARTING getReport LOGGING] ==================")
+def getReport(station_name, station_id):
+    """
+    Main entry point for Flask. 
+    """
+
+    log_messages = []
+
+    report_data = {
+        "station_name": station_name or "",
+        "station_id": station_id or "",
+        "earliest_date": None,
+        "current_day": None,
+        "frequent_birds": None, 
+        "rare_birds": None,
+        "msg": "" 
+    }
+
+
+    if not station_name or not station_id:
+        log_messages.append("No station name or ID.")
+        report_data["msg"] = " | ".join(log_messages)
+        return report_data
+
+    # total_start = time.time()
+    # print("\n================== [STARTING getReport LOGGING] ==================")
     
     today = datetime.today()
     current_day = today.strftime("%Y-%m-%d")
@@ -89,12 +99,11 @@ def getReport():
     earliest_date = datetime.strptime(f"{current_month}-01", "%Y-%m-%d").date()
     
     # Build the base target path explicitly
-    target_url = f"{BASE_URL}{STATION_ID}"
+    target_url = f"{BASE_URL}{station_id}"
     
     # Execute the updated native paginated filter function
-    movements = get_dated_movements_paginated(target_url, earliest_date)
+    movements = get_dated_movements_paginated(target_url, earliest_date, log_messages)
     
-    print(f"[TIMING 2] Returned from data fetching. Proceeding to HTML serialization...")
     loop_start = time.time()
 
     frequent_counts = {}  
@@ -122,16 +131,17 @@ def getReport():
                     html_link = f'<a href="{video_url}" target="_blank">{link_text}</a>'
                     rare_birds_links.append(html_link)
 
-    print(f"[TIMING 3] Validation loops finished processing in {time.time() - loop_start:.4f} seconds.")
+    log_messages.append(f"Validations in {time.time() - loop_start:.4f}secs")
 
     report_data = {
-        "station_name": STATION_NAME,
-        "station_id": STATION_ID,
+        "station_name": station_name,
+        "station_id": station_id,
         "earliest_date": str(earliest_date),
         "current_day": current_day,
         "frequent_birds": frequent_counts, 
-        "rare_birds": rare_birds_links     
+        "rare_birds": rare_birds_links,
+        "msg": " | ".join(log_messages)  
     }
     
-    print(f"================== [FINISHED Data Processing in {time.time() - total_start:.2f}s] ==================\n")
+    # print(f"FINISHED Data Processing in {time.time() - total_start:.2f}s\n")
     return report_data

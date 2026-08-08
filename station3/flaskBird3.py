@@ -426,13 +426,12 @@ def monthlyking():
 @app.route("/api/report-data")
 # selectstations.html submits to layouter '/rarebirds/rb_report.html' with GET parameters station_name and station_id
 def api_rarebirds():
-    station_name = request.args.get('station_name')
-    station_id = request.args.get('station_id')
+    station_name = request.args.get('selectkey')
+    station_id = request.args.get('selectvalue')
     # DEBUG PRINT: Watch this terminal output after starting flask from terminal!
-    print(f"--- Flask Received: Name={station_name}, ID={station_id} ---")
-    # module imported above as rb, so we can call rb.setStation() and rb.getHTML()
-    rb.setStation(station_name, station_id)
-    report_data = rb.getReport()
+    # print(f"--- Flask Received: Name={station_name}, ID={station_id} ---")
+    # module imported above as rb, so we can call rb.getReport()
+    report_data = rb.getReport(station_name, station_id)
     return jsonify(report_data)
 
 @app.route("/api/validation-data")
@@ -441,7 +440,7 @@ def api_validation_data():
     german_name = request.args.get('selectkey')
     latin_name = request.args.get('selectvalue')
     # print(f"--- Flask Received for Validation: Name={german_name}, Latin={latin_name}, ID={video_id} ---")
-    validation_data = av.getValidationData(video_id, german_name, latin_name)
+    validation_data = av.get_validation_data(video_id, german_name, latin_name)
     '''
     validation_data = {
         "video_id": video_id,
