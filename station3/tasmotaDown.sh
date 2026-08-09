@@ -14,12 +14,21 @@ else
     msg=$1
 fi
 
-tasmota_ip=$(jq -r '.tasmota_ip' "$config_file")
+# in case of active SSH/SFTP/SCP (port 22) or WayVNC_0 (port 5900) sessions, skip shutdown
+if ss -H -tn state established '( sport = :22 or dport = :22 or sport = :5900 )' | grep -q .; then
+    msg="$(date): Active connection (SSH/VNC) detected, skipping $msg."
+    log "$msg"
+    echo "$msg"
+    exit 0
+fi
+
 bash "$APPDIR/mdroid.sh" "$msg"
 sleep 10
+
 # https://tasmota.github.io/docs/Commands/
 # %20 = ' ', %3B = ';', Backlog = 'command sequence with ; separator', Delay 1200 = '1200 * 0.1secs', Power means Power1 = relay 1
 # /usr/bin/curl "http://192.168.178.50/cm?cmnd=Backlog%20Delay%201200%3BPower%20off"
+tasmota_ip=$(jq -r '.tasmota_ip' "$config_file")
 CNT=0
 RESPONSE=0
 if [[ -n "$tasmota_ip" && "$tasmota_ip" != "null" && ! "$tasmota_ip" =~ X$ ]]; then # field empty or not existing or ends with X
