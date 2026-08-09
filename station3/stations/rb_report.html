@@ -38,7 +38,7 @@
 
                     //2. Populate the metadata
                     const metaInfo = document.getElementById('meta-info');
-                    metaInfo.textContent = `Human validations of station <b>${data.station_name}</b> (${data.station_id})<br>from ${data.earliest_date} to ${data.current_day}`;
+                    metaInfo.textContent = `Human validations of station ${data.station_name} (${data.station_id}) from ${data.earliest_date} to ${data.current_day}`;
                     
                     if (data.msg) {
                         metaInfo.appendChild(document.createElement('br'));
