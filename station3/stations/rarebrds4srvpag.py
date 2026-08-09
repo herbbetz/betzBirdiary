@@ -12,7 +12,7 @@ BASE_URL = "https://wiediversistmeingarten.org/api/movement/"
 month_back = 3
 
 # Frequent bird labels filter
-FREQUENT_BIRDS = {"Haussperling", "Feldsperling", "Gimpel", "Blaumeise", "Kohlmeise", "Rotkehlchen", "Buchfink", "Gruenfink", "Kleiber", "Ringeltaube"}
+FREQUENT_BIRDS = {"KEIN_VOGEL", "Haussperling", "Feldsperling", "Gimpel", "Blaumeise", "Kohlmeise", "Rotkehlchen", "Buchfink", "Gruenfink", "Kleiber", "Ringeltaube"}
 
 # Persistent session pool configuration
 session = requests.Session()
