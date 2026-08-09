@@ -12,14 +12,14 @@ CURRENT_HM=$(date +%H%M)
 
 # 1. Time-window guard (exit if outside 23:53 - 23:58)
 if ! [[ "$CURRENT_HM" -ge 2353 && "$CURRENT_HM" -le 2358 ]]; then
-    msg="$CURRENT_HM outside reboot plan"
+    msg="${CURRENT_HM}_outside_reboot_window"
     log "$msg"
     exit 0
 fi
 
 # 2. Check for active SSH/SFTP/SCP (port 22) or WayVNC_0 (port 5900) sessions
 if ss -H -tn state established '( sport = :22 or dport = :22 or sport = :5900 )' | grep -q .; then
-    msg="$(date): Active connection (SSH/VNC) detected, skipping reboot."
+    msg="${msg}_skipping_ssh"
     log "$msg"
     echo "$msg"
     exit 0

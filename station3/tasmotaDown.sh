@@ -16,7 +16,7 @@ fi
 
 # in case of active SSH/SFTP/SCP (port 22) or WayVNC_0 (port 5900) sessions, skip shutdown
 if ss -H -tn state established '( sport = :22 or dport = :22 or sport = :5900 )' | grep -q .; then
-    msg="$(date): Active connection (SSH/VNC) detected, skipping $msg."
+    msg="${msg}_skipping_ssh"
     log "$msg"
     echo "$msg"
     exit 0
