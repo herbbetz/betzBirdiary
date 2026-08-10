@@ -1,3 +1,21 @@
+# Me
+Hobbyist Python developer searching for clean, readable, and maintainable code.
+
+# Task
+Want to make SignalLogger and TraceRecorder more readable, do not comment yet
+
+# Constraints
+- Keep existing behavior unchanged unless explicitly requested.
+- Do not add new features or dependencies.
+- Do not delete comments, only correct them or add them as one line if suitable.
+- Return the refactored code in a single code block
+- Follow PEP 8 style guidelines. No additional empty blank lines.
+- Use type annotations for function arguments and return values.
+- Prefer small, single-purpose functions.
+- Keep explanations to under 150 words.
+
+# Code
+```python
 """
 hxFiBirdStateCt.py
 dependent on c/libhx711.so
@@ -409,63 +427,57 @@ def readable_time():
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
 class SignalLogger:
-    def __init__(self, sample: Sample) -> None:
-        self.file = os.path.join(birdpath["ramdisk"], "signal_hx.csv")
-        self._write_header(sample)
-
-    def _write_header(self, sample: Sample) -> None:
-        with open(self.file, "w") as f:
-            f.write(f"# weightThreshold={weightThreshold}\n")
-            f.write(f"# threshold_off={WEIGHTTHRESHOLD_off:.2f}\n")
-            f.write(f"# hxScale={hxScale}\n")
-            f.write(f"# startup_offset={sample.offset:.1f}\n")
-            f.write(f"# startup_note={sample.note}\n")
-            f.write(f"# startup_spread={sample.startup_spread}\n")
-            f.write(f"# startup_attempts={sample.startup_attempts}\n")
-            f.write(f"# startup_maxspread={sample.startup_maxspread}\n")
-            f.write(f"# startup_delay={sample.startup_delay:.2f}\n")
-            f.write("time,mono_t,raw,offset,weight,state,event,peak,note\n")
-
-    def _format_row(self, sample: Sample, event: str) -> str:
-        return (
-            f"{readable_time()},"
-            f"{sample.t:.3f},"
-            f"{sample.raw_sample},"
-            f"{sample.offset:.2f},"
-            f"{sample.weight:.3f},"
-            f"{STATE_NAME[sample.state]},"
-            f"{event},"
-            f"{sample.peak:.3f},"
-            f"{sample.note}\n"
+    def __init__(self, sample):
+        self.file = os.path.join(
+            birdpath["ramdisk"],
+            "signal_hx.csv" # f"signal_{datetime.now():%Y-%m-%d_%H-%M-%S}.csv"
         )
-
-    def log(self, sample: Sample, event: str = "") -> None:
+        with open(self.file, "w") as f:
+            f.write("# weightThreshold={}\n".format(weightThreshold))
+            f.write("# threshold_off={:.2f}\n".format(WEIGHTTHRESHOLD_off))
+            f.write("# hxScale={}\n".format(hxScale))
+            f.write("# startup_offset={:.1f}\n".format(sample.offset))
+            f.write("# startup_note={}\n".format(sample.note))
+            f.write("# startup_spread={}\n".format(sample.startup_spread))
+            f.write("# startup_attempts={}\n".format(sample.startup_attempts))
+            f.write("# startup_maxspread={}\n".format(sample.startup_maxspread))
+            f.write("# startup_delay={:.2f}\n".format(sample.startup_delay))
+            f.write("time,mono_t,raw,offset,weight,state,event,peak,note\n")
+    def log(self, sample, event=""):
         with open(self.file, "a", buffering=1) as f:
-            f.write(self._format_row(sample, event))
-
+            f.write(
+                f"{readable_time()},"
+                f"{sample.t:.3f},"
+                f"{sample.raw_sample},"
+                f"{sample.offset:.2f},"
+                f"{sample.weight:.3f},"
+                f"{STATE_NAME[sample.state]},"
+                f"{event},"
+                f"{sample.peak:.3f},"
+                f"{sample.note}\n"
+            )
 
 class TraceRecorder:
-    def __init__(self) -> None:
+    def __init__(self):
         self.event_id = 0
         self.raw_jump_count = 0
         self.raw_jump_events = 0
-        self.file = os.path.join(birdpath["ramdisk"], "trace_events.csv")
-        self._ensure_header()
+        self.file = os.path.join(
+            birdpath["ramdisk"],
+            "trace_events.csv"
+        )
+        if not os.path.exists(self.file):
+            with open(self.file, "w") as f:
+                f.write(
+                    "event_id,time,reason,"
+                    "weight,peak,state,note,"
+                    "offset,startup_spread,"
+                    "startup_attempts,"
+                    "startup_maxspread,"
+                    "startup_delay\n"
+                )
 
-    def _ensure_header(self) -> None:
-        if os.path.exists(self.file):
-            return
-        with open(self.file, "w") as f:
-            f.write(
-                "event_id,time,reason,"
-                "weight,peak,state,note,"
-                "offset,startup_spread,"
-                "startup_attempts,"
-                "startup_maxspread,"
-                "startup_delay\n"
-            )
-
-    def _write_row(self, reason: str, sample: Sample, note: str) -> None:
+    def dump_event(self, reason: str, sample: Sample):
         self.event_id += 1
         with open(self.file, "a", buffering=1) as f:
             f.write(
@@ -475,7 +487,7 @@ class TraceRecorder:
                 f"{sample.weight:.2f},"
                 f"{sample.peak:.2f},"
                 f"{STATE_NAME[sample.state]},"
-                f"{note},"
+                f"{sample.note},"
                 f"{sample.offset:.1f},"
                 f"{sample.startup_spread},"
                 f"{sample.startup_attempts},"
@@ -483,34 +495,40 @@ class TraceRecorder:
                 f"{sample.startup_delay:.2f}\n"
             )
 
-    def dump_event(self, reason: str, sample: Sample) -> None:
-        self._write_row(reason, sample, sample.note)
-
-    def dump_raw_jump(self, sample: Sample, previous_raw: int) -> None:
+    def dump_raw_jump(self, sample: Sample, previous_raw: int):
+        self.event_id += 1
         self.raw_jump_events += 1
-        note = (
-            f"before={previous_raw} "
-            f"after={sample.raw_sample} "
-            f"filtered={sample.raw} "
-            f"delta={sample.raw_delta}"
-        )
-        self._write_row("HX711_RAW_JUMP", sample, note)
-
+        with open(self.file, "a", buffering=1) as f:
+            f.write(
+                f"{self.event_id},"
+                f"{readable_time()},"
+                f"HX711_RAW_JUMP,"
+                f"{sample.weight:.2f},"
+                f"{sample.peak:.2f},"
+                f"{STATE_NAME[sample.state]},"
+                f"before={previous_raw} "
+                f"after={sample.raw_sample} "
+                f"filtered={sample.raw} "
+                f"delta={sample.raw_delta},"
+                f"{sample.offset:.1f},"
+                f"{sample.startup_spread},"
+                f"{sample.startup_attempts},"
+                f"{sample.startup_maxspread},"
+                f"{sample.startup_delay:.2f}\n"
+            )
 
 class NullRecorder:
-    def __init__(self) -> None:
-        self.raw_jump_count = 0
+    def __init__(self):
+        self.raw_jump_count = 0 # is used here: 'trace.raw_jump_count += 1'
         self.raw_jump_events = 0
-
-    def dump_event(self, *args, **kwargs) -> None:
+    # functions of TraceRecorder:
+    def dump_event(self, *args, **kwargs):
         pass
-
-    def dump_raw_jump(self, *args, **kwargs) -> None:
+    def dump_raw_jump(self,*args,**kwargs):
         pass
-
-    def log(self, *args, **kwargs) -> None:
+    # functions of SignalLogger:
+    def log(self, *args, **kwargs):
         pass
-
 # ============================================================
 # MAIN PROGRAM
 # ============================================================
@@ -648,3 +666,4 @@ finally:
     clearPID(1)
 
     ms.log(f"stopped {time.ctime()}")
+```
