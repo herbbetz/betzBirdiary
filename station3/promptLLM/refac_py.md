@@ -5,6 +5,9 @@ Hobbyist Python developer searching for clean, readable, and maintainable code.
 {task_description}
 
 # Constraints
+
+- Do not guess but ask for a repost of the current code version, if necessary.
+
 - Keep existing behavior unchanged unless explicitly requested.
 - Do not add new features or dependencies.
 - Do not delete comments, only correct them or add them as one line if suitable.

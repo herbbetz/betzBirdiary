@@ -78,7 +78,7 @@ class Sample:
     peak: float = 0.0
 
     startup_spread: int = 0
-    startup_attempts: int = 0
+    startup_attempts: int = 0 # HX711 samples read until a stable baseline was successfully found (ideally equals STABLE_SAMPLES = 60)
     startup_maxspread: int = 0
     startup_delay: float = 0.0
 
@@ -564,6 +564,7 @@ class SignalLogger:
             birdpath["ramdisk"],
             "signal_hx.csv"
         )
+        self._last_second = -1
         self._write_header(sample)
 
     def _write_header(self, sample: Sample) -> None:
@@ -578,23 +579,10 @@ class SignalLogger:
             f.write(
                 f"# startup_offset={sample.offset:.0f}\n"
             )
-            f.write(f"# startup_note={sample.event}\n")
-            f.write(
-                f"# startup_spread="
-                f"{sample.startup_spread}\n"
-            )
-            f.write(
-                f"# startup_attempts="
-                f"{sample.startup_attempts}\n"
-            )
-            f.write(
-                f"# startup_maxspread="
-                f"{sample.startup_maxspread}\n"
-            )
-            f.write(
-                f"# startup_delay="
-                f"{sample.startup_delay:.2f}\n"
-            )
+            f.write(f"# startup_note={sample.event} (within {sample.startup_maxspread})\n") # e.g."startup note: STARTUP_ZERO spread=1050 (within 3000)" 
+            # f.write(f"# startup_spread={sample.startup_spread:.0f}\n") # already contained in startup_note
+            f.write(f"# startup_attempts={sample.startup_attempts}\n")
+            f.write(f"# startup_delay={sample.startup_delay:.2f}\n")
             f.write(
                 "time,mono_t,raw,offset,weight,state,event\n"
             )
@@ -606,17 +594,31 @@ class SignalLogger:
         return (
             f"{readable_time()},"
             f"{sample.t:.3f},"
-            f"{sample.raw_sample},"
+            f"{sample.raw},"
             f"{sample.offset:.0f},"
             f"{sample.weight:.2f},"
             f"{STATE_NAME[sample.state]},"
             f"{sample.event}\n"
         )
 
+
+    '''
+    # This logs about 6-7 samples per second
     def log(self, sample: Sample) -> None:
         with open(self.file, "a", buffering=1) as f:
             f.write(self._format_row(sample))
+    '''
+    def log(self, sample: Sample) -> None:
+        # Write only one sample per second.
+        second = int(sample.t)
 
+        if second == self._last_second:
+            return
+
+        self._last_second = second
+
+        with open(self.file, "a", buffering=1) as f:
+            f.write(self._format_row(sample))
 
 class NullRecorder:
     def __init__(self) -> None:

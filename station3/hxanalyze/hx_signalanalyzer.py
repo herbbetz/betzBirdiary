@@ -167,7 +167,6 @@ def print_configuration(meta: dict) -> None:
         f"{meta.get('CAMERA_DELAY', 0):.2f} s"
     )
 
-
 def print_baseline_statistics(
     rows: list[dict],
     meta: dict
@@ -178,13 +177,10 @@ def print_baseline_statistics(
         if row["state"] == "IDLE"
     ]
 
-    # These events explicitly change the baseline.
+    # Only timeout recovery counts as a baseline reset.
     baseline_resets = [
         row for row in rows
-        if row["note"] in (
-            "IDLE_BASELINE_TIMEOUT",
-            "STATE_TIMEOUT"
-        )
+        if row["event"] == "BASELINE_RESET"
     ]
 
     print()
@@ -236,7 +232,6 @@ def print_baseline_statistics(
             last_offset = offset
     else:
         print("baseline resets : none")
-
 
 def print_visits(visits: list[dict]) -> None:
     print()
@@ -529,7 +524,6 @@ def create_plot(
     )
 
     ax.set_xlim(times[0], plot_end)
-    ax.set_ylim(top=weightlimit)
     ax.xaxis.set_major_formatter(
         plt.matplotlib.dates.DateFormatter("%H:%M")
     )
@@ -538,6 +532,7 @@ def create_plot(
     ax.set_ylabel("grams")
     ax.legend(loc="upper left")
     ax.grid(True, alpha=0.3)
+
 
     plt.tight_layout()
     plt.savefig("signal_timeline.svg")
@@ -575,7 +570,7 @@ def main() -> None:
     visits, oversize = reconstruct_visits(rows, periods)
 
     print_baseline_statistics(rows, meta)
-    print_visits(visits)
+    # print_visits(visits)
     print_oversize(oversize)
     print_visit_statistics(
         visits,
