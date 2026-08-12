@@ -17,6 +17,7 @@ from sharedBird import delFromGallery, prev_month
 # these sometimes need __init__.py in their dirs, when first imported
 import stations.rarebrds4srvpag as rb # rare birds
 import validate.validation4srv as av # add validation
+import hxanalyze.hxanalyze4srv as hxa
 # for camdata plotting:
 import matplotlib.pyplot as plt
 from collections import defaultdict
@@ -484,6 +485,22 @@ def hxsignal_update() -> tuple[dict[str, float], int]:
         return {"error": "invalid data"}, 400
     return hxsignal_latest, 200
 #--------end of hxsignal
+
+@app.route("/hxreport", methods=["GET"])
+def hxreport() -> Response:
+    csv_path = os.path.join(
+        birdpath["appdir"],
+        "ramdisk/signal_hx.csv"
+    )
+
+    if not os.path.exists(csv_path):
+        return jsonify({"signal_csv": False})
+
+    try:
+        report_data = hxa.analyze_csv(csv_path)
+        return jsonify(report_data)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 # this is needed for the files on ramdisk and movements:
 @app.route('/<path:filename>')
