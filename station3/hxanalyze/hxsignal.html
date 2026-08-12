@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+    <title>HX Signal</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: sans-serif;
+            background: #111;
+            color: #eee;
+        }
+
+        h1 {
+            margin-top: 0;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            max-width: 1200px;
+            height: 400px;
+            background: #181818;
+            border: 1px solid #444;
+        }
+
+        #status {
+            margin-top: 10px;
+            color: #aaa;
+        }
+    </style>
+</head>
+<body>
+    <h1>HX Signal</h1>
+
+    <canvas id="signalCanvas"></canvas>
+
+    <div id="status">Waiting for data...</div>
+
+    <script>
+        "use strict";
+
+        const BUFFER_SECONDS = 15;
+        const FETCH_INTERVAL = 1.0;
+        const REDRAW_INTERVAL = 0.3;
+
+        const canvas = document.getElementById("signalCanvas");
+        const context = canvas.getContext("2d");
+        const status = document.getElementById("status");
+
+        const samples = [];
+
+        let latestSample = null;
+        let lastFetch = 0;
+
+        function resizeCanvas() {
+            const rect = canvas.getBoundingClientRect();
+            const ratio = window.devicePixelRatio || 1;
+
+            canvas.width = rect.width * ratio;
+            canvas.height = rect.height * ratio;
+
+            context.setTransform(ratio, 0, 0, ratio, 0, 0);
+        }
+
+        function addSample(sample) {
+            samples.push(sample);
+
+            const cutoff = sample.t - BUFFER_SECONDS;
+
+            while (samples.length > 0 && samples[0].t < cutoff) {
+                samples.shift();
+            }
+        }
+
+        async function fetchSignal() {
+            try {
+                const response = await fetch("/hxsignal", {
+                    cache: "no-store"
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+
+                const sample = await response.json();
+
+                if (
+                    typeof sample.t !== "number"
+                    || typeof sample.weight !== "number"
+                    || typeof sample.offset !== "number"
+                ) {
+                    throw new Error("Invalid signal data");
+                }
+
+                if (
+                    latestSample === null
+                    || sample.t !== latestSample.t
+                ) {
+                    addSample(sample);
+                    latestSample = sample;
+                }
+
+                status.textContent =
+                    `Weight: ${sample.weight.toFixed(2)} g | ` +
+                    `Offset: ${sample.offset.toFixed(0)}`;
+            } catch (error) {
+                status.textContent = `Connection error: ${error.message}`;
+            }
+        }
+
+        function drawGrid(width, height) {
+            context.strokeStyle = "#333";
+            context.lineWidth = 1;
+
+            const horizontalLines = 5;
+
+            for (let i = 0; i <= horizontalLines; i++) {
+                const y = i * height / horizontalLines;
+
+                context.beginPath();
+                context.moveTo(0, y);
+                context.lineTo(width, y);
+                context.stroke();
+            }
+        }
+
+        function drawSignal() {
+            const width = canvas.clientWidth;
+            const height = canvas.clientHeight;
+
+            context.clearRect(0, 0, width, height);
+
+            if (samples.length < 2) {
+                return;
+            }
+
+            const firstTime = samples[0].t;
+            const lastTime = Math.max(
+                firstTime + BUFFER_SECONDS,
+                samples[samples.length - 1].t
+            );
+            const timeRange = lastTime - firstTime;
+
+            const values = samples.flatMap((sample) => [
+                sample.weight,
+                sample.offset
+            ]);
+
+            const minValue = Math.min(...values);
+            const maxValue = Math.max(...values);
+            const valueRange = Math.max(maxValue - minValue, 1);
+            const padding = valueRange * 0.1;
+
+            const minY = minValue - padding;
+            const maxY = maxValue + padding;
+            const yRange = maxY - minY;
+
+            drawGrid(width, height);
+
+            drawLine(
+                samples,
+                "weight",
+                firstTime,
+                timeRange,
+                minY,
+                yRange,
+                width,
+                height
+            );
+
+            drawLine(
+                samples,
+                "offset",
+                firstTime,
+                timeRange,
+                minY,
+                yRange,
+                width,
+                height
+            );
+        }
+
+        function drawLine(
+            data,
+            property,
+            firstTime,
+            timeRange,
+            minY,
+            yRange,
+            width,
+            height
+        ) {
+            if (data.length < 2) {
+                return;
+            }
+
+            context.lineWidth = 2;
+            context.strokeStyle =
+                property === "weight" ? "#6cf" : "#fc6";
+
+            context.beginPath();
+
+            data.forEach((sample, index) => {
+                const x =
+                    (sample.t - firstTime)
+                    / timeRange
+                    * width;
+
+                const y =
+                    height
+                    - (sample[property] - minY)
+                    / yRange
+                    * height;
+
+                if (index === 0) {
+                    context.moveTo(x, y);
+                } else {
+                    context.lineTo(x, y);
+                }
+            });
+
+            context.stroke();
+        }
+
+        function update() {
+            const now = performance.now();
+
+            if (now - lastFetch >= FETCH_INTERVAL * 1000) {
+                lastFetch = now;
+                fetchSignal();
+            }
+
+            drawSignal();
+            requestAnimationFrame(update);
+        }
+
+        window.addEventListener("resize", resizeCanvas);
+
+        resizeCanvas();
+        fetchSignal();
+        setInterval(drawSignal, REDRAW_INTERVAL * 1000);
+    </script>
+</body>
+</html>

@@ -275,6 +275,19 @@ def msgJSON2():
 
 # @app.route('/hoursjson', methods = ['GET']) ->  see acknowledge\flaskBird.py
 
+# remove mp4 and record from gallery.js, 'del' button in gallery3.html handled by it's sendDelRec(recId):
+@app.route('/delrecord', methods=['POST'])
+def delrecord():
+   data = request.json['data']
+   print(f"Received data: {data}")
+   rec2del = data.get('rec') + 1
+   mp4del = "keep/" + str(data.get('content')) + ".mp4"
+   # print(rec2del)
+   # print(mp4del)
+   delFromGallery(rec2del) # see sharedBird.py
+   os.remove(mp4del)
+   return jsonify({"received": data})
+
 @app.route("/camdata")
 def camdata_svg():
     # defaults to "brightness" if only "/camdata" is asked for, but request should be like "/camdata?target=brightness" or "http://server/camdata?target=metaLux"
@@ -451,18 +464,40 @@ def api_validation_data():
     '''
     return jsonify(validation_data)
 
-# remove mp4 and record from gallery.js, 'del' button in gallery3.html handled by it's sendDelRec(recId):
-@app.route('/delrecord', methods=['POST'])
-def delrecord():
-   data = request.json['data']
-   print(f"Received data: {data}")
-   rec2del = data.get('rec') + 1
-   mp4del = "keep/" + str(data.get('content')) + ".mp4"
-   # print(rec2del)
-   # print(mp4del)
-   delFromGallery(rec2del) # see sharedBird.py
-   os.remove(mp4del)
-   return jsonify({"received": data})
+@app.route("/hxsignal", methods=["POST"])
+def hxsignal() -> tuple[dict, int]:
+    data = request.get_json(silent=True)
+
+    if not data:
+        return {"error": "invalid JSON"}, 400
+
+    try:
+        weight = float(data["weight"])
+        offset = float(data["offset"])
+        t = float(data["t"])
+    except (KeyError, TypeError, ValueError):
+        return {"error": "invalid data"}, 400
+
+    return {
+        "t": t,
+        "weight": weight,
+        "offset": offset
+    }, 200
+
+@app.route("/hxsignal", methods=["GET"]) # GET better than POST for polling by hxanalyze.html (only bodyless query string, no cacheing)
+def hxsignal() -> tuple[dict, int]:
+    try:
+        t = float(request.args["t"])
+        weight = float(request.args["weight"])
+        offset = float(request.args["offset"])
+    except (KeyError, TypeError, ValueError):
+        return {"error": "invalid data"}, 400
+
+    return {
+        "t": t,
+        "weight": weight,
+        "offset": offset
+    }, 200
 
 # this is needed for the files on ramdisk and movements:
 @app.route('/<path:filename>')

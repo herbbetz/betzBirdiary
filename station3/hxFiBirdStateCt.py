@@ -43,8 +43,10 @@ import errno
 import os
 import sys
 import time
-
 import numpy as np
+# for LiveLogger:
+import urllib.error
+import urllib.request
 
 from sharedBird import fifoExists, writePID, clearPID
 from configBird3 import (
@@ -579,7 +581,7 @@ class SignalLogger:
             f.write(
                 f"# startup_offset={sample.offset:.0f}\n"
             )
-            f.write(f"# startup_note={sample.event} (within {sample.startup_maxspread})\n") # e.g."startup note: STARTUP_ZERO spread=1050 (within 3000)" 
+            f.write(f"# startup_note={sample.event} (within {sample.startup_maxspread})\n") # e.g."startup note: STARTUP_ZERO spread=1050 (within 3000)"
             # f.write(f"# startup_spread={sample.startup_spread:.0f}\n") # already contained in startup_note
             f.write(f"# startup_attempts={sample.startup_attempts}\n")
             f.write(f"# startup_delay={sample.startup_delay:.2f}\n")
@@ -601,7 +603,6 @@ class SignalLogger:
             f"{sample.event}\n"
         )
 
-
     '''
     # This logs about 6-7 samples per second
     def log(self, sample: Sample) -> None:
@@ -619,6 +620,36 @@ class SignalLogger:
 
         with open(self.file, "a", buffering=1) as f:
             f.write(self._format_row(sample))
+
+class LiveLogger:
+    def __init__(self) -> None:
+        self.url = "http://127.0.0.1:8080/hxsignal"
+        self.timeout = 0.2
+
+    def log(self, sample: Sample) -> None:
+        query = urllib.parse.urlencode({
+            "t": f"{sample.t:.3f}",
+            "weight": f"{sample.weight:.2f}",
+            "offset": f"{sample.offset:.0f}"
+        })
+
+        request = urllib.request.Request(
+            f"{self.url}?{query}",
+            method="GET"
+        )
+
+        try:
+            with urllib.request.urlopen(
+                request,
+                timeout=self.timeout
+            ):
+                pass
+        except (
+            urllib.error.URLError,
+            TimeoutError,
+            OSError
+        ):
+            pass
 
 class NullRecorder:
     def __init__(self) -> None:
@@ -686,8 +717,10 @@ fsm = WeightFSM()
 
 if testmode:
     signal_logger = SignalLogger(sample)
+    live_logger = LiveLogger()
 else:
     signal_logger = NullRecorder()
+    live_logger = NullRecorder()
 
 
 # ============================================================
@@ -741,6 +774,7 @@ try:
             event = timeout_event
 
         signal_logger.log(sample)
+        live_logger.log(sample)
 
         if fsm.camera_trigger():
             send_fifo(sample.peak)
