@@ -464,40 +464,26 @@ def api_validation_data():
     '''
     return jsonify(validation_data)
 
-@app.route("/hxsignal", methods=["POST"])
-def hxsignal() -> tuple[dict, int]:
-    data = request.get_json(silent=True)
-
-    if not data:
-        return {"error": "invalid JSON"}, 400
-
-    try:
-        weight = float(data["weight"])
-        offset = float(data["offset"])
-        t = float(data["t"])
-    except (KeyError, TypeError, ValueError):
-        return {"error": "invalid data"}, 400
-
-    return {
-        "t": t,
-        "weight": weight,
-        "offset": offset
-    }, 200
-
+#--------signal updated from hxFiBirdStateCt.py, and polled by hxanalyze/hxsignal.html
+hxsignal_latest: dict[str, float] = {
+    "t": 0.0,
+    "weight": 0.0,
+    "offset": 0.0
+}
 @app.route("/hxsignal", methods=["GET"]) # GET better than POST for polling by hxanalyze.html (only bodyless query string, no cacheing)
-def hxsignal() -> tuple[dict, int]:
+def hxsignal() -> tuple[dict[str, float], int]:
+    return hxsignal_latest, 200
+
+@app.route("/hxsignal/update", methods=["GET"])
+def hxsignal_update() -> tuple[dict[str, float], int]:
     try:
-        t = float(request.args["t"])
-        weight = float(request.args["weight"])
-        offset = float(request.args["offset"])
+        hxsignal_latest["t"] = float(request.args["t"])
+        hxsignal_latest["weight"] = float(request.args["weight"])
+        hxsignal_latest["offset"] = float(request.args["offset"])
     except (KeyError, TypeError, ValueError):
         return {"error": "invalid data"}, 400
-
-    return {
-        "t": t,
-        "weight": weight,
-        "offset": offset
-    }, 200
+    return hxsignal_latest, 200
+#--------end of hxsignal
 
 # this is needed for the files on ramdisk and movements:
 @app.route('/<path:filename>')

@@ -623,7 +623,7 @@ class SignalLogger:
 
 class LiveLogger:
     def __init__(self) -> None:
-        self.url = "http://127.0.0.1:8080/hxsignal"
+        self.url = "http://127.0.0.1:8080/hxsignal/update" # absolute URL, only the browser can access "/hxsignal/update"
         self.timeout = 0.2
 
     def log(self, sample: Sample) -> None:

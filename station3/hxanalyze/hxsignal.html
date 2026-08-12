@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -33,6 +34,18 @@
             margin-top: 10px;
             color: #aaa;
         }
+
+        #legend {
+            margin-top: 10px;
+        }
+
+        .weight {
+            color: #6cf;
+        }
+
+        .offset {
+            color: #fc6;
+        }
     </style>
 </head>
 <body>
@@ -40,211 +53,313 @@
 
     <canvas id="signalCanvas"></canvas>
 
+    <div id="legend">
+        <span class="weight">■ Weight (g)</span>
+        &nbsp;&nbsp;
+        <span class="offset">■ Offset (HX711)</span>
+    </div>
+
     <div id="status">Waiting for data...</div>
 
-    <script>
-        "use strict";
+<script>
+"use strict";
 
-        const BUFFER_SECONDS = 15;
-        const FETCH_INTERVAL = 1.0;
-        const REDRAW_INTERVAL = 0.3;
+const BUFFER_SECONDS = 150;
+const FETCH_INTERVAL = 1.0;
+const REDRAW_INTERVAL = 0.3;
+const WEIGHT_MIN = -5;
+const WEIGHT_MAX = 30;
 
-        const canvas = document.getElementById("signalCanvas");
-        const context = canvas.getContext("2d");
-        const status = document.getElementById("status");
+const canvas = document.getElementById("signalCanvas");
+const context = canvas.getContext("2d");
+const status = document.getElementById("status");
 
-        const samples = [];
+const samples = [];
 
-        let latestSample = null;
-        let lastFetch = 0;
+let latestSample = null;
+let lastFetchTime = 0;
 
-        function resizeCanvas() {
-            const rect = canvas.getBoundingClientRect();
-            const ratio = window.devicePixelRatio || 1;
+function resizeCanvas() {
+    const rect = canvas.getBoundingClientRect();
+    const ratio = window.devicePixelRatio || 1;
 
-            canvas.width = rect.width * ratio;
-            canvas.height = rect.height * ratio;
+    canvas.width = rect.width * ratio;
+    canvas.height = rect.height * ratio;
 
-            context.setTransform(ratio, 0, 0, ratio, 0, 0);
-        }
+    context.setTransform(ratio, 0, 0, ratio, 0, 0);
+}
 
-        function addSample(sample) {
-            samples.push(sample);
+function addSample(sample) {
+    samples.push(sample);
 
-            const cutoff = sample.t - BUFFER_SECONDS;
+    const cutoff = sample.t - BUFFER_SECONDS;
 
-            while (samples.length > 0 && samples[0].t < cutoff) {
-                samples.shift();
+    while (
+        samples.length > 0
+        && samples[0].t < cutoff
+    ) {
+        samples.shift();
+    }
+
+    // console.log(
+    //     "sample added:",
+    //     sample,
+    //     "buffer:",
+    //     samples.length
+    // );
+}
+
+async function fetchSignal() {
+    try {
+        const response = await fetch(
+            `/hxsignal?_=${Date.now()}`,
+            {
+                cache: "no-store"
             }
-        }
+        );
 
-        async function fetchSignal() {
-            try {
-                const response = await fetch("/hxsignal", {
-                    cache: "no-store"
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-
-                const sample = await response.json();
-
-                if (
-                    typeof sample.t !== "number"
-                    || typeof sample.weight !== "number"
-                    || typeof sample.offset !== "number"
-                ) {
-                    throw new Error("Invalid signal data");
-                }
-
-                if (
-                    latestSample === null
-                    || sample.t !== latestSample.t
-                ) {
-                    addSample(sample);
-                    latestSample = sample;
-                }
-
-                status.textContent =
-                    `Weight: ${sample.weight.toFixed(2)} g | ` +
-                    `Offset: ${sample.offset.toFixed(0)}`;
-            } catch (error) {
-                status.textContent = `Connection error: ${error.message}`;
-            }
-        }
-
-        function drawGrid(width, height) {
-            context.strokeStyle = "#333";
-            context.lineWidth = 1;
-
-            const horizontalLines = 5;
-
-            for (let i = 0; i <= horizontalLines; i++) {
-                const y = i * height / horizontalLines;
-
-                context.beginPath();
-                context.moveTo(0, y);
-                context.lineTo(width, y);
-                context.stroke();
-            }
-        }
-
-        function drawSignal() {
-            const width = canvas.clientWidth;
-            const height = canvas.clientHeight;
-
-            context.clearRect(0, 0, width, height);
-
-            if (samples.length < 2) {
-                return;
-            }
-
-            const firstTime = samples[0].t;
-            const lastTime = Math.max(
-                firstTime + BUFFER_SECONDS,
-                samples[samples.length - 1].t
-            );
-            const timeRange = lastTime - firstTime;
-
-            const values = samples.flatMap((sample) => [
-                sample.weight,
-                sample.offset
-            ]);
-
-            const minValue = Math.min(...values);
-            const maxValue = Math.max(...values);
-            const valueRange = Math.max(maxValue - minValue, 1);
-            const padding = valueRange * 0.1;
-
-            const minY = minValue - padding;
-            const maxY = maxValue + padding;
-            const yRange = maxY - minY;
-
-            drawGrid(width, height);
-
-            drawLine(
-                samples,
-                "weight",
-                firstTime,
-                timeRange,
-                minY,
-                yRange,
-                width,
-                height
-            );
-
-            drawLine(
-                samples,
-                "offset",
-                firstTime,
-                timeRange,
-                minY,
-                yRange,
-                width,
-                height
+        if (!response.ok) {
+            throw new Error(
+                `HTTP ${response.status}`
             );
         }
 
-        function drawLine(
-            data,
-            property,
-            firstTime,
-            timeRange,
-            minY,
-            yRange,
-            width,
-            height
+        const sample = await response.json();
+
+        // console.log("received:", sample);
+
+        if (
+            typeof sample.t !== "number"
+            || typeof sample.weight !== "number"
+            || typeof sample.offset !== "number"
         ) {
-            if (data.length < 2) {
-                return;
-            }
-
-            context.lineWidth = 2;
-            context.strokeStyle =
-                property === "weight" ? "#6cf" : "#fc6";
-
-            context.beginPath();
-
-            data.forEach((sample, index) => {
-                const x =
-                    (sample.t - firstTime)
-                    / timeRange
-                    * width;
-
-                const y =
-                    height
-                    - (sample[property] - minY)
-                    / yRange
-                    * height;
-
-                if (index === 0) {
-                    context.moveTo(x, y);
-                } else {
-                    context.lineTo(x, y);
-                }
-            });
-
-            context.stroke();
+            throw new Error("Invalid signal data");
         }
 
-        function update() {
-            const now = performance.now();
-
-            if (now - lastFetch >= FETCH_INTERVAL * 1000) {
-                lastFetch = now;
-                fetchSignal();
-            }
-
-            drawSignal();
-            requestAnimationFrame(update);
+        if (
+            latestSample === null
+            || sample.t !== latestSample.t
+        ) {
+            addSample(sample);
+            latestSample = sample;
         }
 
-        window.addEventListener("resize", resizeCanvas);
+        status.textContent =
+            `Weight: ${sample.weight.toFixed(2)} g | `
+            + `Offset: ${sample.offset.toFixed(0)}`;
+    } catch (error) {
+        console.error(
+            "fetch /hxsignal failed:",
+            error
+        );
 
-        resizeCanvas();
+        status.textContent =
+            `Connection error: ${error.message}`;
+    }
+}
+
+function getRange(values) {
+    const minimum = Math.min(...values);
+    const maximum = Math.max(...values);
+    const range = Math.max(maximum - minimum, 1);
+    const padding = range * 0.1;
+
+    return {
+        min: minimum - padding,
+        max: maximum + padding
+    };
+}
+
+function drawGrid(width, height) {
+    context.strokeStyle = "#333";
+    context.lineWidth = 1;
+
+    const horizontalLines = 5;
+
+    for (let i = 0; i <= horizontalLines; i++) {
+        const y = i * height / horizontalLines;
+
+        context.beginPath();
+        context.moveTo(0, y);
+        context.lineTo(width, y);
+        context.stroke();
+    }
+}
+
+function drawYAxis(
+    range,
+    width,
+    height,
+    side,
+    decimals
+) {
+    context.fillStyle = "#aaa";
+    context.font = "12px sans-serif";
+
+    const lines = 5;
+
+    for (let i = 0; i <= lines; i++) {
+        const fraction = i / lines;
+        const value =
+            range.max
+            - fraction * (range.max - range.min);
+
+        const y = fraction * height;
+        const text = value.toFixed(decimals);
+
+        const x =
+            side === "left"
+                ? 5
+                : width - context.measureText(text).width - 5;
+
+        context.fillText(text, x, y + 12);
+    }
+}
+
+function drawLine(
+    property,
+    range,
+    firstTime,
+    timeRange,
+    width,
+    height
+) {
+    if (samples.length < 2) {
+        return;
+    }
+
+    context.lineWidth = 2;
+    context.strokeStyle =
+        property === "weight"
+            ? "#6cf"
+            : "#fc6";
+
+    context.beginPath();
+
+    samples.forEach((sample, index) => {
+        const x =
+            (sample.t - firstTime)
+            / timeRange
+            * width;
+
+        const y =
+            height
+            - (
+                (sample[property] - range.min)
+                / (range.max - range.min)
+            ) * height;
+
+        if (index === 0) {
+            context.moveTo(x, y);
+        } else {
+            context.lineTo(x, y);
+        }
+    });
+
+    context.stroke();
+}
+
+function drawSignal() {
+    const width = canvas.clientWidth;
+    const height = canvas.clientHeight;
+
+    context.clearRect(0, 0, width, height);
+
+    // console.log(
+    //     "draw:",
+    //     "samples=",
+    //     samples.length,
+    //     "latest=",
+    //     latestSample
+    // );
+
+    if (samples.length < 2) {
+        return;
+    }
+
+    const firstTime = samples[0].t;
+    const lastTime = samples[samples.length - 1].t;
+
+    const timeRange = Math.max(
+        lastTime - firstTime,
+        BUFFER_SECONDS
+    );
+
+    const weightRange = {
+        min: WEIGHT_MIN,
+        max: WEIGHT_MAX
+    };
+
+    const offsetValues = samples.map(
+        (sample) => sample.offset
+    );
+
+    const offsetRange = getRange(offsetValues);
+
+    drawGrid(width, height);
+
+    drawYAxis(
+        weightRange,
+        width,
+        height,
+        "left",
+        0
+    );
+
+    drawYAxis(
+        offsetRange,
+        width,
+        height,
+        "right",
+        0
+    );
+
+    drawLine(
+        "weight",
+        weightRange,
+        firstTime,
+        timeRange,
+        width,
+        height
+    );
+
+    drawLine(
+        "offset",
+        offsetRange,
+        firstTime,
+        timeRange,
+        width,
+        height
+    );
+}
+
+function update() {
+    const now = performance.now();
+
+    if (
+        now - lastFetchTime
+        >= FETCH_INTERVAL * 1000
+    ) {
+        lastFetchTime = now;
         fetchSignal();
-        setInterval(drawSignal, REDRAW_INTERVAL * 1000);
-    </script>
+    }
+
+    drawSignal();
+}
+
+window.addEventListener(
+    "resize",
+    resizeCanvas
+);
+
+resizeCanvas();
+fetchSignal();
+
+setInterval(
+    update,
+    REDRAW_INTERVAL * 1000
+);
+</script>
+
 </body>
 </html>
