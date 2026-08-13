@@ -630,7 +630,8 @@ class LiveLogger:
         query = urllib.parse.urlencode({
             "t": f"{sample.t:.3f}",
             "weight": f"{sample.weight:.2f}",
-            "offset": f"{sample.offset:.0f}"
+            "offset": f"{sample.offset:.0f}",
+            "hxscale": f"{hxScale:.0f}"
         })
 
         request = urllib.request.Request(

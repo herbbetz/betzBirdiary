@@ -469,7 +469,8 @@ def api_validation_data():
 hxsignal_latest: dict[str, float] = {
     "t": 0.0,
     "weight": 0.0,
-    "offset": 0.0
+    "offset": 0.0,
+    "hxscale": 0.0
 }
 @app.route("/hxsignal", methods=["GET"]) # GET better than POST for polling by hxanalyze.html (only bodyless query string, no cacheing)
 def hxsignal() -> tuple[dict[str, float], int]:
@@ -481,6 +482,7 @@ def hxsignal_update() -> tuple[dict[str, float], int]:
         hxsignal_latest["t"] = float(request.args["t"])
         hxsignal_latest["weight"] = float(request.args["weight"])
         hxsignal_latest["offset"] = float(request.args["offset"])
+        hxsignal_latest["hxscale"] = float(request.args["hxscale"])
     except (KeyError, TypeError, ValueError):
         return {"error": "invalid data"}, 400
     return hxsignal_latest, 200

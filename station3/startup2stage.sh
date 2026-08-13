@@ -63,15 +63,14 @@ sleep 8 # the child process takes time to establish
 # setsid $PYTHON "$APPDIR/hxFiBirdStateCt.py" test > /dev/null 2>&1 & # >> "$APPDIR/logs/hxFiBird.log" 2>&1 & # first birdpipe FIFO writer
 # high user space priority: sudo chrt -f 80 <script> (chrt needs root permissions, later run 'sudo python hxFiBirdStateCt.py test' as 'ramdisk/hxFiPID.txt' will belong to root)
 # dedicated CPU core: taskset -c 3 <script> (CPU core 3 is least used by system, see 'top' or 'htop'), set isolcpus=3 in /boot/firmware/cmdline.txt to isolate CPU core 3 from system tasks, so it can be used for real-time tasks.
-# Define taskset as a Bash array
-if [ "$(nproc)" -gt 3 ]; then
-    TASKSET_CMD=(taskset -c 3)
+# nproc --all ensures isolated cores like isolcpus=3 are counted
+TOTAL_CPUS=$(nproc --all)
+if [ "$TOTAL_CPUS" -ge 4 ]; then
+    # Pass taskset directly with sudo
+    setsid sudo taskset -c 3 chrt -f 80 "$PYTHON" "$APPDIR/hxFiBirdStateCt.py" test >> "$APPDIR/ramdisk/hxFiBird.log" 2>&1 &
 else
-    TASKSET_CMD=()
+    setsid sudo chrt -f 80 "$PYTHON" "$APPDIR/hxFiBirdStateCt.py" test >> "$APPDIR/ramdisk/hxFiBird.log" 2>&1 &
 fi
-# Use "${TASKSET_CMD[@]}" to cleanly expand arguments
-setsid sudo chrt -f 80 "${TASKSET_CMD[@]}" "$PYTHON" "$APPDIR/hxFiBirdStateCt.py" test >> "$APPDIR/ramdisk/hxFiBird.log" 2>&1 &
-# setsid sudo chrt -f 80 $PYTHON "$APPDIR/hxFiBirdStateCt.py" >> "$APPDIR/ramdisk/hxFiBird.log" 2>&1 &
 sleep 1
 # widgets for wayfire desktop will not work here, because wayfire or vnc/X11 env not yet ready! Moreover no use running it, when no desktop shown.
 # setsid $PYTHON widgets.py &

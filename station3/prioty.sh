@@ -33,3 +33,6 @@ for PID in $PIDS; do
     chrt -p "$PID" 2>/dev/null
     echo ""
 done
+echo "Press any key to show processes on CPU 3 ...end by Ctrl+C"
+read -n1 -s
+watch -n 1 "ps -eo pid,psr,user,pcpu,comm | awk '\$2 == 3'"
