@@ -1,5 +1,5 @@
 # Me
-Hobbyist developer in Python/Javascript/C searching for clean, readable, and maintainable code.
+Hobbyist developer in Python/Javascript/C/Bash searching for clean, readable, and maintainable code.
 
 # Task
 {task_description}
@@ -11,7 +11,7 @@ Hobbyist developer in Python/Javascript/C searching for clean, readable, and mai
 - Do not add new features or dependencies.
 - Do not delete comments, only correct them or add them as one line if suitable.
 - Return the refactored code in a single code block
-- Follow PEP 8 style resp. ESLint/Google or GNU C Style guidelines. No additional empty blank lines.
+- Follow PEP 8 style resp. ESLint/Google or GNU C Style and ShellCheck guidelines. No additional empty blank lines.
 - Use type annotations for function arguments and return values.
 - Prefer small, single-purpose functions.
 - Keep explanations to under 150 words.

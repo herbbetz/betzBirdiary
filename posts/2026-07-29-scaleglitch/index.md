@@ -31,7 +31,7 @@ SCK  -> SPI MOSI (Pin 19 / GPIO 10)
 ```
 Zwar werden die SPI0-Pins belegt, aber instabiles Software-Bit-Banging und das ungewollte Einschlafen des HX711-Chips entfallen. Die kontinuierlichen ~15 mA (statt 1,5 mA im Sleep-Zustand) durch die Wheatstone-Brücke fallen bei Netzbetrieb kaum ins Gewicht.
 
-- Mit **SCHED_FIFO** ist es möglich, den *dritten CPU Core* des RPi4 exklusiv zu isolieren (`isolcpus=3` in `/boot/firmware/cmdline.txt`) und im C Treiber des hx711 für den eigenen Thread zu reservieren (nur als root). Auch in Python gibt es einen Befehl, um das Skript mit *CPU Core 3* zu betreiben: `os.sched_setaffinity(0, {3})`.
+- Mein Favorit: Mit **SCHED_FIFO** ist es möglich, den *dritten CPU Core* des RPi4 exklusiv zu isolieren (`isolcpus=3` in `/boot/firmware/cmdline.txt`) und im C Treiber des hx711 für den eigenen Thread zu reservieren (nur als root). Auch in Python gibt es einen Befehl, um das Skript mit *CPU Core 3* zu betreiben: `os.sched_setaffinity(0, {3})`.
 
 - dasselbe kann auch durch OS commands zusammen mit `isolcpus=3 (cmdline.txt)` erreicht werden: `sudo chrt -f 99 taskset -c 3 python3 any.py` oder auch in einem `systemd hx711.service` :
 
@@ -60,12 +60,14 @@ Zwar werden die SPI0-Pins belegt, aber instabiles Software-Bit-Banging und das u
 **Testaufbau**
 
 - Die Station lief über Stunden im Wohnzimmer, um definiert die Sitzstange unbelastet zu lassen (oder sie definiert zu belasten).
-- Das `hxFiBirdStateCt.py` bekam ein Kommandozeilenargument `test` zum Aktivieren von Debugging Code. Ebenso bekam `libhx711.c` ein `make -f hx_Makefile debug`.
-- Um über Stunden Werte in einem auswertbaren Format (für Mensch oder begrenzten KI-Upload) aufzuzeichnen, braucht es 
-	- 1) programm-interne *Event Recorder* , die nur wichtige Änderungen aufzeichnen (TraceRecorder),
-	- 2) SignalLogger, die sekündlich alle Signale aufzeichnen und dann durch ein externes Skript wie `hx_signalanalyzer.py` offline zusammengefasst werden,
-	- 3) ein externes `hx_sig_trace_analyzer.py`, das 1) und 2) anhand ihrer Zeitstempel korreliert,
-	- 4) die Zeitstempel der Auslösung von Leervideos im Vergleich mit 1) bis 3) später im Einsatztest draussen .
+- Das `hxFiBirdStateCt.py` bekam ein Kommandozeilenargument `test` zum Aktivieren von Debugging Code. Das sind die sog. `Logger` im Abschnitt `Recorders`.  Ebenso bekam `libhx711.c` ein `make -f hx_Makefile debug`.
+- Um über Stunden Werte in einem auswertbaren Format (für Mensch oder begrenzten KI-Upload) aufzuzeichnen, sind denkbar
+	- 1) Programminterner *Event Recorder* , der nur wichtige Änderungen aufzeichnet,
+	- 2) SignalLogger, der sekündlich alle Signale aufzeichnet, die dann durch ein externes Skript wie `hxanalyze/hx_signalanalyzer.py` offline zusammengefasst werden,
+	- 3) ein weiteres externes Pythonskript, das Statusänderungen (1) und Rohsignale (2) anhand ihrer Zeitstempel korreliert,
+	- 4) die Zeitstempel der Auslösung von Leervideos im Vergleich mit den Logging Daten von (1) bis (3) später im Einsatztest draußen.
+
+Letztendlich hab ich mich entschieden, den Events eine Spalte in SignalLogger zu geben, womit (1) und (3) entfallen. Die Aufzeichnungen finden sich auf `/ramdisk` als die Dateien `signal_hx.csv` und für den C Treiber `hxFiBird.log`. Das Webinterface zeigt die Auswertungen unter `actions - HX Analyze` an.
 
 **Softwarekonzepte**
 

@@ -154,6 +154,21 @@ else
     echo "[SKIP] Sudo override already exists."
 fi
 
+echo "--- 9. Dedicating CPU Core 3 for Real-Time Tasks (hx711)---"
+CMDLINE_FILE="/boot/firmware/cmdline.txt"
+# for older Raspberry Pi OS versions:
+[ -f "$CMDLINE_FILE" ] || CMDLINE_FILE="/boot/cmdline.txt"
+# Get total CPU count:
+NUM_CORES=$(nproc)
+if [ -f "$CMDLINE_FILE" ]; then
+    if [ "$NUM_CORES" -gt 3 ]; then
+        if ! grep -q "isolcpus" "$CMDLINE_FILE"; then
+            sed -i 's/$/ isolcpus=3/' "$CMDLINE_FILE"
+            echo "[SUCCESS] CPU core 3 isolated"
+        fi
+    fi
+fi
+
 # Run this script only from inside its own directory, do not run build_md_contents.py as root:
 cd /home/pi/station3 && sudo -u pi python3 /home/pi/station3/build_md_contents.py
 echo "--- All System Configurations Complete ---"
