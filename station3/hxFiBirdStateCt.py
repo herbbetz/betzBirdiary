@@ -559,7 +559,6 @@ class WeightFSM:
 def readable_time() -> str:
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-
 class SignalLogger:
     def __init__(self, sample: Sample) -> None:
         self.file = os.path.join(
@@ -581,18 +580,21 @@ class SignalLogger:
             f.write(
                 f"# startup_offset={sample.offset:.0f}\n"
             )
-            f.write(f"# startup_note={sample.event} (within {sample.startup_maxspread})\n") # e.g."startup note: STARTUP_ZERO spread=1050 (within 3000)"
-            # f.write(f"# startup_spread={sample.startup_spread:.0f}\n") # already contained in startup_note
-            f.write(f"# startup_attempts={sample.startup_attempts}\n")
-            f.write(f"# startup_delay={sample.startup_delay:.2f}\n")
+            f.write(
+                f"# startup_note={sample.event} "
+                f"(within {sample.startup_maxspread})\n"
+            )
+            f.write(
+                f"# startup_attempts={sample.startup_attempts}\n"
+            )
+            f.write(
+                f"# startup_delay={sample.startup_delay:.2f}\n"
+            )
             f.write(
                 "time,mono_t,raw,offset,weight,state,event\n"
             )
 
-    def _format_row(
-        self,
-        sample: Sample
-    ) -> str:
+    def _format_row(self, sample: Sample) -> str:
         return (
             f"{readable_time()},"
             f"{sample.t:.3f},"
@@ -603,20 +605,19 @@ class SignalLogger:
             f"{sample.event}\n"
         )
 
-    '''
-    # This logs about 6-7 samples per second
     def log(self, sample: Sample) -> None:
-        with open(self.file, "a", buffering=1) as f:
-            f.write(self._format_row(sample))
-    '''
-    def log(self, sample: Sample) -> None:
-        # Write only one sample per second.
+        important = sample.event in (
+            "CAMERA_TRIGGER",
+            "DEPARTURE_TRIGGER",
+            "BASELINE_RESET"
+        )
+
         second = int(sample.t)
 
-        if second == self._last_second:
-            return
-
-        self._last_second = second
+        if not important:
+            if second == self._last_second:
+                return
+            self._last_second = second
 
         with open(self.file, "a", buffering=1) as f:
             f.write(self._format_row(sample))
@@ -778,9 +779,13 @@ try:
         live_logger.log(sample)
 
         if fsm.camera_trigger():
+            sample.event = "CAMERA_TRIGGER"
+            signal_logger.log(sample)
             send_fifo(sample.peak)
 
         elif event == "DEPARTURE":
+            sample.event = "DEPARTURE_TRIGGER"
+            signal_logger.log(sample)
             send_fifo(-1)
 
         ms.log(

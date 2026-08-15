@@ -14,7 +14,8 @@ const records = new Array(
 "2025-05-06_spatz2|Spatz|house-sparrow",
 "ehaeher2025-08-18|Eichelhäher 177g|jay",
 "drossel20260105|Drossel? 103g|mistle-thrush",
-"ringeltaube2025-8-2|Ringeltaube 228g|collared-dove",
+"tuerkentaube2025-8-2|Türkentaube 228g|collared-dove",
+"tauben_nabu|Tauben|pigeons-and-doves",
 "buntspecht23062026|Buntspecht 98g|great-spotted-woodpecker",
 "squirrel2025-05-26|Schmarotzer|"
 );

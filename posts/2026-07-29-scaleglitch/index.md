@@ -73,8 +73,13 @@ Letztendlich hab ich mich entschieden, den Events eine Spalte in SignalLogger zu
 
 Die KI ist zwar eine hervorragende Kodierhilfe. Sie nimmt es aber nicht ab, stabil gemessene *raw counts* (C Treiber) dann in Python auch sachgerecht zu interpretieren.
 
-- Nach morgendlichem Systemboot kann die Sitzstange leer sein oder durch Vogelgezappel oder einen sitzenden Vogel beeinflusst. Die Temperatur kann viel kühler sein als noch am aufgeheizten Vorabend. Die erste Entscheidung ist, das bisherige hxOffset (Nullinie = *baseline*) zu verwerfen und durch eine Neukalibrierung zu ersetzen, die erst stabile Werte (im *Spreadlimit*) abwartet und einen ruhig sitzenden Vogel "wegkalibriert". Verschwindet der ruhig sitzende Vogel anschließend, löst die konstant abgefallene *baseline* ein Timeout mit Neukalibrierung aus.
-- Der absolute `raw offset counter` ist weniger intuitiv als seine Drift in Gramm in Referenz zum Startwert: `offset_g =(start_offset - current_offset)/abs(hx_scale)`. Das ist die orange Linie im Menü `actions - HX Signal` und `actions - HX Analyze`.
+- Nach morgendlichem Systemboot kann die Sitzstange leer sein oder durch Vogelgezappel oder einen sitzenden Vogel belastet. Die Temperatur kann viel kühler sein als noch am aufgeheizten Vorabend. Die erste Entscheidung ist, das bisherige hxOffset (Nullinie = *baseline*) zu verwerfen und durch eine Neukalibrierung zu ersetzen, die erst stabile Werte (im *Spreadlimit*) abwartet und einen ruhig sitzenden Vogel "wegkalibriert". Verschwindet der ruhig sitzende Vogel anschließend, löst die konstant abgefallene *baseline* nach Timeout eine Neukalibrierung aus.
+
+<img src="signal_timeline.svg" style="zoom:67%;" />
+
+*Beispielgrafik: Hier saß eine Taube (220 g) während des Bootvorganges ruhig auf der Sitzstange und wurde "wegkalibriert". Als sie wegfliegt, wird das nach einem Timeout erkannt und die Nullinie ( = das Offset rel. zum Startwert, orange) neu justiert, so dass die blaue Gewichtslinie wieder auf Null zurückwandert.*
+
+- Der absolute `raw offset counter` ist weniger intuitiv als seine Drift in Gramm in Referenz zum Startwert: `offset_g =(start_offset - current_offset)/abs(hx_scale)`. Das ist die orange Linie in obigem Bild und im Menü `actions - HX Signal` und `actions - HX Analyze`.
 - Eine minimale Sitzzeit von 2 secs wird festgelegt, ab der die Kamera getriggert wird (über FIFO). Die (lokale) KI benötigt eine gewisse Anwesenheitsdauer zur Vogelerkennung. Nicht jeder Windstoß oder fallende Regentropfen an der Stange soll ein Video auslösen. *Spread* und *Outlier* werden statistisch ermittelt (*Perzentile, Medianfilter* oder *Kalmanfilter*).
 - Die Finite State Maschine (*FSM*) definiert States der Sitzstange wie IDLE, ARRIVAL, PRESENT, DEPARTURE, OVERWEIGHT. Im laufenden Betrieb wird immer wieder überprüft, ob IDLE noch der Nullinie entspricht und ob die anderen States nach einem stabilen Timeout nicht als das neue IDLE angesehen werden müssen.
 

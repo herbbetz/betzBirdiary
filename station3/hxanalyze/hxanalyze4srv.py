@@ -241,23 +241,31 @@ def get_oversize(oversize: list[dict]) -> list[dict]:
         for event in oversize
     ]
 
-
 def get_visit_statistics(
     visits: list[dict],
     oversize: list[dict],
+    rows: list[dict],
     camera_delay: float
 ) -> dict:
-    triggered = [
-        visit for visit in visits
-        if visit["stay"] >= camera_delay
-    ]
+    camera_triggers = sum(
+        1
+        for row in rows
+        if row["event"] == "CAMERA_TRIGGER"
+    )
+
+    departures = sum(
+        1
+        for row in rows
+        if row["event"] == "DEPARTURE"
+    )
 
     result = {
         "visits": len(visits),
-        "camera_trigger": len(triggered),
+        "camera_trigger": camera_triggers,
+        "departures": departures,
         "oversize": len(oversize),
         "camera_trigger_threshold": camera_delay,
-        "triggered": len(triggered)
+        "triggered": camera_triggers
     }
 
     if visits:
@@ -534,7 +542,6 @@ def create_plot(
     plt.savefig(output_path)
     plt.close(fig)
 
-
 def analyze_csv(filename: str) -> dict:
     if not os.path.isfile(filename):
         return {"signal_csv": False}
@@ -598,6 +605,7 @@ def analyze_csv(filename: str) -> dict:
         "visit_statistics": get_visit_statistics(
             visits,
             oversize,
+            rows,
             camera_delay
         ),
         "idle_statistics": get_idle_statistics(rows),
