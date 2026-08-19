@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+<meta http-equiv="Cache-Control" content="no-store">
+
+<title>SVGpathResize</title>
+
+<style>
+body {
+  background: #fff;
+  color: #000;
+  font-family: Helvetica, Arial, sans-serif;
+  margin: 20px;
+  margin-top: 90px;
+  height: 600px;
+}
+
+h1 {
+  font-size: 20px;
+}
+
+p {
+  margin: 10px;
+}
+
+.centered {
+  width: 90%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.textinput {
+  margin: 20px;
+  width: 80%;
+  min-height: 120px;
+}
+
+.numberinput {
+  width: 100px;
+  margin: 10px;
+}
+
+#result {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  border: 1px solid #ccc;
+  padding: 10px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>SVG-Pfadcode skalieren</h1>
+
+<p>
+  Gib SVG-Pfadcode ein und skaliere alle Koordinaten mit dem gewünschten Faktor.
+</p>
+
+<form id="pathForm" name="pathForm" class="centered">
+
+  <fieldset>
+    <legend>SVG-Pfadcode</legend>
+
+    <textarea
+      id="notebody"
+      class="textinput"
+      placeholder="M 100,100 C 200,100 300,200 400,400"></textarea>
+
+    <br>
+
+    <label for="scaleFactor">
+      Skalierungsfaktor:
+    </label>
+
+    <input
+      id="scaleFactor"
+      class="numberinput"
+      type="number"
+      value="0.04"
+      min="0"
+      step="any">
+
+    <p>
+      Beispiel: 800px → 32px entspricht einem Faktor von 0.04. Feld 'Max' zeigt 6 px, dann kann der Pfad noch mal 5-fach vergrößert werden, also Skalierung 0.04*5 = 0.2 .
+    </p>
+  </fieldset>
+
+  <input type="submit" value="Skalieren">
+
+</form>
+
+<p id="result">_</p>
+<p>Max / Min: <span id="maxmin">_</span></p>
+
+<script>
+document.getElementById('pathForm').addEventListener('submit', function (evt) {
+  evt.preventDefault();
+
+  const input = document.getElementById('notebody').value;
+  const factor = Number(document.getElementById('scaleFactor').value);
+
+  if (!Number.isFinite(factor) || factor < 0) {
+    document.getElementById('result').textContent =
+      'Bitte einen gültigen Skalierungsfaktor eingeben.';
+    return;
+  }
+
+  let max = -Infinity;
+  let min = Infinity;
+
+  /*
+   * SVG-Pfadbefehle bleiben unverändert.
+   * Nur Zahlen werden mit dem Skalierungsfaktor multipliziert.
+   *
+   * Unterstützt auch wissenschaftliche Schreibweisen,
+   * z. B. 1e-3 oder -2.5E+4.
+   */
+  const resultPath = input.replace(
+    /[-+]?(?:\d+\.\d*|\.\d+|\d+)(?:[eE][-+]?\d+)?/g,
+    function (numberText) {
+      const originalNumber = Number(numberText);
+      const scaledNumber = originalNumber * factor;
+
+      if (scaledNumber > max) max = scaledNumber;
+      if (scaledNumber < min) min = scaledNumber;
+
+      return formatNumber(scaledNumber);
+    }
+  );
+
+  document.getElementById('result').textContent = resultPath;
+
+  if (min === Infinity) {
+    document.getElementById('maxmin').textContent = '_';
+  } else {
+    document.getElementById('maxmin').textContent =
+      formatNumber(max) + ' / ' + formatNumber(min);
+  }
+});
+
+
+function formatNumber(number) {
+  /*
+   * Vermeidet unnötige Nachkommastellen und typische
+   * JavaScript-Ausgaben wie 1.2000000000000002.
+   */
+  return Number(number.toFixed(2)).toString();
+}
+</script>
+
+</body>
+</html>

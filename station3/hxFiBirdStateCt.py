@@ -717,6 +717,7 @@ for value in baseline.stable_buf:
 
 fsm = WeightFSM()
 
+ms.setScaleready()
 if testmode:
     signal_logger = SignalLogger(sample)
     live_logger = LiveLogger()

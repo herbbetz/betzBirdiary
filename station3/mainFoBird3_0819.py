@@ -159,7 +159,8 @@ def send_realtime_movement(files):
         ms.log(f"failed movement upload: {e}")
         return uploadFail
 
-def send_movement(circ_output, picam, wght, stop_event): # first parameter is either circ_output OR picam, the latter in case of no circ_output
+def send_movement(circ_output, picam, wght, stop_event, preTrigImg): # first parameter is either circ_output OR picam, the latter in case of no circ_output
+    # preTrigImg is oldimg[] from main() and contains e.g. 'ramdisk/1697041234567.jpg'
     if upmaxcnt > 0 and send_movement.vid_cnt >= upmaxcnt: # upmaxcnt=0 means no limit
         ms.log("upload limit reached")
         subprocess.call(f"bash {birdpath['appdir']}/tasmotaDown.sh limitdown", shell=True)
@@ -174,10 +175,20 @@ def send_movement(circ_output, picam, wght, stop_event): # first parameter is ei
     audio_filename = movementStartStr + ".wav"
 
     # for local review:
-    daydir = "ramdisk" # "ramdisk/daydir" would have to be created first
+    # "ramdisk/daydir" would have to be created first
+    daydir = birdpath['ramdisk']
     model = "model"
     imgCnt, imgMax = 0, 30 # one img is below 20 kB, so enough space on ramdisk
     videoUrlStr = movementStartStr.replace(":", "").replace(" ", "_")
+
+    # pre-trigger images are captured in the main loop and stored in preTrigImg, which is a list of filenames
+    for imgName in preTrigImg:
+        oldName = f"{imgName}" # e.g. ramdisk/1697041234567.jpg
+        if os.path.exists(oldName):
+            newName = f"{daydir}/{videoUrlStr}.{imgCnt}.jpg" 
+            os.rename(oldName, newName)
+            imgCnt += 1
+    preTrigImg.clear()  # empty the renamed list for reuse as oldimg[] in main()
 
     # for video with circ output (dashcam):
     stop_event.clear()   # ensure clean state
@@ -286,6 +297,7 @@ def send_movement(circ_output, picam, wght, stop_event): # first parameter is ei
 
 send_movement.vid_cnt = 0
 
+
 def readBalance(bQ, stop_event):
     fifo = birdpath['fifo']
     if not fifoExists(fifo):
@@ -348,7 +360,7 @@ def main():
     ms.setLux(3) # set luxcategory to normal
     ms.log("Set up balance receive as child process")
     bQueue = multiprocessing.Queue()
-    stop_recording_event = multiprocessing.Event()
+    stop_recording_event = multiprocessing.Event() # this can span 2 processes, while a simple boolean flag were only present inside one process
     child1 = multiprocessing.Process(target=readBalance, args=(bQueue, stop_recording_event))
     child1.start()
     camera_transform = libcamera.Transform(hflip=hflip_val, vflip=vflip_val)
@@ -396,34 +408,29 @@ def main():
                     ms.setRecording(1)
                     # trigger_ns = time.time_ns() # check for nanosecs till recording, is exaggerated
                     weight = bQueue.get()
-                    # picam.set_controls(camsetting)
-                    send_movement(c_output, picam, weight, stop_recording_event) # if no circ_output, replace c_output by picam
+                    send_movement(c_output, picam, weight, stop_recording_event, oldimg) # if no circ_output, replace c_output by picam
                     ms.setRecording(0)
-                    # reset_camera(picam, camsetting, config)
                     while not bQueue.empty(): bQueue.get()
                     metadata = picam.capture_metadata() # read back from picam, after reset_camera()
                     ms.log(f"sent video with ExposureTime {metadata.get('ExposureTime')} and AnalogueGain {metadata.get('AnalogueGain')}")
-
-                elif ms.getClientActive() == 1: # set by flaskBird.py
-                    if testmode: ms.log("shooting a still")
                     inactive_counter = 0
-                    timestamp = round(time.time() * 1000)
+
+                else: 
+                    now = datetime.now()
+                    timestamp = int(now.timestamp() * 1000)
                     imgName = f"{dirName}/{timestamp}.jpg"
                     capture_img(picam, imgName)
                     ms.setImgCnt(timestamp)
                     oldimg.append(imgName)
                     if len(oldimg) > maxOldImg:
                         oldest = oldimg.pop(0)
-                        if os.path.exists(oldest):
-                            os.remove(oldest)
-                else:
-                    now = datetime.now()
-                    if testmode: ms.log("brightness check instead of still possible")
-                    # clear forgotten standby after 300 secs of webGUI inactivity:
-                    inactive_counter += 1 if inactive_counter < 32760 else 0
-                    if inactive_counter == 300: ms.clearStandby()
-                    get_brightness(picam, now)
+                        if os.path.exists(oldest): os.remove(oldest)
 
+                    if ms.getClientActive() == 0: # set by flaskBird.py
+                        # clear forgotten standby after 300 secs of webGUI inactivity:
+                        inactive_counter += 1 if inactive_counter < 32760 else 0
+                        if inactive_counter == 300: ms.clearStandby()
+                        get_brightness(picam, now)
                 time.sleep(sleepTime)
 
         except Exception as e:

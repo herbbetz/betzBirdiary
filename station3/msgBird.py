@@ -23,7 +23,7 @@ from configBird3 import birdpath
 #   luxraw: raw lux data string for webGUI display, set by mainFoBird3.py
 #   recording: 0 or 1, set by mainFoBird3.py
 message = {"imgid": 0, "lastvid": "", "vidcnt": 0, "linecnt": 0, "linetxt": "", "envirEvt": 0, "sysmonEvt": 0,
-           "upmode": 0, "confirm": 0, "standby": 0, "clientactive": 0, "lux": 0, "luxraw": 0, "recording": 0} # define dictionary
+           "upmode": 0, "confirm": 0, "standby": 0, "clientactive": 0, "lux": 0, "luxraw": 0, "recording": 0, "scaleready": 0} # define dictionary
 
 filename = f"{birdpath['ramdisk']}/vidmsg.json" #serialized msg
 
@@ -154,6 +154,17 @@ def setLuxRaw(lux):
 def setRecording(state):
     # state: 1= recording in progress, else 0
     setmsgprop('recording', state)
+
+# scaleready default = 1, till hxFiBird*.py started
+def setScaleready():
+    setmsgprop('scaleready', 1)
+
+def clearScaleready():
+    setmsgprop('scaleready', 0)
+
+def getScaleready():
+    m = readmsg()
+    return m['scaleready']    
 
 def getClientActive():
     m = readmsg()

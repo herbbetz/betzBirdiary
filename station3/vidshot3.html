@@ -91,7 +91,8 @@
             cloud: "cloud.svg",
             moon: "moon.svg",
             underexpo: "eye-closed.svg",
-            overexpo: "x-eyes.svg"
+            overexpo: "x-eyes.svg",
+            scalenoise: "redscale.svg"
         };
 
         // Constants for data sources
@@ -283,6 +284,7 @@
                 // if (data['standby'] == 0) {setText(dom.stdbymsg, "🎥");} else {setText(dom.stdbymsg, "STANDBY");}
                 // or setHTMLSafe(dom.stdbymsg, '&#127909;');
                 if (data['standby'] == 1) {dom.stdbyimg.src = "icons/" + icons['redcrossedcam'];}
+                else if (data['scaleready'] == 0) {dom.stdbyimg.src = "icons/" + icons['scalenoise'];} //scale to noisy
                 else {
                     if (data['lux'] > 4) {dom.stdbyimg.src = "icons/" + icons['greencrossedcam'];} // bad light exposure
                     else {dom.stdbyimg.src = "icons/" + icons['vidcam'];}

@@ -182,11 +182,12 @@ def send_movement(circ_output, picam, wght, stop_event, preTrigImg): # first par
     videoUrlStr = movementStartStr.replace(":", "").replace(" ", "_")
 
     # pre-trigger images are captured in the main loop and stored in preTrigImg, which is a list of filenames
-    for i, imgName in enumerate(preTrigImg):
+    for imgName in preTrigImg:
         oldName = f"{imgName}" # e.g. ramdisk/1697041234567.jpg
-        newName = f"{daydir}/{videoUrlStr}.{i}.jpg"
-        if os.path.exists(oldName): os.rename(oldName, newName)
-    imgCnt = len(preTrigImg) # start counting from the number of pre-trigger images
+        if os.path.exists(oldName):
+            newName = f"{daydir}/{videoUrlStr}.{imgCnt}.jpg" 
+            os.rename(oldName, newName)
+            imgCnt += 1
     preTrigImg.clear()  # empty the renamed list for reuse as oldimg[] in main()
 
     # for video with circ output (dashcam):
@@ -313,7 +314,7 @@ def readBalance(bQ, stop_event):
                     ms.log("fifo rcvd: " + data)
                     if value == -1:
                         stop_event.set()
-                    elif ms.getStandby() == 0:
+                    else:
                         bQ.put(float(data))
                 else:
                     # If the pipe is empty, yield CPU for a fraction of a second
@@ -404,12 +405,17 @@ def main():
         try:
             while True:
                 if not bQueue.empty(): # child1 process 'readBalance()' fills bQueue after filtering for ms.getStandby()
-                    ms.setRecording(1)
                     # trigger_ns = time.time_ns() # check for nanosecs till recording, is exaggerated
                     weight = bQueue.get()
+                    if ms.getStandby() == 1 or ms.getScaleready() == 0:
+                        time.sleep(0.2)
+                        continue
+                    ms.setRecording(1)
                     send_movement(c_output, picam, weight, stop_recording_event, oldimg) # if no circ_output, replace c_output by picam
                     ms.setRecording(0)
-                    while not bQueue.empty(): bQueue.get()
+                    while not bQueue.empty():
+                        bQueue.get()
+                        time.sleep(0.2)
                     metadata = picam.capture_metadata() # read back from picam, after reset_camera()
                     ms.log(f"sent video with ExposureTime {metadata.get('ExposureTime')} and AnalogueGain {metadata.get('AnalogueGain')}")
                     inactive_counter = 0

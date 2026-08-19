@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/> 
+	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0">
+	<meta http-equiv="Cache-Control" content="no-store">
+	
+	<title>SVGpathSimplify</title>
+	<style type="text/css">
+		@charset "UTF-8";
+
+		body {
+			background: #fff;/*for debugging*/
+			color: #000;
+			font-family: "Helvetica";
+			margin:20px;
+			padding:0px;
+			margin-top:90px;
+			height: 600px;
+		}
+
+		h1 {
+			font-size: 20px;
+			color: #000;
+		}
+
+		p{
+			margin:10px;
+		}
+
+		.small{
+			font-size: 12px;
+			color: red;
+		}
+
+		.centered{
+			width: 90%;
+			margin-left: auto;
+			margin-right: auto;
+		}
+
+		.textinput{
+			margin: 20px;
+			width: 50%;
+		}
+	</style>
+</head>
+
+
+<body>
+	<h1>SVG Pfadcode Vereinfacher</h1>
+
+	<p>Kopiere Inkscape Pfadcode der Form "M -0.09375,-3 A 1.001098,1.001098 0 1 0 0,-1 C 0.56412939 ..." und erhalte Pfadpunkte ohne Nachkommastellen.</p>
+	<form id="pathForm" name="pathForm" class="centered">
+
+	  <fieldset>
+		<legend>Gib Inkscape Pfadcode ein:</legend>
+		<textarea id="notebody" class="textinput"></textarea>
+		<label>Pfadcode</label> 
+	  </fieldset>
+
+	  <input type="submit" value="Vereinfache">
+	</form>
+	<p id="result">_</p>
+	<p>Max /Min: <span id="maxmin">_</span></p>
+
+	<script type='text/javascript'>
+	document.getElementById('pathForm').onsubmit = function(evt){
+		var input = document.getElementById('notebody').value;
+		
+		var max = 0;
+		var min = 0;
+		var res = input.replace(/[\d\.-][\d\.e-]*/g,
+			function(n){
+				n = Math.round(n/2);
+				if (n > max) max = n;
+				if (n < min) min = n;
+				return n;
+			})
+
+		var result = document.getElementById('result');
+		result.innerHTML = res;
+		
+		var bounds = max + ' / ' + min;
+		var maxmin = document.getElementById('maxmin');
+		maxmin.innerHTML = bounds;
+		evt.preventDefault();
+	}
+	</script>
+</body>
+</html>

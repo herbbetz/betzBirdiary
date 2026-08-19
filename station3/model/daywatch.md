@@ -1,8 +1,10 @@
-<!--keywords[daywatch,KI-Model,ramdisk,Tensorflow_Lite_C_API]-->
+<!--keywords[daywatch,KI-Model,pretrigger,ramdisk,Tensorflow_Lite_C_API]-->
 
 **Doku zu daywatch**
 
 - 30 aus jedem Vogelvideo ausgekoppelte JPG Images werden nach KI-ermittelter Erkennungsrate auf die zwei eindeutigsten vogelhaltigen Bilder reduziert. 
+
+- In `mainFoBird3.py` werden erst die Pretrigger Images (ein `rolling buffer` der sowieso der WebIF-Darstellung dient) in `ramdisk/yyyy-mm-dd_hhMMss.msecs.X.jpg (z.B. X = 0 bis 2)` umbenannt, da die Kameraauslösung selbst Zeit benötigt. Anschließend werden parallel zum Videorecording weitere Images aufgenommen bis `X = 29` (s.u.). Das Videorecording ist ja ebenfalls an das `circular buffer pretrigger video` drangehängt.
 
 - mehrere KI-Modelle im Vergleich (in der Reihenfolge ihrer zeitlichen Verfügbarkeit):
 
