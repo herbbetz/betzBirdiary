@@ -2,6 +2,7 @@
 
 - SVG-Pfad auf 2 Nachkommastellen verkürzen, siehe `pathSimplify.html`
 - Resize SVG to 32x32, siehe `pathResize.html`
+- Improve path position mit *Affinity3* (SVG klein). *Libreoffice Draw* erzeugt unschönen Code.
 
 
 

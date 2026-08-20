@@ -258,68 +258,6 @@ class Baseline:
 
 
 # ============================================================
-# NoiseGuard using Welford's Standard Deviation in 30 secs windows
-#   (is faster than Interquartile Range)
-# ============================================================
-class NoiseGuard:
-    def __init__(
-            self,
-            weight_threshold: float,
-            window_samples: int = 210,  # 30 seconds * 7 Hz
-        ) -> None:
-            # Convert threshold from grams to raw ADC units, so add_sample() can be passed sample.raw in the main loop
-            raw_threshold = weight_threshold * abs(hxScale)
-            self.max_std = raw_threshold / 4.0
-            self.max_samples = window_samples
-            # Ring buffer and tracking state
-            self.buf = np.zeros(self.max_samples, dtype=np.float64)
-            self.count = 0
-            self.head = 0
-            # Welford running stats
-            self.mean = 0.0
-            self.M2 = 0.0
-
-    def reset(self) -> None:
-        self.count = 0
-        self.head = 0
-        self.mean = 0.0
-        self.M2 = 0.0
-
-    def add_sample(self, raw: float) -> None:
-        if self.count < self.max_samples:
-            # Filling the buffer initially
-            self.count += 1
-            delta = raw - self.mean
-            self.mean += delta / self.count
-            delta2 = raw - self.mean
-            self.M2 += delta * delta2
-            self.buf[self.head] = raw
-        else:
-            # Ring buffer full: remove outgoing value before adding incoming
-            old_val = self.buf[self.head]
-            old_mean = self.mean
-            
-            # Update mean for replacement
-            self.mean += (raw - old_val) / self.max_samples
-            
-            # Update M2 (running sum of squared differences)
-            self.M2 += (raw - old_val) * (raw - self.mean + old_val - old_mean)
-            self.buf[self.head] = raw
-
-        self.head = (self.head + 1) % self.max_samples
-
-    def current_std(self) -> float:
-        if self.count < 2:
-            return 0.0
-        variance = max(0.0, self.M2 / (self.count - 1))
-        return float(np.sqrt(variance))
-
-    def is_quiet(self) -> bool:
-        if self.count < self.max_samples:
-            return False
-        return self.current_std() <= self.max_std
-
-# ============================================================
 # FSM (pure state machine, no I/O, no logging)
 # ============================================================
 
@@ -784,12 +722,6 @@ sample = Sample()
 baseline = Baseline(hx)
 baseline.startup(sample)
 
-# Initialize NoiseGuard (30-second window, assuming ~6.67 Hz loop speed from time.sleep(0.15))
-noiseguard = NoiseGuard(
-    weight_threshold=WEIGHTTHRESHOLD_off,
-    window_samples=30 * 7
-)
-
 median = MedianFilter()
 
 for value in baseline.stable_buf:
@@ -797,6 +729,7 @@ for value in baseline.stable_buf:
 
 fsm = WeightFSM()
 
+ms.setScaleready()
 if testmode:
     signal_logger = SignalLogger(sample)
     live_logger = LiveLogger()
@@ -812,12 +745,7 @@ else:
 try:
     while True:
         sample.t = time.monotonic()
-        try:
-            sample.raw_sample = hx.read()
-        except RuntimeError as e:
-            ms.log(f"hx read: {e}", terminal=False)
-            time.sleep(0.05)
-            continue
+        sample.raw_sample = hx.read()
 
         median.update(sample)
         baseline.process(sample)
@@ -831,25 +759,25 @@ try:
         sample.peak = fsm.peak
 
         if fsm.state == STATE_IDLE:
-            noiseguard.add_sample(sample.raw_sample)
+            baseline.update_stable_buffer(sample.raw)
 
-            # Only allow baseline adjustments if the environment is quiet
-            if noiseguard.is_quiet():
-                ms.setScaleready()
-                baseline.update_stable_buffer(sample.raw)
-                candidate = baseline.stable_raw()
+            candidate = baseline.stable_raw()
 
-                if candidate is not None and abs(candidate - baseline.offset) > 0:
-                    baseline.adopt_raw_value(candidate, sample)
-                    sample.event = "IDLE_STABLE_RECAL"
-                elif abs(sample.weight) < WEIGHTTHRESHOLD_off:
-                    baseline.follow_idle(sample)
-            else:
-                # Flush baseline buffer when noisy so dirty samples aren't used
-                ms.clearScaleready()
-                baseline.stable_buf_reset()
+            if (
+                candidate is not None
+                and abs(candidate - baseline.offset) > 0
+            ):
+                baseline.adopt_raw_value(
+                    candidate,
+                    sample
+                )
+                sample.event = "IDLE_STABLE_RECAL" # baseline recalibration during IDLE state
+
+            elif abs(sample.weight) < WEIGHTTHRESHOLD_off:
+                # Follow small drift near a correct baseline.
+                baseline.follow_idle(sample)
+
         else:
-            noiseguard.reset()
             baseline.stable_buf_reset()
 
         timeout_event = fsm.check_timeout(
@@ -899,4 +827,4 @@ finally:
     ms.clearScaleready()
     clearPID(1)
 
-    ms.log(f"{sys.argv[0]} stopped {time.ctime()}")
+    ms.log(f"hxFiBird stopped {time.ctime()}")

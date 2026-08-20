@@ -78,58 +78,39 @@ def readmsgProp(prop):
     return m[prop]
 
 def updatemsg(callback):
-    global message
     with open(filename, 'r+') as jfile:
-        fcntl.flock(jfile, fcntl.LOCK_EX)
+        # Acquire an exclusive lock
+        fcntl.flock(jfile, fcntl.LOCK_EX) # will wait for other locks to close
         try:
-            m = jfile.read()
-            disk_data = json.loads(m)
-            
-            # Apply update function
-            updated_data = callback(disk_data)
-            
-            # Write updated dict to disk
-            upd = json.dumps(updated_data)
+            m = jfile.read() # gives no dict
+            # or msg = json.load(jfile)
+            # JSONDecodeError from None, vidmsg.json sometimes empty? why?
+            msg = json.loads(m) # change to dict
+            msg = callback(msg) # update
+            upd = json.dumps(msg)
+            # and write:
             jfile.seek(0)
-            jfile.write(upd)
-            jfile.truncate()
-            
-            # Sync local process cache with what was written
-            message = updated_data
-
+            jfile.write(upd) # will not change numerics to strings
+            # json.dump(msg, jfile)
+            jfile.truncate() # truncate before the write may leave back an empty file
         except JSONDecodeError as e:
-            print(f"{m} = invalid json read: {e}", flush=True)
+            print(str(m) + " =read unvalid json: " + str(e), flush=True)
         except TypeError as s:
-            print(f"Not serializable to json: {s}", flush=True)
+            print(str(upd) + " =not serializable to json: " + str(s), flush=True)
         finally:
             fcntl.flock(jfile, fcntl.LOCK_UN)
 
 def setmsgprop(key, val):
-    global message
-    # 1. Memory Guard: Skip disk I/O entirely if local process cache already matches
-    if message.get(key) == val:
-        return
-
-    # 2. File Lock & Update
     def change(data):
         data[key] = val
         return data
-
     updatemsg(change)
 
-
 def setmsgProps(newDict):
-    global message
-    # 1. Memory Guard: Check if all values in dictionary match local cache
-    if all(message.get(k) == v for k, v in newDict.items()):
-        return
-
-    # 2. File Lock & Update
     def change(data):
         for key, value in newDict.items():
             data[key] = value
         return data
-
     updatemsg(change)
 
 def printmsg():
@@ -177,10 +158,14 @@ def setRecording(state):
 
 # scaleready default = 1, till hxFiBird*.py started
 def setScaleready():
-    setmsgprop('scaleready', 1)
+    if message['scaleready'] == 0:
+        setmsgprop('scaleready', 1)
+        message['scaleready'] = 1
 
 def clearScaleready():
-    setmsgprop('scaleready', 0)
+    if message['scaleready'] == 1:
+        setmsgprop('scaleready', 0)
+        message['scaleready'] = 0
 
 def getScaleready():
     m = readmsg()
