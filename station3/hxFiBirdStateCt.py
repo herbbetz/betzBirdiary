@@ -75,6 +75,7 @@ class Sample:
 
     offset: float = 0.0
     weight: float = 0.0
+    sigma: float = 0.0  # Standard deviation in grams
 
     state: int = 0
     peak: float = 0.0
@@ -325,6 +326,10 @@ class NoiseGuard:
             return False
         return self.current_std() <= self.max_std
 
+    def current_std_grams(self) -> float:
+        """Returns standard deviation in physical units (grams)."""
+        if abs(hxScale) < 1: return 0.0
+        return self.current_std() / abs(hxScale)
 # ============================================================
 # FSM (pure state machine, no I/O, no logging)
 # ============================================================
@@ -349,17 +354,21 @@ STATE_TIMEOUT = 300.0
 
 
 class WeightFSM:
-    def __init__(self) -> None:
+    def __init__(self, weight_threshold: float) -> None:
+        self.set_thresholds(weight_threshold)
         self.state = STATE_IDLE
         self.state_t0 = time.monotonic()
-        self.threshold_on = weightThreshold
-        self.threshold_off = WEIGHTTHRESHOLD_off
         self.above_count = 0
         self.below_count = 0
         self.peak = 0.0
         self.departure_t0 = 0.0
         self.present_t0 = 0.0
         self.camera_sent = False
+
+    def set_thresholds(self, base_threshold: float) -> None:
+        """Updates the active weight threshold and recalibrates hysteresis off-threshold."""
+        self.weight_threshold = base_threshold
+        self.weight_threshold_off = 0.7 * base_threshold
 
     def reset(self, keep_peak: bool = True) -> None:
         self.above_count = 0
@@ -671,7 +680,7 @@ class SignalLogger:
                 f"# startup_delay={sample.startup_delay:.2f}\n"
             )
             f.write(
-                "time,mono_t,raw,offset,weight,state,event\n"
+                "time,mono_t,raw,offset,weight,sigma,state,event\n"
             )
 
     def _format_row(self, sample: Sample) -> str:
@@ -681,6 +690,7 @@ class SignalLogger:
             f"{sample.raw},"
             f"{sample.offset:.0f},"
             f"{sample.weight:.2f},"
+            f"{sample.sigma:.2f},"
             f"{STATE_NAME[sample.state]},"
             f"{sample.event}\n"
         )
@@ -793,6 +803,8 @@ baseline.startup(sample)
 # Configuration
 MEDIAN_SAMPLES = 7
 NOISEGUARD_SAMPLES = 210
+# Adaptive threshold logic
+BASELINE_SIGMA = 0.5  # Baseline noise standard deviation in grams under calm conditions
 
 # Initialize Filters
 # Initialize NoiseGuard (30-second window, assuming ~6.67 Hz loop speed from time.sleep(0.15))
@@ -813,7 +825,7 @@ for _ in range(MEDIAN_SAMPLES):
 for _ in range(NOISEGUARD_SAMPLES):
     noiseguard.add_sample(baseline_val)
 
-fsm = WeightFSM()
+fsm = WeightFSM(weightThreshold)
 
 if testmode:
     signal_logger = SignalLogger(sample)
@@ -839,20 +851,16 @@ try:
         median.update(sample)
         baseline.process(sample)
 
-        event = fsm.process_weight(
-            sample.weight,
-            sample
-        )
-
-        sample.state = fsm.state
-        sample.peak = fsm.peak
-
         if fsm.state == STATE_IDLE:
             noiseguard.add_sample(sample.raw_sample)
+            sample.sigma = noiseguard.current_std_grams()  # Export std dev in grams
+            # Calculate relative noise ratio compared to normal baseline
+            noise_ratio = sample.sigma / BASELINE_SIGMA
 
             # Only allow baseline adjustments if the environment is quiet
             if noiseguard.is_quiet():
-                ms.setScaleready()
+                # ms.setScaleready()
+                fsm.set_thresholds(weightThreshold)
                 baseline.update_stable_buffer(sample.raw)
                 candidate = baseline.stable_raw()
 
@@ -863,17 +871,30 @@ try:
                     baseline.follow_idle(sample)
             else:
                 # Flush baseline buffer when noisy so dirty samples aren't used
-                ms.clearScaleready()
                 baseline.stable_buf_reset()
+                # ms.clearScaleready()
+                # if noise_ratio > 1.15 or noise_ratio < 0.85:
+                # Continuously adapt threshold to wind intensity while noisy
+                adapted_threshold = max(weightThreshold, weightThreshold * noise_ratio)
+                fsm.set_thresholds(adapted_threshold)
+
         else:
             noiseguard.reset()
+            sample.sigma = 0.0
             baseline.stable_buf_reset()
+
+        # process FSM using freshly updated thresholds:
+        event = fsm.process_weight(
+            sample.weight,
+            sample
+        )
+        sample.state = fsm.state
+        sample.peak = fsm.peak
 
         timeout_event = fsm.check_timeout(
             sample,
             baseline
         )
-
         if timeout_event:
             event = timeout_event
 
