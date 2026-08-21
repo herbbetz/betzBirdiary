@@ -269,7 +269,7 @@ class NoiseGuard:
         ) -> None:
             # Convert threshold from grams to raw ADC units, so add_sample() can be passed sample.raw in the main loop
             raw_threshold = weight_threshold * abs(hxScale)
-            self.max_std = raw_threshold / 4.0
+            self.max_std = raw_threshold / 4.0 # StdDev 2 sigma covers 95% +- weight/2, so test sigma vs. weightThreshold/4
             self.max_samples = window_samples
             # Ring buffer and tracking state
             self.buf = np.zeros(self.max_samples, dtype=np.float64)
