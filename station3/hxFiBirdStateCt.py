@@ -90,8 +90,12 @@ class Sample:
 # ============================================================
 # HX711 DRIVER
 # ============================================================
-ERR_WAIT_TIMEOUT  = -9223372036854775808
-ERR_FRAME_PREEMPT = -9223372036854775807
+import ctypes
+
+# Updated error definitions matching libhx711.c
+ERR_BASE          = -10000000
+ERR_WAIT_TIMEOUT  = ERR_BASE - 1  # -10000001
+ERR_FRAME_PREEMPT = ERR_BASE - 2  # -10000002
 
 class HX711_CT:
     def __init__(self) -> None:
@@ -116,18 +120,20 @@ class HX711_CT:
             raise RuntimeError("HX711 init failed")
 
     def read(self) -> int:
-            value = self.lib.hx711_read()
+        value = self.lib.hx711_read()
 
+        if value <= ERR_BASE:
             if value == ERR_WAIT_TIMEOUT:
                 raise RuntimeError("HX711 timeout: DOUT pin remained HIGH (Hardware disconnect or unready)")
             elif value == ERR_FRAME_PREEMPT:
                 raise RuntimeError("HX711 preemption: OS scheduling delay invalidated frame timing")
+            else:
+                raise RuntimeError(f"HX711 driver error code: {value}")
 
-            return value
+        return value
 
     def close(self) -> None:
         self.lib.hx711_close()
-
 
 # ============================================================
 # SIMPLE MEDIAN FILTER
@@ -784,16 +790,28 @@ sample = Sample()
 baseline = Baseline(hx)
 baseline.startup(sample)
 
+# Configuration
+MEDIAN_SAMPLES = 7
+NOISEGUARD_SAMPLES = 210
+
+# Initialize Filters
 # Initialize NoiseGuard (30-second window, assuming ~6.67 Hz loop speed from time.sleep(0.15))
+median = MedianFilter(size=MEDIAN_SAMPLES)
 noiseguard = NoiseGuard(
     weight_threshold=WEIGHTTHRESHOLD_off,
-    window_samples=30 * 7
+    window_samples=NOISEGUARD_SAMPLES
 )
 
-median = MedianFilter()
+# Baseline reference value, baseline.stable_buf is already filled during scale calibration/startup
+baseline_val = int(np.median(baseline.stable_buf))
 
-for value in baseline.stable_buf:
-    median.buf.append(int(value))
+# 1. Pre-fill MedianFilter
+for _ in range(MEDIAN_SAMPLES):
+    median.buf.append(baseline_val)
+
+# 2. Pre-fill NoiseGuard completely (count = 210, is_quiet() enabled immediately)
+for _ in range(NOISEGUARD_SAMPLES):
+    noiseguard.add_sample(baseline_val)
 
 fsm = WeightFSM()
 
@@ -803,7 +821,6 @@ if testmode:
 else:
     signal_logger = NullRecorder()
     live_logger = NullRecorder()
-
 
 # ============================================================
 # MAIN LOOP

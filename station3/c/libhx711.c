@@ -13,9 +13,10 @@
 #include <stdint.h>
 #include <lgpio.h>
 
-/* Sentinels for Python distinction */
-#define ERR_WAIT_TIMEOUT   (-9223372036854775807LL - 1LL) /* INT64_MIN: DOUT stayed HIGH */
-#define ERR_FRAME_PREEMPT  (-9223372036854775807LL) /* Frame took > 2.5ms due to OS stall */
+/* Negative error band base: well below raw 24-bit ADC min (-8,388,608) */
+#define ERR_BASE            (-10000000LL)
+#define ERR_WAIT_TIMEOUT    (ERR_BASE - 1LL) /* -10000001: DOUT stayed HIGH */
+#define ERR_FRAME_PREEMPT   (ERR_BASE - 2LL) /* -10000002: Frame took > 2.5ms due to OS stall */
 
 static int chip = -1;
 static int dout_pin = -1;
