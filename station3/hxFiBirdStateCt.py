@@ -8,7 +8,8 @@ raw      : median-filtered HX711 reading
 offset   : current zero reference (baseline)
 weight   : (raw - offset) / hxScale
 
-- Baseline calibration is based on current stable raw values only.
+- Baseline calibration is based on current stable raw values only. EMA adaptation.
+- NoiseGuard measures baseline StdDev sigma (Welford) and on noise increases weightThreshold
 - No hxOffset history or BOOT_LOAD_DETECT logic is used. By environment
   hxOffset can vary more than a bird weight.
 - Startup establishes the initial baseline from a stable sample window.
@@ -35,7 +36,7 @@ signal_hx.csv, hxFiBird.log (C driver on stderr)
 Offline analysis of signal_hx.csv with hx_signalanalyzer.py.
 """
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from collections import deque
 from datetime import datetime
 import ctypes
@@ -69,9 +70,9 @@ WEIGHTTHRESHOLD_off = 0.7 * weightThreshold
 class Sample:
     t: float = 0.0
 
-    raw_sample: int = 0
-    raw: int = 0
-    raw_delta: int = 0
+    raw_sample: int = 0 # single ADC value before median filter (could be spike)
+    raw: int = 0 # ADCount after median filter
+    # raw_delta: int = 0
 
     offset: float = 0.0
     weight: float = 0.0
@@ -85,8 +86,7 @@ class Sample:
     startup_maxspread: int = 0
     startup_delay: float = 0.0
 
-    event: str = ""
-
+    events: list[str] = field(default_factory=list) # '=[]' not allowed in dataclass
 
 # ============================================================
 # HX711 DRIVER
@@ -229,12 +229,12 @@ class Baseline:
                     sample.startup_attempts = attempts
                     sample.startup_maxspread = STABLE_SPREAD_LIMIT
                     sample.startup_delay = time.monotonic() - t0
-                    sample.event = (
+                    event = (
                         f"STARTUP_ZERO "
                         f"spread={sample.startup_spread:.0f}"
                     )
-
-                    ms.log(sample.event)
+                    sample.events.append(event)
+                    ms.log(event)
                     return True
 
                 # No extra sleep needed here on success; hx.read() on the next loop 
@@ -268,23 +268,33 @@ class Baseline:
 # NoiseGuard using Welford's Standard Deviation in 30 secs windows
 #   (is faster than Interquartile Range)
 # ============================================================
+# ============================================================
+# NoiseGuard using Welford's Standard Deviation in 30 secs windows
+# ============================================================
+
 class NoiseGuard:
     def __init__(
             self,
             weight_threshold: float,
-            window_samples: int = 210,  # 30 seconds * 7 Hz
+            window_samples: int = 210,
         ) -> None:
-            # Convert threshold from grams to raw ADC units, so add_sample() can be passed sample.raw in the main loop
-            raw_threshold = weight_threshold * abs(hxScale)
-            self.max_std = raw_threshold / 4.0 # StdDev 2 sigma covers 95% +- weight/2, so test sigma vs. weightThreshold/4
-            self.max_samples = window_samples
-            # Ring buffer and tracking state
-            self.buf = np.zeros(self.max_samples, dtype=np.float64)
-            self.count = 0
-            self.head = 0
-            # Welford running stats
-            self.mean = 0.0
-            self.M2 = 0.0
+        # Convert threshold from grams to raw ADC units.
+        raw_threshold = weight_threshold * abs(hxScale)
+        self.max_std = raw_threshold / 4.0
+
+        self.max_samples = window_samples
+
+        # Ring buffer and tracking state
+        self.buf = np.zeros(
+            self.max_samples,
+            dtype=np.float64
+        )
+        self.count = 0
+        self.head = 0
+
+        # Welford running statistics
+        self.mean = 0.0
+        self.M2 = 0.0
 
     def reset(self) -> None:
         self.count = 0
@@ -294,41 +304,59 @@ class NoiseGuard:
 
     def add_sample(self, raw: float) -> None:
         if self.count < self.max_samples:
-            # Filling the buffer initially
+            # Fill the buffer initially.
             self.count += 1
+
             delta = raw - self.mean
             self.mean += delta / self.count
             delta2 = raw - self.mean
             self.M2 += delta * delta2
-            self.buf[self.head] = raw
-        else:
-            # Ring buffer full: remove outgoing value before adding incoming
-            old_val = self.buf[self.head]
-            old_mean = self.mean
-            
-            # Update mean for replacement
-            self.mean += (raw - old_val) / self.max_samples
-            
-            # Update M2 (running sum of squared differences)
-            self.M2 += (raw - old_val) * (raw - self.mean + old_val - old_mean)
+
             self.buf[self.head] = raw
 
-        self.head = (self.head + 1) % self.max_samples
+        else:
+            # Ring buffer full: remove outgoing value
+            # before adding incoming value.
+            old_val = self.buf[self.head]
+            old_mean = self.mean
+
+            self.mean += (
+                raw - old_val
+            ) / self.max_samples
+
+            self.M2 += (
+                (raw - old_val)
+                * (raw - self.mean + old_val - old_mean)
+            )
+
+            self.buf[self.head] = raw
+
+        self.head = (
+            self.head + 1
+        ) % self.max_samples
 
     def current_std(self) -> float:
         if self.count < 2:
             return 0.0
-        variance = max(0.0, self.M2 / (self.count - 1))
+
+        variance = max(
+            0.0,
+            self.M2 / (self.count - 1)
+        )
         return float(np.sqrt(variance))
 
-    def is_quiet(self) -> bool:
+    def is_noise(self) -> bool:
+        # No noise decision until a complete window exists.
         if self.count < self.max_samples:
             return False
-        return self.current_std() <= self.max_std
+
+        return self.current_std() > self.max_std
 
     def current_std_grams(self) -> float:
         """Returns standard deviation in physical units (grams)."""
-        if abs(hxScale) < 1: return 0.0
+        if abs(hxScale) < 1:
+            return 0.0
+
         return self.current_std() / abs(hxScale)
 # ============================================================
 # FSM (pure state machine, no I/O, no logging)
@@ -352,10 +380,8 @@ CAMERA_DELAY = 2.0
 ARRIVAL_CONFIRM_SAMPLES = 10
 STATE_TIMEOUT = 300.0
 
-
 class WeightFSM:
     def __init__(self, weight_threshold: float) -> None:
-        self.set_thresholds(weight_threshold)
         self.state = STATE_IDLE
         self.state_t0 = time.monotonic()
         self.above_count = 0
@@ -364,16 +390,18 @@ class WeightFSM:
         self.departure_t0 = 0.0
         self.present_t0 = 0.0
         self.camera_sent = False
+        self.threshold_on = 0.0
+        self.threshold_off = 0.0
+        self.set_thresholds(weight_threshold)
 
     def set_thresholds(self, base_threshold: float) -> None:
-        """Updates the active weight threshold and recalibrates hysteresis off-threshold."""
-        self.weight_threshold = base_threshold
-        self.weight_threshold_off = 0.7 * base_threshold
+        """Updates active weight threshold and recalibrates hysteresis off-threshold."""
+        self.threshold_on = base_threshold
+        self.threshold_off = 0.7 * base_threshold
 
     def reset(self, keep_peak: bool = True) -> None:
         self.above_count = 0
         self.below_count = 0
-
         if not keep_peak:
             self.peak = 0.0
 
@@ -402,16 +430,14 @@ class WeightFSM:
         if departure:
             self.departure_t0 = self.state_t0
 
-        sample.event = event
-        return STATE_NAME[new_state]
+        sample.events.append(event)
+        return event  # Return the transition string directly!
 
     def camera_trigger(self) -> bool:
         if self.state != STATE_PRESENT:
             return False
-
         if self.camera_sent:
             return False
-
         if time.monotonic() - self.present_t0 < CAMERA_DELAY:
             return False
 
@@ -423,48 +449,29 @@ class WeightFSM:
         sample: Sample,
         baseline: Baseline
     ) -> str | None:
-        # Recover stuck non-IDLE states using a stable baseline.
-        if self.state in (
-            STATE_ARRIVAL,
-            STATE_PRESENT,
-            STATE_DEPARTURE
-        ):
+        if self.state in (STATE_ARRIVAL, STATE_PRESENT, STATE_DEPARTURE):
             if time.monotonic() - self.state_t0 > STATE_TIMEOUT:
                 raw_value = baseline.stable_raw()
-
                 if raw_value is not None:
                     old_state = STATE_NAME[self.state]
-                    baseline.adopt_raw_value(
-                        raw_value,
-                        sample
-                    )
+                    baseline.adopt_raw_value(raw_value, sample)
                     self.force_idle()
-                    sample.event = (
-                        f"BASELINE_RESET "
-                        f"{old_state} -> IDLE"
-                    )
-                    return "BASELINE_RESET"
-
+                    event_str = f"BASELINE_RESET {old_state} -> IDLE"
+                    sample.events.append(event_str)
+                    return event_str
             return None
 
-        # Reset an IDLE baseline that remains off-center too long.
         if self.state == STATE_IDLE:
-            if abs(sample.weight) > WEIGHTTHRESHOLD_off:
+            if abs(sample.weight) > self.threshold_off:
                 if time.monotonic() - self.state_t0 > STATE_TIMEOUT:
                     raw_value = baseline.stable_raw()
-
                     if raw_value is not None:
-                        baseline.adopt_raw_value(
-                            raw_value,
-                            sample
-                        )
+                        baseline.adopt_raw_value(raw_value, sample)
                         self.reset(keep_peak=False)
-                        sample.event = "BASELINE_RESET"
+                        sample.events.append("BASELINE_RESET")
                         return "BASELINE_RESET"
-
             return None
 
-        # OVERSIZE never auto-calibrates.
         return None
 
     def process_weight(
@@ -472,23 +479,16 @@ class WeightFSM:
         weight: float,
         sample: Sample
     ) -> str | None:
-        sample.event = ""
-
         if self.state == STATE_IDLE:
             return self.state_idle(weight, sample)
-
         if self.state == STATE_ARRIVAL:
             return self.state_arrival(weight, sample)
-
         if self.state == STATE_PRESENT:
             return self.state_present(weight, sample)
-
         if self.state == STATE_DEPARTURE:
             return self.state_departure(weight, sample)
-
         if self.state == STATE_OVERSIZE:
             return self.state_oversize(weight, sample)
-
         return None
 
     def state_idle(
@@ -498,26 +498,21 @@ class WeightFSM:
     ) -> str | None:
         if weight > self.threshold_on:
             self.above_count += 1
-
             if self.above_count >= 3:
                 self.peak = weight
-
                 if weight > weightlimit:
                     return self._transition(
                         STATE_OVERSIZE,
                         sample,
                         "IDLE->OVERSIZE"
                     )
-
                 return self._transition(
                     STATE_ARRIVAL,
                     sample,
                     "IDLE->ARRIVAL"
                 )
-
         else:
             self.above_count = 0
-
         return None
 
     def state_arrival(
@@ -544,10 +539,8 @@ class WeightFSM:
 
         self.above_count += 1
 
-        if (
-            self.above_count >= ARRIVAL_CONFIRM_SAMPLES
-            and self.peak > weightThreshold + 2.0
-        ):
+        # FIX: Removed (+ 2.0) hardcoded offset and global variable reference
+        if self.above_count >= ARRIVAL_CONFIRM_SAMPLES:
             return self._transition(
                 STATE_PRESENT,
                 sample,
@@ -572,7 +565,6 @@ class WeightFSM:
 
         if weight < self.threshold_off:
             self.below_count += 1
-
             if self.below_count >= 2:
                 return self._transition(
                     STATE_DEPARTURE,
@@ -580,7 +572,6 @@ class WeightFSM:
                     "PRESENT->DEPARTURE",
                     departure=True
                 )
-
         else:
             self.below_count = 0
 
@@ -595,7 +586,6 @@ class WeightFSM:
 
         if weight < self.threshold_off:
             self.below_count += 1
-
             if self.below_count >= 2:
                 return self._transition(
                     STATE_DEPARTURE,
@@ -603,7 +593,6 @@ class WeightFSM:
                     "OVERSIZE->DEPARTURE",
                     departure=True
                 )
-
         else:
             self.below_count = 0
 
@@ -614,7 +603,7 @@ class WeightFSM:
         weight: float,
         sample: Sample
     ) -> str | None:
-        if time.monotonic() - self.departure_t0 > 2:
+        if time.monotonic() - self.departure_t0 > 2.0:
             return self._transition(
                 STATE_IDLE,
                 sample,
@@ -624,14 +613,12 @@ class WeightFSM:
 
         if weight > self.threshold_on:
             self.peak = weight
-
             if weight > weightlimit:
                 return self._transition(
                     STATE_OVERSIZE,
                     sample,
                     "DEPARTURE->OVERSIZE"
                 )
-
             return self._transition(
                 STATE_ARRIVAL,
                 sample,
@@ -639,7 +626,6 @@ class WeightFSM:
             )
 
         return None
-
 
 # ============================================================
 # RECORDERS
@@ -670,7 +656,7 @@ class SignalLogger:
                 f"# startup_offset={sample.offset:.0f}\n"
             )
             f.write(
-                f"# startup_note={sample.event} "
+                f"# startup_note={'|'.join(sample.events)} "
                 f"(within {sample.startup_maxspread})\n"
             )
             f.write(
@@ -680,7 +666,7 @@ class SignalLogger:
                 f"# startup_delay={sample.startup_delay:.2f}\n"
             )
             f.write(
-                "time,mono_t,raw,offset,weight,sigma,state,event\n"
+                "time,mono_t,raw,offset,weight,sigma,threshold,state,events\n"
             )
 
     def _format_row(self, sample: Sample) -> str:
@@ -691,19 +677,30 @@ class SignalLogger:
             f"{sample.offset:.0f},"
             f"{sample.weight:.2f},"
             f"{sample.sigma:.2f},"
+            f"{weightThreshold:.2f},"
             f"{STATE_NAME[sample.state]},"
-            f"{sample.event}\n"
+            f"{'|'.join(sample.events)}\n"
         )
 
     def log(self, sample: Sample) -> None:
-        important = sample.event in (
-            "CAMERA_TRIGGER",
-            "DEPARTURE_TRIGGER",
-            "BASELINE_RESET"
-        )
+        # 1. Initialize important to False by default
+        important = False
+        
+        # 2. Check if any event in the list qualifies as important
+        for event in sample.events:
+            if event in (
+                "CAMERA_TRIGGER",
+                "DEPARTURE_TRIGGER",
+                "BASELINE_RESET",
+                "NOISY",
+                "HX711_GLITCH"
+            ):
+                important = True
+                break  # Stop checking once we find one important event
 
         second = int(sample.t)
 
+        # 3. Rate-limit standard sub-second samples, but write immediately if important
         if not important:
             if second == self._last_second:
                 return
@@ -781,6 +778,9 @@ def send_fifo(value: int) -> None:
 # ============================================================
 # INITIALIZATION
 # ============================================================
+# ============================================================
+# INITIALIZATION
+# ============================================================
 
 ms.init()
 
@@ -803,27 +803,24 @@ baseline.startup(sample)
 # Configuration
 MEDIAN_SAMPLES = 7
 NOISEGUARD_SAMPLES = 210
-# Adaptive threshold logic
-BASELINE_SIGMA = 0.5  # Baseline noise standard deviation in grams under calm conditions
 
-# Initialize Filters
-# Initialize NoiseGuard (30-second window, assuming ~6.67 Hz loop speed from time.sleep(0.15))
+# Adaptive threshold logic
+BASELINE_SIGMA = 0.5  # Baseline noise standard deviation in grams
+
+# Initialize filters
 median = MedianFilter(size=MEDIAN_SAMPLES)
+
 noiseguard = NoiseGuard(
     weight_threshold=WEIGHTTHRESHOLD_off,
     window_samples=NOISEGUARD_SAMPLES
 )
 
-# Baseline reference value, baseline.stable_buf is already filled during scale calibration/startup
+# Pre-fill MedianFilter only.
+# NoiseGuard deliberately starts empty.
 baseline_val = int(np.median(baseline.stable_buf))
 
-# 1. Pre-fill MedianFilter
 for _ in range(MEDIAN_SAMPLES):
     median.buf.append(baseline_val)
-
-# 2. Pre-fill NoiseGuard completely (count = 210, is_quiet() enabled immediately)
-for _ in range(NOISEGUARD_SAMPLES):
-    noiseguard.add_sample(baseline_val)
 
 fsm = WeightFSM(weightThreshold)
 
@@ -834,16 +831,23 @@ else:
     signal_logger = NullRecorder()
     live_logger = NullRecorder()
 
+
 # ============================================================
 # MAIN LOOP
 # ============================================================
 
 try:
     while True:
+        sample.events.clear()
         sample.t = time.monotonic()
+
         try:
             sample.raw_sample = hx.read()
+            ms.setScaleready()
+
         except RuntimeError as e:
+            sample.events.append("HX711_GLITCH")
+            ms.clearScaleready()
             ms.log(f"hx read: {e}", terminal=False)
             time.sleep(0.05)
             continue
@@ -851,65 +855,141 @@ try:
         median.update(sample)
         baseline.process(sample)
 
-        if fsm.state == STATE_IDLE:
-            noiseguard.add_sample(sample.raw_sample)
-            sample.sigma = noiseguard.current_std_grams()  # Export std dev in grams
-            # Calculate relative noise ratio compared to normal baseline
-            noise_ratio = sample.sigma / BASELINE_SIGMA
+        # ----------------------------------------------------
+        # FSM
+        # ----------------------------------------------------
 
-            # Only allow baseline adjustments if the environment is quiet
-            if noiseguard.is_quiet():
-                # ms.setScaleready()
-                fsm.set_thresholds(weightThreshold)
-                baseline.update_stable_buffer(sample.raw)
-                candidate = baseline.stable_raw()
-
-                if candidate is not None and abs(candidate - baseline.offset) > 0:
-                    baseline.adopt_raw_value(candidate, sample)
-                    sample.event = "IDLE_STABLE_RECAL"
-                elif abs(sample.weight) < WEIGHTTHRESHOLD_off:
-                    baseline.follow_idle(sample)
-            else:
-                # Flush baseline buffer when noisy so dirty samples aren't used
-                baseline.stable_buf_reset()
-                # ms.clearScaleready()
-                # if noise_ratio > 1.15 or noise_ratio < 0.85:
-                # Continuously adapt threshold to wind intensity while noisy
-                adapted_threshold = max(weightThreshold, weightThreshold * noise_ratio)
-                fsm.set_thresholds(adapted_threshold)
-
-        else:
-            noiseguard.reset()
-            sample.sigma = 0.0
-            baseline.stable_buf_reset()
-
-        # process FSM using freshly updated thresholds:
         event = fsm.process_weight(
             sample.weight,
             sample
         )
+
         sample.state = fsm.state
         sample.peak = fsm.peak
+
+        # ----------------------------------------------------
+        # BASELINE
+        # ----------------------------------------------------
+
+        if fsm.state == STATE_IDLE:
+            baseline.update_stable_buffer(sample.raw)
+
+            candidate = baseline.stable_raw()
+
+            if (
+                candidate is not None
+                and abs(candidate - baseline.offset) > 0
+            ):
+                baseline.adopt_raw_value(
+                    candidate,
+                    sample
+                )
+                sample.events.append(
+                    "IDLE_STABLE_RECAL"
+                )
+
+            elif abs(sample.weight) < WEIGHTTHRESHOLD_off:
+                baseline.follow_idle(sample)
+
+        else:
+            baseline.stable_buf_reset()
+
+        # ----------------------------------------------------
+        # FSM TIMEOUT / BASELINE RECOVERY
+        # ----------------------------------------------------
 
         timeout_event = fsm.check_timeout(
             sample,
             baseline
         )
+
         if timeout_event:
             event = timeout_event
+            sample.state = fsm.state
+            sample.peak = fsm.peak
 
-        signal_logger.log(sample)
-        live_logger.log(sample)
+        # ----------------------------------------------------
+        # NOISEGUARD
+        #
+        # Completely independent measurement lifecycle:
+        #   IDLE     -> collect samples
+        #   non-IDLE -> discard all samples
+        # ----------------------------------------------------
+
+        if fsm.state == STATE_IDLE:
+            noiseguard.add_sample(sample.raw)
+
+            if noiseguard.is_noise():
+                sample.events.append("NOISY")
+
+                sample.sigma = (
+                    noiseguard.current_std_grams()
+                )
+
+                noise_ratio = (
+                    sample.sigma / BASELINE_SIGMA
+                )
+
+                adapted_threshold = max(
+                    weightThreshold,
+                    weightThreshold * noise_ratio
+                )
+
+                print(
+                    f"adapted_threshold {adapted_threshold}",
+                    flush=True
+                )
+
+                fsm.set_thresholds(
+                    adapted_threshold
+                )
+
+            else:
+                sample.sigma = (
+                    noiseguard.current_std_grams()
+                )
+
+                fsm.set_thresholds(
+                    weightThreshold
+                )
+
+        else:
+            noiseguard.reset()
+            sample.sigma = 0.0
+
+        # ----------------------------------------------------
+        # CAMERA / DEPARTURE TRIGGERS
+        # ----------------------------------------------------
 
         if fsm.camera_trigger():
-            sample.event = "CAMERA_TRIGGER"
+            sample.events.append("CAMERA_TRIGGER")
             signal_logger.log(sample)
             send_fifo(sample.peak)
 
-        elif event == "DEPARTURE":
-            sample.event = "DEPARTURE_TRIGGER"
+        elif (
+            event
+            and "DEPARTURE" in event
+        ):
+            sample.events.append("DEPARTURE_TRIGGER")
             signal_logger.log(sample)
             send_fifo(-1)
+
+        # ----------------------------------------------------
+        # STATE EVENT
+        # ----------------------------------------------------
+
+        if event is not None:
+            print(
+                f"FSM Event Triggered: {event}",
+                flush=True
+            )
+
+        # ----------------------------------------------------
+        # RECORDERS
+        # ----------------------------------------------------
+
+        signal_logger.log(sample)
+        live_logger.log(sample)
 
         ms.log(
             f"{sample.weight:.2f} g "
@@ -937,4 +1017,6 @@ finally:
     ms.clearScaleready()
     clearPID(1)
 
-    ms.log(f"{sys.argv[0]} stopped {time.ctime()}")
+    ms.log(
+        f"{sys.argv[0]} stopped {time.ctime()}"
+    )
