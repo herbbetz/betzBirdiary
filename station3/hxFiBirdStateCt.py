@@ -77,6 +77,7 @@ class Sample:
     offset: float = 0.0
     weight: float = 0.0
     sigma: float = 0.0  # Standard deviation in grams
+    dyn_threshold: float = 0.0
 
     state: int = 0
     peak: float = 0.0
@@ -677,7 +678,7 @@ class SignalLogger:
             f"{sample.offset:.0f},"
             f"{sample.weight:.2f},"
             f"{sample.sigma:.2f},"
-            f"{weightThreshold:.2f},"
+            f"{sample.dyn_threshold:.2f},"
             f"{STATE_NAME[sample.state]},"
             f"{'|'.join(sample.events)}\n"
         )
@@ -806,6 +807,8 @@ NOISEGUARD_SAMPLES = 210
 
 # Adaptive threshold logic
 BASELINE_SIGMA = 0.5  # Baseline noise standard deviation in grams
+dyn_threshold = weightThreshold
+dyn_step = 0.15 # similar to main loop sleep time, so about 1g per sec increase
 
 # Initialize filters
 median = MedianFilter(size=MEDIAN_SAMPLES)
@@ -869,6 +872,7 @@ try:
 
         # ----------------------------------------------------
         # BASELINE
+        #   candidate is the possible new baseline value produced by the stable-sample buffer
         # ----------------------------------------------------
 
         if fsm.state == STATE_IDLE:
@@ -910,52 +914,45 @@ try:
 
         # ----------------------------------------------------
         # NOISEGUARD
-        #
         # Completely independent measurement lifecycle:
         #   IDLE     -> collect samples
         #   non-IDLE -> discard all samples
         # ----------------------------------------------------
-
-        if fsm.state == STATE_IDLE:
+        if event == "IDLE->ARRIVAL": # avoid contamination of sample.sigma by bird arrival
+            noiseguard.reset()
+            sample.sigma = 0.0
+        elif fsm.state == STATE_IDLE:
             noiseguard.add_sample(sample.raw)
+            sample.sigma = noiseguard.current_std_grams()
 
-            if noiseguard.is_noise():
+            if noiseguard.is_noise() and sample.sigma > BASELINE_SIGMA:
+                # slowly increase up to (2 * weightThreshold)
+                dyn_threshold = min(
+                    dyn_threshold + dyn_step,
+                    2 * weightThreshold
+                )
                 sample.events.append("NOISY")
-
-                sample.sigma = (
-                    noiseguard.current_std_grams()
-                )
-
-                noise_ratio = (
-                    sample.sigma / BASELINE_SIGMA
-                )
-
-                adapted_threshold = max(
-                    weightThreshold,
-                    weightThreshold * noise_ratio
-                )
-
-                print(
-                    f"adapted_threshold {adapted_threshold}",
-                    flush=True
-                )
-
-                fsm.set_thresholds(
-                    adapted_threshold
-                )
-
             else:
-                sample.sigma = (
-                    noiseguard.current_std_grams()
-                )
-
-                fsm.set_thresholds(
+                # slowly go back to weightThreshold
+                dyn_threshold = max(
+                    dyn_threshold - dyn_step,
                     weightThreshold
                 )
+
+            sample.dyn_threshold = dyn_threshold
+            fsm.set_thresholds(dyn_threshold)
+
+            print(
+                f"dyn_threshold {sample.dyn_threshold}",
+                flush=True
+            )
 
         else:
             noiseguard.reset()
             sample.sigma = 0.0
+            dyn_threshold = weightThreshold
+            sample.dyn_threshold = dyn_threshold
+            fsm.set_thresholds(dyn_threshold)
 
         # ----------------------------------------------------
         # CAMERA / DEPARTURE TRIGGERS
