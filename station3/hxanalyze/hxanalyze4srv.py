@@ -19,10 +19,7 @@ JUMP_G = 3.0
 # Minimum duration for an IDLE warning in seconds.
 IDLE_BAD_TIME = 5.0
 
-
-def read_signal_file(
-    filename: str
-) -> tuple[dict, list[dict], list[str]]:
+def read_signal_file(filename: str) -> tuple[dict, list[dict], list[str]]:
     meta = {}
     rows = []
 
@@ -31,10 +28,8 @@ def read_signal_file(
             line = file.readline()
             if not line:
                 break
-
             if line.startswith("#"):
                 key, value = line[1:].strip().split("=", 1)
-
                 try:
                     meta[key] = float(value)
                 except ValueError:
@@ -47,18 +42,18 @@ def read_signal_file(
 
         for line in file:
             values = line.strip().split(",")
-
             if len(values) != len(header):
                 continue
-
             row = dict(zip(header, values))
             row["mono_t"] = float(row["mono_t"])
-            row["weight"] = float(row["weight"])
+            row["raw"] = float(row["raw"])
             row["offset"] = float(row["offset"])
+            row["weight"] = float(row["weight"])
+            row["sigma"] = float(row["sigma"])
+            row["threshold"] = float(row["threshold"])
             rows.append(row)
 
     return meta, rows, header
-
 
 def split_periods(
     rows: list[dict]
@@ -157,17 +152,12 @@ def reconstruct_visits(
 
     return visits, oversize
 
-
 def get_configuration(meta: dict) -> dict:
     weight_threshold = meta.get("weightThreshold", 0)
-    threshold_off = meta.get(
-        "threshold_off",
-        weight_threshold * 0.7
-    )
 
     return {
         "weight_threshold": weight_threshold,
-        "threshold_off": threshold_off,
+        "threshold_off": weight_threshold * 0.7,
         "weightlimit": meta.get("weightlimit", 0),
         "hxScale": meta.get("hxScale", 0),
         "startup_offset": meta.get("startup_offset", 0),
@@ -175,20 +165,18 @@ def get_configuration(meta: dict) -> dict:
         "CAMERA_DELAY": meta.get("CAMERA_DELAY", 0)
     }
 
+def row_has_event(row: dict, event: str) -> bool:
+    return event in row["events"].split("|")
 
-def get_baseline_statistics(
-    rows: list[dict],
-    meta: dict
-) -> dict:
+
+def get_baseline_statistics(rows: list[dict], meta: dict) -> dict:
     idle_offsets = [
-        row["offset"]
-        for row in rows
+        row["offset"] for row in rows
         if row["state"] == "IDLE"
     ]
-
     baseline_resets = [
         row for row in rows
-        if row["event"] == "BASELINE_RESET"
+        if row_has_event(row, "BASELINE_RESET")
     ]
 
     result = {
@@ -199,36 +187,24 @@ def get_baseline_statistics(
     if idle_offsets:
         result["minimum_offset"] = min(idle_offsets)
         result["maximum_offset"] = max(idle_offsets)
-        result["offset_range"] = (
-            max(idle_offsets) - min(idle_offsets)
-        )
-        result["idle_mean"] = (
-            sum(idle_offsets) / len(idle_offsets)
-        )
+        result["offset_range"] = max(idle_offsets) - min(idle_offsets)
+        result["idle_mean"] = sum(idle_offsets) / len(idle_offsets)
     else:
         result["no_idle_offset_samples"] = True
 
     last_offset = None
-
     for index, row in enumerate(baseline_resets, 1):
         offset = row["offset"]
-
-        if last_offset is None:
-            delta = 0.0
-        else:
-            delta = offset - last_offset
-
+        delta = 0.0 if last_offset is None else offset - last_offset
         result["baseline_resets"].append({
             "index": index,
             "time": row["time"],
             "offset": offset,
             "delta": delta
         })
-
         last_offset = offset
 
     return result
-
 
 def get_oversize(oversize: list[dict]) -> list[dict]:
     return [
@@ -248,15 +224,12 @@ def get_visit_statistics(
     camera_delay: float
 ) -> dict:
     camera_triggers = sum(
-        1
-        for row in rows
-        if row["event"] == "CAMERA_TRIGGER"
+        1 for row in rows
+        if row_has_event(row, "CAMERA_TRIGGER")
     )
-
     departures = sum(
-        1
-        for row in rows
-        if row["event"] == "DEPARTURE"
+        1 for row in rows
+        if row_has_event(row, "DEPARTURE_TRIGGER")
     )
 
     result = {
@@ -269,11 +242,7 @@ def get_visit_statistics(
     }
 
     if visits:
-        durations = [
-            visit["stay"]
-            for visit in visits
-        ]
-
+        durations = [visit["stay"] for visit in visits]
         result["visit_durations"] = {
             "minimum": min(durations),
             "maximum": max(durations),
@@ -281,7 +250,6 @@ def get_visit_statistics(
         }
 
     return result
-
 
 def get_idle_statistics(rows: list[dict]) -> dict | None:
     idle = [
@@ -439,100 +407,59 @@ def get_summary(
 
     return result
 
-
 def create_plot(
     rows: list[dict],
     periods: list[tuple[str, int, int]],
     weight_threshold: float,
-    threshold_off: float,
     startup_offset: float,
     hx_scale: float,
     weightlimit: float,
     output_path: str
 ) -> None:
     times = [
-        datetime.strptime(
-            row["time"],
-            "%Y-%m-%d %H:%M:%S"
-        )
+        datetime.strptime(row["time"], "%Y-%m-%d %H:%M:%S")
         for row in rows
     ]
-
-    weights = [
-        row["weight"]
-        for row in rows
-    ]
+    weights = [row["weight"] for row in rows]
+    thresholds = [row["threshold"] for row in rows]
+    sigmas = [row["sigma"] for row in rows]
 
     offset_g = [
-        (
-            startup_offset - row["offset"]
-        ) / abs(hx_scale)
-        if hx_scale != 0
-        else 0.0
+        (startup_offset - row["offset"]) / abs(hx_scale)
+        if hx_scale != 0 else 0.0
         for row in rows
     ]
+
+    threshold_off = weight_threshold * 0.7
 
     fig, ax = plt.subplots(figsize=(11, 4))
 
-    ax.plot(
-        times,
-        weights,
-        label="weight",
-        linewidth=1
-    )
-    ax.plot(
-        times,
-        offset_g,
-        label="offset drift (g)",
-        linewidth=1
-    )
+    ax.plot(times, weights, label="weight", linewidth=1)
+    ax.plot(times, offset_g, label="offset drift (g)", linewidth=1)
+    ax.plot(times, thresholds, label="threshold", linewidth=1)
+    ax.plot(times, sigmas, label="sigma", linewidth=1)
 
-    ax.axhline(
-        weight_threshold,
-        color="r",
-        linestyle="--",
-        alpha=0.7
-    )
-    ax.axhline(
-        threshold_off,
-        color="g",
-        linestyle="--",
-        alpha=0.7
-    )
+    ax.axhline(weight_threshold, linestyle="--", alpha=0.7)
+    ax.axhline(threshold_off, linestyle="--", alpha=0.7)
 
     for state, start, end in periods:
         if state != "IDLE":
-            ax.axvspan(
-                times[start],
-                times[end],
-                alpha=0.08
-            )
+            ax.axvspan(times[start], times[end], alpha=0.08)
 
     if hx_scale != 0:
         for index in range(1, len(rows)):
             delta_g = (
-                rows[index - 1]["offset"]
-                - rows[index]["offset"]
+                rows[index - 1]["offset"] - rows[index]["offset"]
             ) / abs(hx_scale)
 
             if abs(delta_g) > JUMP_G:
-                ax.axvline(
-                    times[index],
-                    linestyle=":",
-                    alpha=0.8
-                )
+                ax.axvline(times[index], linestyle=":", alpha=0.8)
 
-    # Show at least one hour on the time axis.
-    plot_end = max(
-        times[-1],
-        times[0] + timedelta(hours=1)
-    )
-
+    plot_end = max(times[-1], times[0] + timedelta(hours=1))
     ax.set_xlim(times[0], plot_end)
     ax.xaxis.set_major_formatter(
         plt.matplotlib.dates.DateFormatter("%H:%M")
     )
-
     ax.set_xlabel("time")
     ax.set_ylabel("grams")
     ax.legend(loc="upper left")
@@ -542,6 +469,7 @@ def create_plot(
     plt.savefig(output_path)
     plt.close(fig)
 
+
 def analyze_csv(filename: str) -> dict:
     if not os.path.isfile(filename):
         return {"signal_csv": False}
@@ -549,30 +477,20 @@ def analyze_csv(filename: str) -> dict:
     meta, rows, _ = read_signal_file(filename)
 
     if not rows:
-        return {
-            "signal_csv": True,
-            "samples": 0
-        }
+        return {"signal_csv": True, "samples": 0}
 
     weight_threshold = meta.get("weightThreshold", 0)
-    threshold_off = meta.get(
-        "threshold_off",
-        weight_threshold * 0.7
-    )
     weightlimit = meta.get("weightlimit", 0)
     hx_scale = meta.get("hxScale", 0)
     camera_delay = meta.get("CAMERA_DELAY", 0)
     startup_offset = meta.get("startup_offset", 0)
 
     periods = split_periods(rows)
-    visits, oversize = reconstruct_visits(
-        rows,
-        periods
-    )
+    visits, oversize = reconstruct_visits(rows, periods)
 
     idle_warnings = find_idle_warnings(
         rows,
-        threshold_off
+        weight_threshold * 0.7
     )
 
     output_path = os.path.join(
@@ -584,7 +502,6 @@ def analyze_csv(filename: str) -> dict:
         rows,
         periods,
         weight_threshold,
-        threshold_off,
         startup_offset,
         hx_scale,
         weightlimit,
@@ -597,29 +514,16 @@ def analyze_csv(filename: str) -> dict:
         "first": rows[0]["time"],
         "last": rows[-1]["time"],
         "configuration": get_configuration(meta),
-        "baseline_statistics": get_baseline_statistics(
-            rows,
-            meta
-        ),
+        "baseline_statistics": get_baseline_statistics(rows, meta),
         "oversize_events": get_oversize(oversize),
         "visit_statistics": get_visit_statistics(
-            visits,
-            oversize,
-            rows,
-            camera_delay
+            visits, oversize, rows, camera_delay
         ),
         "idle_statistics": get_idle_statistics(rows),
-        "warnings": get_warnings(
-            idle_warnings,
-            oversize
-        ),
+        "warnings": get_warnings(idle_warnings, oversize),
         "offset_discontinuities": get_offset_discontinuities(
-            rows,
-            hx_scale
+            rows, hx_scale
         ),
-        "summary": get_summary(
-            visits,
-            oversize
-        ),
+        "summary": get_summary(visits, oversize),
         "timeline": "/ramdisk/signal_timeline.svg"
     }

@@ -269,10 +269,6 @@ class Baseline:
 # NoiseGuard using Welford's Standard Deviation in 30 secs windows
 #   (is faster than Interquartile Range)
 # ============================================================
-# ============================================================
-# NoiseGuard using Welford's Standard Deviation in 30 secs windows
-# ============================================================
-
 class NoiseGuard:
     def __init__(
             self,
@@ -339,7 +335,6 @@ class NoiseGuard:
     def current_std(self) -> float:
         if self.count < 2:
             return 0.0
-
         variance = max(
             0.0,
             self.M2 / (self.count - 1)
@@ -350,7 +345,6 @@ class NoiseGuard:
         # No noise decision until a complete window exists.
         if self.count < self.max_samples:
             return False
-
         return self.current_std() > self.max_std
 
     def current_std_grams(self) -> float:
@@ -804,9 +798,7 @@ baseline.startup(sample)
 # Configuration
 MEDIAN_SAMPLES = 7
 NOISEGUARD_SAMPLES = 210
-
 # Adaptive threshold logic
-BASELINE_SIGMA = 0.5  # Baseline noise standard deviation in grams
 dyn_threshold = weightThreshold
 dyn_step = 0.15 # similar to main loop sleep time, so about 1g per sec increase
 
@@ -834,11 +826,9 @@ else:
     signal_logger = NullRecorder()
     live_logger = NullRecorder()
 
-
 # ============================================================
 # MAIN LOOP
 # ============================================================
-
 try:
     while True:
         sample.events.clear()
@@ -925,7 +915,7 @@ try:
             noiseguard.add_sample(sample.raw)
             sample.sigma = noiseguard.current_std_grams()
 
-            if noiseguard.is_noise() and sample.sigma > BASELINE_SIGMA:
+            if noiseguard.is_noise():
                 # slowly increase up to (2 * weightThreshold)
                 dyn_threshold = min(
                     dyn_threshold + dyn_step,
@@ -941,11 +931,6 @@ try:
 
             sample.dyn_threshold = dyn_threshold
             fsm.set_thresholds(dyn_threshold)
-
-            print(
-                f"dyn_threshold {sample.dyn_threshold}",
-                flush=True
-            )
 
         else:
             noiseguard.reset()

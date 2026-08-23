@@ -32,11 +32,11 @@ def read_signal_file(filename: str) -> tuple[dict, list[dict], list[str]]:
     meta = {}
     rows = []
 
-    with open(filename) as f:
+    with open(filename, encoding="utf-8") as f:
         while True:
             line = f.readline()
             if not line:
-                break
+                return meta, rows, []
 
             if line.startswith("#"):
                 key, value = line[1:].strip().split("=", 1)
@@ -50,13 +50,18 @@ def read_signal_file(filename: str) -> tuple[dict, list[dict], list[str]]:
 
         for line in f:
             values = line.strip().split(",")
+
             if len(values) != len(header):
                 continue
 
             row = dict(zip(header, values))
             row["mono_t"] = float(row["mono_t"])
+            row["raw"] = float(row["raw"])
             row["weight"] = float(row["weight"])
             row["offset"] = float(row["offset"])
+            row["sigma"] = float(row["sigma"])
+            row["threshold"] = float(row["threshold"])
+            row["events"] = row["events"].strip()
             rows.append(row)
 
     return meta, rows, header
@@ -177,16 +182,14 @@ def print_baseline_statistics(
         if row["state"] == "IDLE"
     ]
 
-    # Only timeout recovery counts as a baseline reset.
     baseline_resets = [
         row for row in rows
-        if row["event"] == "BASELINE_RESET"
+        if "BASELINE_RESET" in row["events"].split()
     ]
 
     print()
     print("Baseline statistics")
     print("-------------------")
-
     print(
         f"startup offset : "
         f"{meta.get('startup_offset', 0):.0f}"
@@ -210,28 +213,25 @@ def print_baseline_statistics(
     print("Baseline maintenance")
     print("--------------------")
 
-    if baseline_resets:
-        print(f"baseline resets : {len(baseline_resets)}")
-
-        last_offset = None
-
-        for index, row in enumerate(baseline_resets, 1):
-            offset = row["offset"]
-
-            if last_offset is None:
-                delta = 0.0
-            else:
-                delta = offset - last_offset
-
-            print(
-                f"  {index}. {row['time']} "
-                f"offset={offset:.0f} "
-                f"delta={delta:+.0f}"
-            )
-
-            last_offset = offset
-    else:
+    if not baseline_resets:
         print("baseline resets : none")
+        return
+
+    print(f"baseline resets : {len(baseline_resets)}")
+
+    last_offset = None
+
+    for index, row in enumerate(baseline_resets, 1):
+        offset = row["offset"]
+        delta = 0.0 if last_offset is None else offset - last_offset
+
+        print(
+            f"  {index}. {row['time']} "
+            f"offset={offset:.0f} "
+            f"delta={delta:+.0f}"
+        )
+
+        last_offset = offset
 
 def print_visits(visits: list[dict]) -> None:
     print()
@@ -322,7 +322,6 @@ def find_idle_warnings(
     threshold_off: float
 ) -> list[tuple[dict, float, float]]:
     idle_warnings = []
-
     bad_start = None
     bad_max = 0.0
 
@@ -337,11 +336,7 @@ def find_idle_warnings(
                 bad_start = row
                 bad_max = abs(row["weight"])
             else:
-                bad_max = max(
-                    bad_max,
-                    abs(row["weight"])
-                )
-
+                bad_max = max(bad_max, abs(row["weight"]))
         elif bad_start is not None:
             duration = row["mono_t"] - bad_start["mono_t"]
 
@@ -362,7 +357,6 @@ def find_idle_warnings(
             )
 
     return idle_warnings
-
 
 def print_warnings(
     idle_warnings: list[tuple[dict, float, float]],
@@ -449,7 +443,6 @@ def create_plot(
     rows: list[dict],
     periods: list[tuple[str, int, int]],
     weight_threshold: float,
-    threshold_off: float,
     startup_offset: float,
     hx_scale: float,
     weightlimit: float
@@ -463,11 +456,19 @@ def create_plot(
     ]
 
     weights = [row["weight"] for row in rows]
+    sigmas = [row["sigma"] for row in rows]
+    thresholds = [row["threshold"] for row in rows]
 
     offset_g = [
-        (startup_offset - row["offset"]) / abs(hx_scale)
+        (
+            startup_offset - row["offset"]
+        ) / abs(hx_scale)
+        if hx_scale != 0
+        else 0.0
         for row in rows
     ]
+
+    threshold_off = weight_threshold * 0.7
 
     fig, ax = plt.subplots(figsize=(11, 4))
 
@@ -481,6 +482,18 @@ def create_plot(
         times,
         offset_g,
         label="offset drift (g)",
+        linewidth=1
+    )
+    ax.plot(
+        times,
+        sigmas,
+        label="sigma",
+        linewidth=1
+    )
+    ax.plot(
+        times,
+        thresholds,
+        label="threshold",
         linewidth=1
     )
 
@@ -505,19 +518,19 @@ def create_plot(
                 alpha=0.08
             )
 
-    for index in range(1, len(rows)):
-        delta_g = (
-            rows[index - 1]["offset"] - rows[index]["offset"]
-        ) / abs(hx_scale)
+    if hx_scale != 0:
+        for index in range(1, len(rows)):
+            delta_g = (
+                rows[index - 1]["offset"] - rows[index]["offset"]
+            ) / abs(hx_scale)
 
-        if abs(delta_g) > JUMP_G:
-            ax.axvline(
-                times[index],
-                linestyle=":",
-                alpha=0.8
-            )
+            if abs(delta_g) > JUMP_G:
+                ax.axvline(
+                    times[index],
+                    linestyle=":",
+                    alpha=0.8
+                )
 
-    # Show at least one hour on the time axis.
     plot_end = max(
         times[-1],
         times[0] + timedelta(hours=1)
@@ -533,11 +546,9 @@ def create_plot(
     ax.legend(loc="upper left")
     ax.grid(True, alpha=0.3)
 
-
     plt.tight_layout()
     plt.savefig("signal_timeline.svg")
     print("timeline plot written to signal_timeline.svg")
-
 
 def main() -> None:
     if len(sys.argv) != 2:
@@ -551,10 +562,6 @@ def main() -> None:
         sys.exit(1)
 
     weight_threshold = meta.get("weightThreshold", 0)
-    threshold_off = meta.get(
-        "threshold_off",
-        weight_threshold * 0.7
-    )
     weightlimit = meta.get("weightlimit", 0)
     hx_scale = meta.get("hxScale", 0)
     camera_delay = meta.get("CAMERA_DELAY", 0)
@@ -570,38 +577,25 @@ def main() -> None:
     visits, oversize = reconstruct_visits(rows, periods)
 
     print_baseline_statistics(rows, meta)
-    # print_visits(visits)
     print_oversize(oversize)
-    print_visit_statistics(
-        visits,
-        oversize,
-        camera_delay
-    )
+    print_visit_statistics(visits, oversize, camera_delay)
     print_idle_statistics(rows)
 
-    idle_warnings = find_idle_warnings(
-        rows,
-        threshold_off
-    )
+    threshold_off = weight_threshold * 0.7
+    idle_warnings = find_idle_warnings(rows, threshold_off)
     print_warnings(idle_warnings, oversize)
 
-    print_offset_discontinuities(
-        rows,
-        hx_scale
-    )
-
+    print_offset_discontinuities(rows, hx_scale)
     print_summary(visits, oversize)
 
     create_plot(
         rows,
         periods,
         weight_threshold,
-        threshold_off,
         meta.get("startup_offset", 0),
         hx_scale,
         weightlimit
     )
 
-
 if __name__ == "__main__":
-    main()
+        main()

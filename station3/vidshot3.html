@@ -16,7 +16,8 @@
         <div class="rowed">
             <div id="online"></div>&nbsp;&nbsp;<div id="latency"></div>&nbsp;&nbsp;
                 <img id="stdby" src="" alt="stdby" width="32" height="32" crossorigin="anonymous">&nbsp;&nbsp;
-                <img id="lux" src="" alt="lux" width="32" height="32" crossorigin="anonymous">
+                <img id="lux" src="" alt="lux" width="32" height="32" crossorigin="anonymous">&nbsp;&nbsp;
+                <img id="scale" src="" alt="scale" width="32" height="32" crossorigin="anonymous">
         </div>
         <div class="rowed">
             <a href="config3.html" class="button">actions</a>
@@ -71,7 +72,7 @@
             jsmsg: document.getElementById('latency'),
             stdbyimg: document.getElementById('stdby'),
             luximg: document.getElementById('lux'),
-            // stdbymsg: document.getElementById('stdby'),
+            scaleimg: document.getElementById('scale'),
             envir: document.getElementById('envir'),
             actity: document.getElementById('actity'),
             sysmon: document.getElementById('sysmon'),
@@ -92,7 +93,8 @@
             moon: "moon.svg",
             underexpo: "eye-closed.svg",
             overexpo: "x-eyes.svg",
-            scalenoise: "redscale.svg"
+            scalenoise: "redscale.svg",
+            scaleready: "greenscale.svg"
         };
 
         // Constants for data sources
@@ -284,7 +286,6 @@
                 // if (data['standby'] == 0) {setText(dom.stdbymsg, "🎥");} else {setText(dom.stdbymsg, "STANDBY");}
                 // or setHTMLSafe(dom.stdbymsg, '&#127909;');
                 if (data['standby'] == 1) {dom.stdbyimg.src = "icons/" + icons['redcrossedcam'];}
-                else if (data['scaleready'] == 0) {dom.stdbyimg.src = "icons/" + icons['scalenoise'];} //scale to noisy
                 else {
                     if (data['lux'] > 4) {dom.stdbyimg.src = "icons/" + icons['greencrossedcam'];} // bad light exposure
                     else {dom.stdbyimg.src = "icons/" + icons['vidcam'];}
@@ -305,6 +306,9 @@
                 } else {
                     dom.luximg.src = "favicon.svg"; // Default icon if no lux data
                 }
+
+                if (data['scaleready'] == 0) {dom.scaleimg.src = "icons/" + icons['scalenoise'];} //scale off or to noisy
+                else {dom.scaleimg.src = "icons/" + icons['scaleready'];}
 
                 // Environment event
                 if (data['envirEvt'] !== state.saved.envirEvt) {
