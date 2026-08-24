@@ -34,29 +34,6 @@ from configBird3 import *
 
 testmode = False # define outside any block ('if __name__ == "__main__":' also is a block) and use 'global testmode' in all functions, that write to it (only main()), but not in the ones that only read it.
 
-def readable_cam_time() -> str:
-    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-class CamRecorder:
-    def __init__(self) -> None:
-        self.file = os.path.join(
-            birdpath["ramdisk"],
-            "cam_event.csv"
-        )
-        self._write_header()
-
-    def _write_header(self) -> None:
-        with open(self.file, "w") as f:
-            f.write("date,weight,event\n")
-
-    def log(self, weight: float, event: str) -> None:
-        with open(self.file, "a", buffering=1) as f:
-            f.write(
-                f"{readable_cam_time()},"
-                f"{weight:.2f},"
-                f"cam_{event}\n"
-            )
-
 def capture_img(picam, dest):
     tmp_dest = dest + ".tmp"
     picam.capture_file(tmp_dest, name="lores", format="jpeg") # lores YUV420 and jpeg were not compatible (error: Buffer has wrong number of dimensions (expected 2, got 3))
@@ -381,7 +358,6 @@ def main():
     ms.emptyVidDateStr()
     # ms.setUpmode(1) # direct upload
     ms.setLux(3) # set luxcategory to normal
-    camRecorder = CamRecorder()
     ms.log("Set up balance receive as child process")
     bQueue = multiprocessing.Queue()
     stop_recording_event = multiprocessing.Event() # this can span 2 processes, while a simple boolean flag were only present inside one process
@@ -428,44 +404,22 @@ def main():
 
         try:
             while True:
-                if not bQueue.empty():  # child1 process 'readBalance()' fills bQueue after filtering for ms.getStandby()
+                if not bQueue.empty(): # child1 process 'readBalance()' fills bQueue after filtering for ms.getStandby()
                     # trigger_ns = time.time_ns() # check for nanosecs till recording, is exaggerated
                     weight = bQueue.get()
-                    camRecorder.log(weight, "FIFO")
-
-                    if ms.getStandby() == 1:
-                        camRecorder.log(weight, "STDBY")
+                    if ms.getStandby() == 1 or ms.getScaleready() == 0:
                         time.sleep(0.2)
                         continue
-
-                    if ms.getScaleready() == 0:
-                        camRecorder.log(weight, "SCL_NT_RDY")
-                        time.sleep(0.2)
-                        continue
-
                     ms.setRecording(1)
-                    send_movement(
-                        c_output,
-                        picam,
-                        weight,
-                        stop_recording_event,
-                        oldimg
-                    )  # if no circ_output, replace c_output by picam
+                    send_movement(c_output, picam, weight, stop_recording_event, oldimg) # if no circ_output, replace c_output by picam
                     ms.setRecording(0)
-                    camRecorder.log(weight, "SND_MVMNT_FNSHD")
-
                     while not bQueue.empty():
-                        cleared_weight = bQueue.get()
-                        camRecorder.log(cleared_weight, "CLR_Q")
+                        bQueue.get()
                         time.sleep(0.2)
-
-                    metadata = picam.capture_metadata()  # read back from picam, after reset_camera()
-                    ms.log(
-                        f"sent video with ExposureTime "
-                        f"{metadata.get('ExposureTime')} and AnalogueGain "
-                        f"{metadata.get('AnalogueGain')}"
-                    )
+                    metadata = picam.capture_metadata() # read back from picam, after reset_camera()
+                    ms.log(f"sent video with ExposureTime {metadata.get('ExposureTime')} and AnalogueGain {metadata.get('AnalogueGain')}")
                     inactive_counter = 0
+
                 else: 
                     now = datetime.now()
                     timestamp = int(now.timestamp() * 1000)
