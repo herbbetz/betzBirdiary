@@ -437,11 +437,13 @@ def main():
                         camRecorder.log(weight, "STDBY")
                         time.sleep(0.2)
                         continue
-
+                    '''
+                    # then hxFiBird*.py should not send FIFO anyway:
                     if ms.getScaleready() == 0:
                         camRecorder.log(weight, "SCL_NT_RDY")
                         time.sleep(0.2)
                         continue
+                    '''
 
                     ms.setRecording(1)
                     send_movement(

@@ -108,9 +108,9 @@
             </div>
 
             <div class="report-section">
-                <h2>Camera Events</h2>
+                <h2>Camera trigger simulation</h2>
                 <table class="report-table">
-                    <tbody id="camera-events"></tbody>
+                    <tbody id="camera-trigger"></tbody>
                 </table>
             </div>
 
@@ -332,34 +332,17 @@
             );
         }
 
-        function renderCameraEvents(data) {
-            const target = document.getElementById("camera-events");
+        function renderCameraTrigger(data) {
+            const target = document.getElementById("camera-trigger");
 
             addRow(
                 target,
-                "HX triggers",
-                data.hx_triggers
+                "threshold",
+                `${formatNumber(
+                    data.camera_trigger_threshold
+                )} s`
             );
-            addRow(
-                target,
-                "recordings",
-                data.recordings
-            );
-            addRow(
-                target,
-                "blocked by CLR_Q",
-                data.blocked_clr_q
-            );
-            addRow(
-                target,
-                "blocked by STDBY",
-                data.blocked_stdby
-            );
-            addRow(
-                target,
-                "unrelated FIFO events",
-                data.unrelated_fifo
-            );
+            addRow(target, "triggered", data.triggered);
         }
 
         function renderIdleStatistics(data) {
@@ -495,11 +478,6 @@
                     return;
                 }
 
-                if (data.cam_event === false) {
-                    status.textContent = "no CAM_EVENT";
-                    return;
-                }
-
                 if (data.signal_csv !== true) {
                     throw new Error("invalid /hxreport response");
                 }
@@ -522,7 +500,7 @@
                 renderOversize(data.oversize_events);
                 renderVisitStatistics(data.visit_statistics);
                 renderVisitDurations(data.visit_statistics);
-                renderCameraEvents(data.camera_events);
+                renderCameraTrigger(data.visit_statistics);
                 renderIdleStatistics(data.idle_statistics);
                 renderWarnings(data.warnings);
                 renderDiscontinuities(

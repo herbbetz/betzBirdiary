@@ -490,16 +490,22 @@ def hxsignal_update() -> tuple[dict[str, float], int]:
 
 @app.route("/hxreport", methods=["GET"])
 def hxreport() -> Response:
-    csv_path = os.path.join(
+    hx_csv_path = os.path.join(
         birdpath["appdir"],
         "ramdisk/signal_hx.csv"
     )
-
-    if not os.path.exists(csv_path):
+    if not os.path.exists(hx_csv_path):
         return jsonify({"signal_csv": False})
 
+    cam_csv_path = os.path.join(
+        birdpath["appdir"],
+        "ramdisk/cam_event.csv"
+    )
+    if not os.path.exists(cam_csv_path):
+        return jsonify({"cam_event": False})
+
     try:
-        report_data = hxa.analyze_csv(csv_path)
+        report_data = hxa.analyze_csv(hx_csv_path, cam_csv_path)
         return jsonify(report_data)
     except Exception as e:
         return jsonify({"error": str(e)}), 500

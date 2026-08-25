@@ -945,7 +945,6 @@ try:
 
         if fsm.camera_trigger():
             sample.events.append("CAMERA_TRIGGER")
-            signal_logger.log(sample)
             send_fifo(sample.peak)
 
         elif (
@@ -953,7 +952,6 @@ try:
             and "DEPARTURE" in event
         ):
             sample.events.append("DEPARTURE_TRIGGER")
-            signal_logger.log(sample)
             send_fifo(-1)
 
         # ----------------------------------------------------
