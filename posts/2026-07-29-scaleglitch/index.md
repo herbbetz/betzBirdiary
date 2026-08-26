@@ -83,7 +83,7 @@ Die KI ist zwar eine hervorragende Kodierhilfe. Sie nimmt es aber nicht ab, stab
 - `EMA (exponential moving average)` ist ebenfalls ein Algorithmus, der den Offset langsam und asymptotisch nach Null Gramm anpasst, um einen Wärmedrift auszugleichen.
 - Eine minimale Sitzzeit von 2 secs wird festgelegt, ab der die Kamera getriggert wird (über FIFO). Die (lokale) KI benötigt eine gewisse Anwesenheitsdauer zur Vogelerkennung (und am besten auch `pretrigger images` wegen Verzögerung des Kameraauslösers). Nicht jeder Windstoß oder fallende Regentropfen an der Stange soll ein Video auslösen. *Spread* und *Outlier* werden statistisch ermittelt (*Perzentile, Medianfilter* oder *Kalmanfilter*).
 - Die Finite State Maschine (*FSM*) definiert States der Sitzstange wie IDLE, ARRIVAL, PRESENT, DEPARTURE, OVERWEIGHT. Im laufenden Betrieb wird immer wieder überprüft, ob IDLE noch der Nullinie entspricht und ob die anderen States nach einem stabilen Timeout nicht als das neue IDLE angesehen werden müssen.
-- Die Gewichts-Nullinie hat eine gewisse Variation (noise), die bei Sturm zunimmt. Dieser `baseline noise` kann durch Standardabweichung (σ) ausgedrückt werden und auch zur Erhöhung der Auslöseschwelle verwendet werden: `dyn_weightThreshold = 2 * sigma + weightThreshold`.
+- Die Gewichts-Nullinie hat eine gewisse Variation (noise), die bei Sturm zunimmt. Dieser `baseline noise` kann durch Standardabweichung (Welford σ) ausgedrückt werden und auch zur Erhöhung der Auslöseschwelle verwendet werden: `dyn_weightThreshold = 2 * sigma + weightThreshold`.
 
 
 
