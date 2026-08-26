@@ -52,11 +52,6 @@ h2{
 .button:hover {
     background-color: #0056b3;
 }
-.prebutton { /* box format of button */
-    width: 80px;
-    margin: 10px;
-    padding: 10px 20px;
-}
 #online, #latency, .emph{
     color: red;
 }
