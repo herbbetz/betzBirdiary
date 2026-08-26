@@ -87,6 +87,6 @@ Die KI ist zwar eine hervorragende Kodierhilfe. Sie nimmt es aber nicht ab, stab
 
 
 
-Mit dieser Darstellung möchte ich andeuten, wieviel Zeit und Tokens in der Entwicklung eines verlässlichen hx711 Treibers (in C und Python) unter *Raspberry Trixie* stecken.
+Mit dieser Darstellung möchte ich andeuten, wieviel Zeit und Tokens in der Entwicklung eines verlässlichen hx711 Treibers (in C und Python, zs. rund 1000 Codezeilen) unter *Raspberry Trixie* stecken.
 
 Feedback an *herber7be7z@gmail.com*. Happy Birding!
