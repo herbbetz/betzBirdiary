@@ -46,6 +46,7 @@ import sys
 import time
 import numpy as np
 # for LiveLogger:
+import urllib.parse
 import urllib.error
 import urllib.request
 
@@ -61,10 +62,7 @@ from configBird3 import (
 )
 import msgBird as ms
 
-
-testmode = False
 WEIGHTTHRESHOLD_off = 0.7 * weightThreshold
-
 
 @dataclass
 class Sample:
@@ -100,9 +98,7 @@ ERR_WAIT_TIMEOUT  = ERR_BASE - 1  # -10000001
 ERR_FRAME_PREEMPT = ERR_BASE - 2  # -10000002
 
 class HX711_CT:
-    def __init__(self) -> None:
-        global testmode
-
+    def __init__(self, testmode: bool = False) -> None:
         if testmode:
             libpath = f"{birdpath['appdir']}/c/libhx711_debug.so"
         else:
@@ -268,17 +264,14 @@ class Baseline:
 # ============================================================
 # NoiseGuard using Welford's Standard Deviation in 30 secs windows
 #   (is faster than Interquartile Range)
+# uses raw ADC values
 # ============================================================
 class NoiseGuard:
     def __init__(
             self,
-            weight_threshold: float,
-            window_samples: int = 210,
+            window_samples: int = 210
         ) -> None:
-        # Convert threshold from grams to raw ADC units.
-        raw_threshold = weight_threshold * abs(hxScale)
-        self.max_std = raw_threshold / 4.0
-
+        # window_samples in raw ADC units.
         self.max_samples = window_samples
 
         # Ring buffer and tracking state
@@ -340,12 +333,6 @@ class NoiseGuard:
             self.M2 / (self.count - 1)
         )
         return float(np.sqrt(variance))
-
-    def is_noise(self) -> bool:
-        # No noise decision until a complete window exists.
-        if self.count < self.max_samples:
-            return False
-        return self.current_std() > self.max_std
 
     def current_std_grams(self) -> float:
         """Returns standard deviation in physical units (grams)."""
@@ -446,14 +433,11 @@ class WeightFSM:
     ) -> str | None:
         if self.state in (STATE_ARRIVAL, STATE_PRESENT, STATE_DEPARTURE):
             if time.monotonic() - self.state_t0 > STATE_TIMEOUT:
-                raw_value = baseline.stable_raw()
-                if raw_value is not None:
-                    old_state = STATE_NAME[self.state]
-                    baseline.adopt_raw_value(raw_value, sample)
-                    self.force_idle()
-                    event_str = f"BASELINE_RESET {old_state} -> IDLE"
-                    sample.events.append(event_str)
-                    return event_str
+                old = STATE_NAME[self.state]
+                self.force_idle()
+                event_str = f"BASELINE_RESET {old_state} -> IDLE"
+                sample.events.append(event_str)
+                return event_str
             return None
 
         if self.state == STATE_IDLE:
@@ -754,31 +738,30 @@ if not fifoExists(fifo):
     os.mkfifo(fifo)
     ms.log("FIFO created")
 
-
 def send_fifo(value: int) -> None:
     try:
-        fd = os.open(
-            fifo,
-            os.O_WRONLY | os.O_NONBLOCK
-        )
-
-        with os.fdopen(fd, "w") as f:
-            f.write(str(value) + "\n")
-
+        fd = os.open(fifo, os.O_WRONLY | os.O_NONBLOCK)
     except OSError as e:
-        if e.errno != errno.ENXIO:
+        if e.errno == errno.ENXIO:
+            return  # no reader attached – expected during tests
+        raise
+
+    try:
+        with os.fdopen(fd, "w") as f:
+            f.write(f"{value}\n")
+    except OSError as e:
+        if e.errno in (errno.EAGAIN, errno.EWOULDBLOCK):
+            ms.log(f"send_fifo({value}): pipe full, trigger dropped",
+                   terminal=False)
+        else:
             raise
 
-
-# ============================================================
-# INITIALIZATION
-# ============================================================
 # ============================================================
 # INITIALIZATION
 # ============================================================
 
 ms.init()
-
+testmode = False
 if len(sys.argv) > 1 and sys.argv[1] == "test":
     testmode = True
     ms.log(f"Testmode of {sys.argv[0]}")
@@ -789,7 +772,7 @@ ms.log(f"... starting at {time.ctime()}")
 
 writePID(1)
 
-hx = HX711_CT()
+hx = HX711_CT(testmode=testmode)
 sample = Sample()
 
 baseline = Baseline(hx)
@@ -800,15 +783,10 @@ MEDIAN_SAMPLES = 7
 NOISEGUARD_SAMPLES = 210
 # Adaptive threshold logic
 dyn_threshold = weightThreshold
-dyn_step = 0.15 # similar to main loop sleep time, so about 1g per sec increase
 
 # Initialize filters
 median = MedianFilter(size=MEDIAN_SAMPLES)
-
-noiseguard = NoiseGuard(
-    weight_threshold=WEIGHTTHRESHOLD_off,
-    window_samples=NOISEGUARD_SAMPLES
-)
+noiseguard = NoiseGuard(window_samples=NOISEGUARD_SAMPLES)
 
 # Pre-fill MedianFilter only.
 # NoiseGuard deliberately starts empty.
@@ -882,12 +860,10 @@ try:
                     "IDLE_STABLE_RECAL"
                 )
 
-            elif abs(sample.weight) < WEIGHTTHRESHOLD_off:
+            elif abs(sample.weight) < fsm.threshold_off:
                 baseline.follow_idle(sample)
-
         else:
             baseline.stable_buf_reset()
-
         # ----------------------------------------------------
         # FSM TIMEOUT / BASELINE RECOVERY
         # ----------------------------------------------------
@@ -915,23 +891,9 @@ try:
             noiseguard.add_sample(sample.raw)
             sample.sigma = noiseguard.current_std_grams()
 
-            if noiseguard.is_noise():
-                # slowly increase up to (2 * weightThreshold)
-                dyn_threshold = min(
-                    dyn_threshold + dyn_step,
-                    2 * weightThreshold
-                )
-                sample.events.append("NOISY")
-            else:
-                # slowly go back to weightThreshold
-                dyn_threshold = max(
-                    dyn_threshold - dyn_step,
-                    weightThreshold
-                )
-
+            dyn_threshold = 2 * sample.sigma + weightThreshold
             sample.dyn_threshold = dyn_threshold
             fsm.set_thresholds(dyn_threshold)
-
         else:
             noiseguard.reset()
             sample.sigma = 0.0
