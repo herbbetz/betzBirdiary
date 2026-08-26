@@ -67,7 +67,7 @@ Zwar werden die SPI0-Pins belegt, aber instabiles Software-Bit-Banging und das u
 	- 3) ein weiteres externes Pythonskript, das Statusänderungen (1) und Rohsignale (2) anhand ihrer Zeitstempel korreliert,
 	- 4) die Zeitstempel der Auslösung von Leervideos im Vergleich mit den Logging Daten von (1) bis (3) später im Einsatztest draußen.
 
-Letztendlich hab ich mich entschieden, den Events eine Spalte in SignalLogger zu geben, womit (1) und (3) entfallen. Die Aufzeichnungen finden sich auf `/ramdisk` als die Dateien `signal_hx.csv` und für den C Treiber `hxFiBird.log`. Das Webinterface zeigt die Auswertungen unter `actions - HX Analyze` an.
+Letztendlich hab ich mich entschieden, den Events eine Spalte in `SignalLogger` zu geben. Die Aufzeichnungen finden sich auf `/ramdisk` als die Dateien `signal_hx.csv` und für den C Treiber `hxFiBird.log`. Den Event Recorder habe ich in das Kameraskript verschoben (`CamRecorder in mainFoBird3.py`), wo er die empfangenen FIFO Triggerevents in `ramdisk/cam_event.csv` aufzeichnet. Das Webinterface zeigt die korrelative Auswertung von  `signal_hx.csv und cam_event.csv` unter `actions - HX Analyze` an.
 
 **Softwarekonzepte**
 
