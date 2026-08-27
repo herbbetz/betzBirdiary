@@ -4,7 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Video</title>
-  <!-- replace all later with server links: -->
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/button.css">
   <link rel="stylesheet" href="/select/select.css">
   <script src="/validate/birdlabels.js"></script>
 </head>
@@ -30,7 +31,7 @@
       <button type="submit">Submit</button>
     </form>
   </p>
-
+  <div><a id="backlink" href="/daywatch" class="button">back</a></div>
   <script>
     // no XSS Defence needed when getting vidurl as get parameter from the same server
     const urlParams = new URLSearchParams(window.location.search);
@@ -40,6 +41,7 @@
     if (targetUrl) {
       const vidsrc = document.getElementById('vidsrc');
       const videoidInput = document.getElementById('videoid');
+      document.getElementById('backlink').href = "/daywatch#" + encodeURIComponent(vidkey);
       
       videoidInput.value = vidkey;
       vidsrc.src = targetUrl;

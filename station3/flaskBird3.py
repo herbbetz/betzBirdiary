@@ -360,7 +360,8 @@ def daygallery():
             if currentprefix is not None:
                html_segments.append("</div>")
                html_segments.append(render_csv_block(dayimg_dir, current_comb_prefix))
-               html_segments.append(f'<div>{groupIdx} <a href="{vidURL_prev}" target="_blank">{currentprefix}</a></div><hr>')
+               # validate.html points it's back button to /daywatch#id, so no target="_blank":
+               html_segments.append(f'<div>{groupIdx} <a id="{current_comb_prefix}" href="{vidURL_prev}">{currentprefix}</a></div><hr>')
                # html += f'lastDEBUG: groupIdx={groupIdx}: csv={current_comb_prefix}, video={vidURL_prev}, videolinktext={currentprefix}'
 
             # 2. Start the NEW group's row
@@ -381,7 +382,8 @@ def daygallery():
     if currentprefix is not None:
       html_segments.append("</div>")
       html_segments.append(render_csv_block(dayimg_dir, current_comb_prefix))
-      html_segments.append(f'<div>{groupIdx} <a href="{vidURL_prev}" target="_blank">{currentprefix}</a></div><hr>')
+      # validate.html points it's back button to /daywatch#id, so no target="_blank":
+      html_segments.append(f'<div>{groupIdx} <a id="{current_comb_prefix}" href="{vidURL_prev}">{currentprefix}</a></div><hr>')
 
     html_segments.append("</body></html>")
     

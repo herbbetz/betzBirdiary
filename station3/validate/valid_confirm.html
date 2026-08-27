@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Validate</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="stylesheet" href="/button.css">
   <style>
       #loading { font-style: italic; color: #666; }
       .hidden { display: none; }
@@ -19,7 +21,7 @@
     <p>Thank you for your submission. Your validation has been recorded.</p>
   </div>  
   
-  <a href="/daywatch">Back</a>
+  <a id="backlink" href="/daywatch">Back</a>
 
   <script>
       const currentQueryParams = window.location.search;
@@ -32,6 +34,7 @@
               return response.json();
           })
           .then(data => {
+              document.getElementById('backlink').href = "/daywatch#" + encodeURIComponent(data.video_id);
               document.getElementById('loading').classList.add('hidden');
               document.getElementById('content').classList.remove('hidden');
 
