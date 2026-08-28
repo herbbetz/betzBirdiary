@@ -147,6 +147,7 @@ def generate_html(data):
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{TARGET_MONTH}</title>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/button.css">
 <link rel="stylesheet" href="/birdmd.css">
 </head>
 <body>
@@ -177,7 +178,7 @@ def generate_html(data):
         <td>{rbird_link}</td>
         </tr>
         """
-    html_content += "</table></body></html>"
+    html_content += '</table><div><a href="/config3.html" class="button">back</a></div></body></html>'
     with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
         f.write(html_content)
     print(f"[STATUS] Successfully wrote report structure to disk output -> {OUTPUT_FILE}")

@@ -107,7 +107,7 @@ def delFromGallery(recnum):
         for i in range(len(lines)):
             if i != line2delete: newfile.write(lines[i])
 
-# videoking calculation:
+# videoking & delete_movs calculation:
 def prev_month(month_str): # e.g. month_str = '2026-04'
     # Split and convert to integers
     year, month = map(int, month_str.split('-'))

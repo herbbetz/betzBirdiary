@@ -1,0 +1,222 @@
+'''
+Delete following movements from my API:
+- filter my movements by date, using API ?from=2026-06-01
+- look for movements with first detection = Aphelocoma_californica (calif. scrub jay, Kalifornienhäher) or Larus_occidentalis (western gull, Westmöwe),
+    save movement_id to list for deletion of these bogus KI classifications
+- look for movements with first validation = None, save movement_id to list
+- print len(movement_ids)/all movements found
+- if in deleteMode, delete all movements in list from API, using DELETE method with access token
+
+-- take the first day of 6 months ago, e.g. 2026-01-01
+-- from this day (?from=2026-01-01) delete all unvalidated aphelocoma & larus detections and all “None” = no Bird validations
+-- take one day before this (?to=2025-12-31) and delete all records with no validation and with validation “None” = no bird
+'''
+import os
+import sys
+import requests
+from datetime import datetime, timedelta
+import time
+from sharedBird import prev_month
+from configBird3 import serverUrl, boxId, boxName, deleteKey
+
+BASE_URL = f"{serverUrl}movement/"
+STATION_ID = boxId
+STATION_NAME = boxName
+API_URL = f"{BASE_URL}{STATION_ID}"
+ACCESS_TOKEN = deleteKey # secret for writing to api, Stationsschlüssel nach Einloggen auf birdiary Plattform, -> D:birdiary\githubMirror\ACCESS_TOKEN.txt
+OUTPUT_FILE = "del-report.html"
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+OUTPUT_PATH = f"{BASE_DIR}/{OUTPUT_FILE}"
+months_back = 6
+
+def get_movements(cutoff_date, old=False):
+    try:
+        # the f-string converts date object to string like 'date_str = date.strftime("%Y-%m-%d")' would do, e.g. '2026-06-01':
+        if old:
+            response = requests.get(f"{API_URL}?to={cutoff_date}", timeout=30)
+        else:
+            response = requests.get(f"{API_URL}?from={cutoff_date}", timeout=30)
+        response.raise_for_status()
+        movements = response.json()
+        if not isinstance(movements, list):
+            print("API response format unexpected. Expected a list.")
+            return []
+        return movements
+    except Exception as e:
+        print(f"Error fetching data: {e}")
+        return []
+
+def main():
+    def add_html(html_str):
+        html += f"{html_str}<br>\n"
+
+    global ACCESS_TOKEN
+    deleteMode = False
+    if len(sys.argv) > 2 and sys.argv[1] == "delete":
+        ACCESS_TOKEN = sys.argv[2].strip()
+        if ACCESS_TOKEN and not ACCESS_TOKEN.endswith('X'):
+            deleteMode = True
+        else:
+            print(f"ACCESS_TOKEN '{ACCESS_TOKEN}' unvalid, not deleting")
+
+    start_time = time.time()  # Record the start time
+
+    today = datetime.today()
+    current_month = today.strftime("%Y-%m")
+    for _ in range(months_back):
+        current_month = prev_month(current_month)
+    newtime_date = datetime.strptime(f"{current_month}-01", "%Y-%m-%d").date()
+
+    html = f"""<!DOCTYPE html>
+    <html>
+    <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Deleted before </title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/button.css">
+    <link rel="stylesheet" href="/birdmd.css">
+    </head>
+    <body>
+    <p><b>Alle unvalidierten Movements der Station {STATION_NAME} vor {newtime_date} werden gelöscht, sobald ein gültiger _deleteKey_ in config.json eingetragen ist !!</b></p>
+    """
+    movements = get_movements(newtime_date, old=False)
+
+    cnt_all = len(movements)
+    if cnt_all == 0:
+        new_movs_exist = False
+        add_html(f"No movements found since {newtime_date}.")
+    else:
+        new_movs_exist = True
+        cnt_detect = 0
+        cnt_valid = 0
+        movement_ids = []
+        for mov in movements:
+            take_id = False
+            keep = False
+
+            validation_data = mov.get("validation", {})
+            validations = validation_data.get("validations", []) if validation_data else []
+            if validations and validations[0]:
+                val_latin = validations[0].get("latinName", "").strip() if validations[0].get("latinName") else ""
+                if val_latin == "None":
+                    take_id = True
+                    cnt_valid += 1
+                else: keep = True
+
+            # step2: detections take_id for delete only, if validations[0] is empty (not None)
+            if not keep:
+                detections = mov.get("detections", [])
+                if detections and detections[0]:
+                    det_latin = (detections[0].get("latinName") or "").strip()
+                    if det_latin in ("Aphelocoma californica", "Larus occidentalis"):
+                        take_id = True
+                        cnt_detect += 1
+
+            if take_id:
+                movement_ids.append(mov.get("mov_id"))
+
+        # cnt_all > 0 guaranteed here, as we returned early if cnt_all == 0
+        id_ratio = len(movement_ids) / cnt_all if cnt_all > 0 else 0
+        det_ratio = cnt_detect / cnt_all if cnt_all > 0 else 0
+        val_ratio = cnt_valid / cnt_all if cnt_all > 0 else 0
+        add_html(f"Found {len(movement_ids)} movements out of {cnt_all} total ({id_ratio:.2f}) since {newtime_date}.")
+        add_html(f"Aphelocoma: {cnt_detect} ({det_ratio:.2f}), NoBird: {cnt_valid} ({val_ratio:.2f})")
+    html += '<hr>'
+
+    oldtime_date = newtime_date - timedelta(days=1) # one day before
+    old_movements = get_movements(oldtime_date, old=True)
+    cnt_old_all = len(old_movements)
+    if cnt_old_all == 0:
+        old_movs_exist = False
+        add_html(f"No movements found before {oldtime_date}.")
+    else:
+        old_movs_exist = True
+        cnt_no_valid = 0
+        cnt_nobird_valid = 0
+        oldmovement_ids = []
+        for mov in old_movements:
+            take_id = False
+            #use this to delete unvalidated movements:
+            if "validation" not in mov:
+                take_id = True
+                cnt_no_valid += 1
+            else:
+                validation_data = mov.get("validation", {})
+                validations = validation_data.get("validations", []) if validation_data else []
+                if validations and validations[0]:
+                    val_latin = validations[0].get("latinName", "").strip() if validations[0].get("latinName") else ""
+                    if val_latin == "None":
+                        take_id = True
+                        cnt_nobird_valid += 1
+            
+            if take_id:
+                oldmovement_ids.append(mov.get("mov_id"))
+
+        old_valid_cnt = cnt_old_all - cnt_no_valid
+        old_valid_ratio = old_valid_cnt / cnt_old_all if cnt_old_all > 0 else 0
+        nobird_valid_ratio = cnt_nobird_valid / old_valid_cnt if old_valid_cnt > 0 else 0
+        add_html(f"{old_valid_cnt} movements out of {cnt_old_all} ({old_valid_ratio:.2f}) have human validation before incl. {oldtime_date}.")
+        add_html(f"Among these, {cnt_nobird_valid} ({nobird_valid_ratio:.2f}) are validated as 'NoBird'.")
+    html += '<hr>'
+
+    if not deleteMode:
+        add_html(f"To delete these movements, run 'python {sys.argv[0]} delete ACCESS_TOKEN'.")
+        return
+
+    # SPEED OPTIMIZATION: Use a Session block to keep TCP connection alive
+    if new_movs_exist:
+        add_html(f"Deleting {len(movement_ids)} movements since {newtime_date}...")
+        deleted_count = 0
+        with requests.Session() as session:
+            for mov_id in movement_ids:
+                try:
+                    # Per OpenAPI docs: /api/movement/{station_id}/{movement_id}
+                    # without deleteData=True videos were kept unreferenced until 08/2026.
+                    # url = f"{API_URL}/{mov_id}?apikey={ACCESS_TOKEN}&deleteData=True"
+                    url = f"{API_URL}/{mov_id}?apikey={ACCESS_TOKEN}"
+                    response = session.delete(url, timeout=10)
+                    response.raise_for_status()
+                    # print(f"Deleted movement {mov_id}.")
+                    deleted_count += 1
+                except Exception as e:
+                    print(f"Error deleting movement {mov_id}: {e}")
+
+        all_deleted_count = len(movement_ids)
+        del_ratio = deleted_count / all_deleted_count if movement_ids else 0
+        add_html(f"Deleted {deleted_count} out of {all_deleted_count} movements ({del_ratio:.2f}) since {newtime_date}.")
+        html += '<hr>'
+
+    if old_movs_exist:
+        add_html(f"Deleting {len(oldmovement_ids)} movements before incl. {oldtime_date}...")
+        deleted_count = 0
+        with requests.Session() as session:
+            for mov_id in oldmovement_ids:
+                try:
+                    # Per OpenAPI docs: /api/movement/{station_id}/{movement_id}
+                    url = f"{API_URL}/{mov_id}?apikey={ACCESS_TOKEN}"
+                    response = session.delete(url, timeout=10)
+                    response.raise_for_status()
+                    # print(f"Deleted movement {mov_id}.")
+                    deleted_count += 1
+                except Exception as e:
+                    print(f"Error deleting movement {mov_id}: {e}")
+
+        all_deleted_count = len(oldmovement_ids)
+        del_ratio = deleted_count / all_deleted_count if oldmovement_ids else 0
+        add_html(f"Deleted {deleted_count} out of {all_deleted_count} movements ({del_ratio:.2f}) before incl. {oldtime_date}.")
+        tokenlength = len(ACCESS_TOKEN)
+        if tokenlength != 32:
+            add_html(f"ACCESS_TOKEN {ACCESS_TOKEN} has {tokenlength} digits - normal is 32!")
+
+    end_time = time.time()    # Record the end time
+    duration = end_time - start_time  # Calculate duration in seconds
+    html += '<hr'
+    add_html(f"Script finished in {duration:.2f} seconds.")
+    html += '<div><a href="/config3.html" class="button">back</a></div></body></html>'
+    with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
+        f.write(html)
+
+if __name__ == "__main__":
+    main()
+ 
