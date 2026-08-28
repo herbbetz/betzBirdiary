@@ -52,13 +52,6 @@ def main():
 
     global ACCESS_TOKEN
     deleteMode = False
-    if len(sys.argv) > 2 and sys.argv[1] == "delete":
-        ACCESS_TOKEN = sys.argv[2].strip()
-        if ACCESS_TOKEN and not ACCESS_TOKEN.endswith('X'):
-            deleteMode = True
-        else:
-            print(f"ACCESS_TOKEN '{ACCESS_TOKEN}' unvalid, not deleting")
-
     start_time = time.time()  # Record the start time
 
     today = datetime.today()
@@ -72,14 +65,20 @@ def main():
     <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Deleted before </title>
+    <title>Delete_movs</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="/button.css">
     <link rel="stylesheet" href="/birdmd.css">
     </head>
     <body>
+    <h2>Delete Report of {today}</h2>
     <p><b>Alle unvalidierten Movements der Station {STATION_NAME} vor {newtime_date} werden gelöscht, sobald ein gültiger _deleteKey_ in config.json eingetragen ist !!</b></p>
     """
+    if ACCESS_TOKEN and not ACCESS_TOKEN.endswith('X'):
+        deleteMode = True
+    else:
+        add_html(f"deleteKey '{ACCESS_TOKEN}' invalid, not deleting")
+
     movements = get_movements(newtime_date, old=False)
 
     cnt_all = len(movements)
