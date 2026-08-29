@@ -26,6 +26,7 @@ import io
 # PYTHON = "/home/pi/birdvenv/bin/python3"
 PYTHON = "/usr/bin/python3"
 VK_SCRIPT_RUNNING = False # flag OUTSIDE the function context to keep track of state across multiple browser refreshes.
+DEL_SCRIPT_RUNNING = False
 
 # for timeseries_svg():
 LABELS = {
@@ -438,6 +439,52 @@ def monthlyking():
             </body>
         </html>
         """
+
+@app.route("/api/delete")
+def monthlydelete():
+    # similar to monthlyking()
+    global DEL_SCRIPT_RUNNING # global lock
+    
+    today = datetime.today()
+    CURRENT_MONTH = today.strftime("%Y-%m")
+    OUTPUT_FILE = f"del{CURRENT_MONTH}.html"
+    
+    STATIONS_DIR = os.path.join(BASE_DIR, "delete")
+    OUT_PATH = os.path.join(STATIONS_DIR, OUTPUT_FILE)
+    
+    # If file exists, reset the lock and serve it!
+    if os.path.exists(OUT_PATH):
+        DEL_SCRIPT_RUNNING = False  # Reset lock for next month
+        # print(f"[FLASK DEBUG] Serving file directly.")
+        return send_from_directory(STATIONS_DIR, OUTPUT_FILE)
+        
+    else:
+        # print(f"[FLASK DEBUG] File not found yet. Lock status: {DEL_SCRIPT_RUNNING}")
+        if not DEL_SCRIPT_RUNNING:
+            DEL_SCRIPT_RUNNING = True
+            SCRIPT_PATH = os.path.join(STATIONS_DIR, "del_mov_html.py")
+            cmd = ["python", SCRIPT_PATH]
+            # print(f"[FLASK DEBUG] Launching background process: {cmd}")
+            subprocess.Popen(cmd) 
+
+        return f"""
+        <!doctype html>
+        <html>
+            <head>
+                <meta http-equiv="refresh" content="15;url=/api/delete">
+                <meta name="viewport" content="width=device-width, initial-scale=1">
+                <title>Wait...</title>
+                <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+                <link rel="stylesheet" href="/bird.css">
+            </head>
+            <body>
+                <h3>Compiling Delete stats for {CURRENT_MONTH}...</h3>
+                <p>Expected target location:<br><code>{OUT_PATH}</code></p>
+                <strong>This page updates automatically every 15 seconds. Please wait...</strong>
+            </body>
+        </html>
+        """
+
 
 @app.route("/api/report-data")
 # selectstations.html submits to layouter '/rarebirds/rb_report.html' with GET parameters station_name and station_id

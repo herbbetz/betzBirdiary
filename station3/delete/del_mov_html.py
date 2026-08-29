@@ -12,7 +12,7 @@ Delete following movements from my API:
 -- take one day before this (?to=2025-12-31) and delete all records with no validation and with validation “None” = no bird
 '''
 import os
-import sys
+from pathlib import Path # to delete old reports
 import requests
 from datetime import datetime, timedelta
 import time
@@ -24,10 +24,38 @@ STATION_ID = boxId
 STATION_NAME = boxName
 API_URL = f"{BASE_URL}{STATION_ID}"
 ACCESS_TOKEN = deleteKey # secret for writing to api, Stationsschlüssel nach Einloggen auf birdiary Plattform, -> D:birdiary\githubMirror\ACCESS_TOKEN.txt
-OUTPUT_FILE = "del-report.html"
+today = datetime.today()
+CURRENT_MONTH = today.strftime("%Y-%m")
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-OUTPUT_PATH = f"{BASE_DIR}/{OUTPUT_FILE}"
+OUTPUT_PATH = f"{BASE_DIR}/del{CURRENT_MONTH}.html"
 months_back = 6
+deleteMode = False
+
+# exit if this month's report already exists:
+if os.path.exists(OUTPUT_PATH):
+    exit(0)
+# else remove old reports and build this month's report:
+for f in Path(BASE_DIR).glob("del*.html"):
+    f.unlink()
+
+start_time = time.time()  # Record the start time
+
+html = f"""<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Delete_movs</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/button.css">
+<link rel="stylesheet" href="/birdmd.css">
+</head>
+<body>
+"""
+
+def add_html(html_str):
+    global html # needed for write access
+    html += f"{html_str}<br>\n"
 
 def get_movements(cutoff_date, old=False):
     try:
@@ -39,183 +67,162 @@ def get_movements(cutoff_date, old=False):
         response.raise_for_status()
         movements = response.json()
         if not isinstance(movements, list):
-            print("API response format unexpected. Expected a list.")
+            add_html("API response format unexpected. Expected a list.")
             return []
         return movements
     except Exception as e:
-        print(f"Error fetching data: {e}")
+        add_html(f"Error fetching data: {e}")
         return []
 
-def main():
-    def add_html(html_str):
-        html += f"{html_str}<br>\n"
+def delete_movements(session, ids, label):
+    # Per OpenAPI docs: /api/movement/{station_id}/{movement_id}
+    # without deleteData=True videos were kept unreferenced until 08/2026.
+    # url = f"{API_URL}/{mov_id}?apikey={ACCESS_TOKEN}&deleteData=True"
+    deleted = 0
+    for mov_id in ids:
+        if mov_id is None:
+            add_html(f"Skipping movement with missing id in {label}.")
+            continue
+        for attempt in range(3):
+            try:
+                url = f"{API_URL}/{mov_id}?apikey={ACCESS_TOKEN}"
+                response = session.delete(url, timeout=10)
+                response.raise_for_status()
+                deleted += 1
+                break
+            except Exception as e:
+                if attempt < 2:
+                    time.sleep(2 ** attempt) # first wait 1 sec (2^0), then 2 secs (so maximum of 3 secs waiting)
+                else:
+                    add_html(f"Error deleting movement {mov_id} ({label}): {e}")
+    total = len(ids)
+    ratio = deleted / total if total else 0
+    add_html(f"Deleted {deleted}/{total} ({ratio:.2f}) in {label}.")
 
-    global ACCESS_TOKEN
-    deleteMode = False
-    start_time = time.time()  # Record the start time
+# main prog part#2:
+for _ in range(months_back):
+    current_month = prev_month(current_month)
+newtime_date = datetime.strptime(f"{current_month}-01", "%Y-%m-%d").date()
 
-    today = datetime.today()
-    current_month = today.strftime("%Y-%m")
-    for _ in range(months_back):
-        current_month = prev_month(current_month)
-    newtime_date = datetime.strptime(f"{current_month}-01", "%Y-%m-%d").date()
+add_html(f'<h2>Delete Report of {today}</h2>')
+add_html(f'<p><b>Alle unvalidierten Movements der Station {STATION_NAME} vor {newtime_date} werden gelöscht, sobald ein gültiger _deleteKey_ in config.json eingetragen ist !!</b></p>')
 
-    html = f"""<!DOCTYPE html>
-    <html>
-    <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Delete_movs</title>
-    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-    <link rel="stylesheet" href="/button.css">
-    <link rel="stylesheet" href="/birdmd.css">
-    </head>
-    <body>
-    <h2>Delete Report of {today}</h2>
-    <p><b>Alle unvalidierten Movements der Station {STATION_NAME} vor {newtime_date} werden gelöscht, sobald ein gültiger _deleteKey_ in config.json eingetragen ist !!</b></p>
-    """
-    if ACCESS_TOKEN and not ACCESS_TOKEN.endswith('X'):
-        deleteMode = True
-    else:
-        add_html(f"deleteKey '{ACCESS_TOKEN}' invalid, not deleting")
+if ACCESS_TOKEN and not ACCESS_TOKEN.endswith('X'):
+    deleteMode = True
+else:
+    add_html(f"deleteKey '{ACCESS_TOKEN}' invalid, not deleting")
 
-    movements = get_movements(newtime_date, old=False)
+movements = get_movements(newtime_date, old=False)
 
-    cnt_all = len(movements)
-    if cnt_all == 0:
-        new_movs_exist = False
-        add_html(f"No movements found since {newtime_date}.")
-    else:
-        new_movs_exist = True
-        cnt_detect = 0
-        cnt_valid = 0
-        movement_ids = []
-        for mov in movements:
-            take_id = False
-            keep = False
+cnt_all = len(movements)
+if cnt_all == 0:
+    new_movs_exist = False
+    add_html(f"No movements found since {newtime_date}.")
+else:
+    new_movs_exist = True
+    cnt_detect = 0
+    cnt_valid = 0
+    movement_ids = []
+    for mov in movements:
+        take_id = False
+        keep = False
 
+        validation_data = mov.get("validation", {})
+        validations = validation_data.get("validations", []) if validation_data else []
+        if validations and validations[0]:
+            val_latin = validations[0].get("latinName", "").strip() if validations[0].get("latinName") else ""
+            if val_latin == "None":
+                take_id = True
+                cnt_valid += 1
+            else: keep = True
+
+        # step2: detections take_id for delete only, if validations[0] is empty (not None)
+        if not keep:
+            detections = mov.get("detections", [])
+            if detections and detections[0]:
+                det_latin = (detections[0].get("latinName") or "").strip()
+                if det_latin in ("Aphelocoma californica", "Larus occidentalis"):
+                    take_id = True
+                    cnt_detect += 1
+
+        if take_id:
+            mid = mov.get("mov_id")
+            if mid == None:
+                add_html("mov with missing mov_id")
+            else: 
+                movement_ids.append(mid)
+
+    # cnt_all > 0 guaranteed here, as we returned early if cnt_all == 0
+    id_ratio = len(movement_ids) / cnt_all if cnt_all > 0 else 0
+    det_ratio = cnt_detect / cnt_all if cnt_all > 0 else 0
+    val_ratio = cnt_valid / cnt_all if cnt_all > 0 else 0
+    add_html(f"Found {len(movement_ids)} movements out of {cnt_all} total ({id_ratio:.2f}) since {newtime_date}.")
+    add_html(f"Aphelocoma: {cnt_detect} ({det_ratio:.2f}), NoBird: {cnt_valid} ({val_ratio:.2f})")
+html += '<hr>'
+
+oldtime_date = newtime_date - timedelta(days=1) # one day before
+old_movements = get_movements(oldtime_date, old=True)
+cnt_old_all = len(old_movements)
+if cnt_old_all == 0:
+    old_movs_exist = False
+    add_html(f"No movements found before {oldtime_date}.")
+else:
+    old_movs_exist = True
+    cnt_no_valid = 0
+    cnt_nobird_valid = 0
+    oldmovement_ids = []
+    for mov in old_movements:
+        take_id = False
+        #use this to delete unvalidated movements:
+        if "validation" not in mov:
+            take_id = True
+            cnt_no_valid += 1
+        else:
             validation_data = mov.get("validation", {})
             validations = validation_data.get("validations", []) if validation_data else []
             if validations and validations[0]:
                 val_latin = validations[0].get("latinName", "").strip() if validations[0].get("latinName") else ""
                 if val_latin == "None":
                     take_id = True
-                    cnt_valid += 1
-                else: keep = True
+                    cnt_nobird_valid += 1
+        
+        if take_id:
+            mid = mov.get("mov_id")
+            if mid == None:
+                add_html("mov with missing mov_id")
+            else: 
+                oldmovement_ids.append(mid)
 
-            # step2: detections take_id for delete only, if validations[0] is empty (not None)
-            if not keep:
-                detections = mov.get("detections", [])
-                if detections and detections[0]:
-                    det_latin = (detections[0].get("latinName") or "").strip()
-                    if det_latin in ("Aphelocoma californica", "Larus occidentalis"):
-                        take_id = True
-                        cnt_detect += 1
+    old_valid_cnt = cnt_old_all - cnt_no_valid
+    old_valid_ratio = old_valid_cnt / cnt_old_all if cnt_old_all > 0 else 0
+    nobird_valid_ratio = cnt_nobird_valid / old_valid_cnt if old_valid_cnt > 0 else 0
+    add_html(f"{old_valid_cnt} movements out of {cnt_old_all} ({old_valid_ratio:.2f}) have human validation before incl. {oldtime_date}.")
+    add_html(f"Among these, {cnt_nobird_valid} ({nobird_valid_ratio:.2f}) are validated as 'NoBird'.")
+html += '<hr>'
 
-            if take_id:
-                movement_ids.append(mov.get("mov_id"))
-
-        # cnt_all > 0 guaranteed here, as we returned early if cnt_all == 0
-        id_ratio = len(movement_ids) / cnt_all if cnt_all > 0 else 0
-        det_ratio = cnt_detect / cnt_all if cnt_all > 0 else 0
-        val_ratio = cnt_valid / cnt_all if cnt_all > 0 else 0
-        add_html(f"Found {len(movement_ids)} movements out of {cnt_all} total ({id_ratio:.2f}) since {newtime_date}.")
-        add_html(f"Aphelocoma: {cnt_detect} ({det_ratio:.2f}), NoBird: {cnt_valid} ({val_ratio:.2f})")
-    html += '<hr>'
-
-    oldtime_date = newtime_date - timedelta(days=1) # one day before
-    old_movements = get_movements(oldtime_date, old=True)
-    cnt_old_all = len(old_movements)
-    if cnt_old_all == 0:
-        old_movs_exist = False
-        add_html(f"No movements found before {oldtime_date}.")
-    else:
-        old_movs_exist = True
-        cnt_no_valid = 0
-        cnt_nobird_valid = 0
-        oldmovement_ids = []
-        for mov in old_movements:
-            take_id = False
-            #use this to delete unvalidated movements:
-            if "validation" not in mov:
-                take_id = True
-                cnt_no_valid += 1
-            else:
-                validation_data = mov.get("validation", {})
-                validations = validation_data.get("validations", []) if validation_data else []
-                if validations and validations[0]:
-                    val_latin = validations[0].get("latinName", "").strip() if validations[0].get("latinName") else ""
-                    if val_latin == "None":
-                        take_id = True
-                        cnt_nobird_valid += 1
-            
-            if take_id:
-                oldmovement_ids.append(mov.get("mov_id"))
-
-        old_valid_cnt = cnt_old_all - cnt_no_valid
-        old_valid_ratio = old_valid_cnt / cnt_old_all if cnt_old_all > 0 else 0
-        nobird_valid_ratio = cnt_nobird_valid / old_valid_cnt if old_valid_cnt > 0 else 0
-        add_html(f"{old_valid_cnt} movements out of {cnt_old_all} ({old_valid_ratio:.2f}) have human validation before incl. {oldtime_date}.")
-        add_html(f"Among these, {cnt_nobird_valid} ({nobird_valid_ratio:.2f}) are validated as 'NoBird'.")
-    html += '<hr>'
-
-    if not deleteMode:
-        add_html(f"To delete these movements, run 'python {sys.argv[0]} delete ACCESS_TOKEN'.")
-        return
-
+if not deleteMode:
+    add_html(f"To delete these movements, provide valid deleteKey (Stationsschlüssel) first.")
+else:
     # SPEED OPTIMIZATION: Use a Session block to keep TCP connection alive
     if new_movs_exist:
-        add_html(f"Deleting {len(movement_ids)} movements since {newtime_date}...")
-        deleted_count = 0
+        add_html(f"Deleting {len(movement_ids)} movements since {newtime_date}…")
         with requests.Session() as session:
-            for mov_id in movement_ids:
-                try:
-                    # Per OpenAPI docs: /api/movement/{station_id}/{movement_id}
-                    # without deleteData=True videos were kept unreferenced until 08/2026.
-                    # url = f"{API_URL}/{mov_id}?apikey={ACCESS_TOKEN}&deleteData=True"
-                    url = f"{API_URL}/{mov_id}?apikey={ACCESS_TOKEN}"
-                    response = session.delete(url, timeout=10)
-                    response.raise_for_status()
-                    # print(f"Deleted movement {mov_id}.")
-                    deleted_count += 1
-                except Exception as e:
-                    print(f"Error deleting movement {mov_id}: {e}")
-
-        all_deleted_count = len(movement_ids)
-        del_ratio = deleted_count / all_deleted_count if movement_ids else 0
-        add_html(f"Deleted {deleted_count} out of {all_deleted_count} movements ({del_ratio:.2f}) since {newtime_date}.")
+            delete_movements(session, movement_ids, f"since {newtime_date}")
         html += '<hr>'
 
     if old_movs_exist:
-        add_html(f"Deleting {len(oldmovement_ids)} movements before incl. {oldtime_date}...")
-        deleted_count = 0
+        add_html(f"Deleting {len(oldmovement_ids)} movements before {oldtime_date}…")
         with requests.Session() as session:
-            for mov_id in oldmovement_ids:
-                try:
-                    # Per OpenAPI docs: /api/movement/{station_id}/{movement_id}
-                    url = f"{API_URL}/{mov_id}?apikey={ACCESS_TOKEN}"
-                    response = session.delete(url, timeout=10)
-                    response.raise_for_status()
-                    # print(f"Deleted movement {mov_id}.")
-                    deleted_count += 1
-                except Exception as e:
-                    print(f"Error deleting movement {mov_id}: {e}")
+            delete_movements(session, oldmovement_ids, f"before {oldtime_date}")
+        html += '<hr>'
 
-        all_deleted_count = len(oldmovement_ids)
-        del_ratio = deleted_count / all_deleted_count if oldmovement_ids else 0
-        add_html(f"Deleted {deleted_count} out of {all_deleted_count} movements ({del_ratio:.2f}) before incl. {oldtime_date}.")
-        tokenlength = len(ACCESS_TOKEN)
-        if tokenlength != 32:
-            add_html(f"ACCESS_TOKEN {ACCESS_TOKEN} has {tokenlength} digits - normal is 32!")
-
-    end_time = time.time()    # Record the end time
-    duration = end_time - start_time  # Calculate duration in seconds
-    html += '<hr'
-    add_html(f"Script finished in {duration:.2f} seconds.")
-    html += '<div><a href="/config3.html" class="button">back</a></div></body></html>'
-    with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
-        f.write(html)
-
-if __name__ == "__main__":
-    main()
+end_time = time.time()    # Record the end time
+duration = end_time - start_time  # Calculate duration in seconds
+tokenlength = len(ACCESS_TOKEN)
+if tokenlength != 32:
+    add_html(f"ACCESS_TOKEN {ACCESS_TOKEN} has {tokenlength} digits - normal is 32!")
+add_html(f"Script finished in {duration:.2f} seconds.")
+html += '<div><a href="/config3.html" class="button">back</a></div></body></html>'
+with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
+    f.write(html)
  
