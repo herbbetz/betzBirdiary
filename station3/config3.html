@@ -9,6 +9,14 @@
     <meta http-equiv="Expires" content="0"/>
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="bird.css">
+    <style>
+        .displayed {
+            display: block
+        }
+        .undisplayed {
+            display: none
+        }
+    </style>
 </head>
 <body>
     <h2>Actions</h2>
@@ -19,10 +27,12 @@
         <div class="rowed"><a href="/reboot" class="button">reboot</a> <a href="/shutdown" class="button">shutdown</a></div>
         <div class="rowed"><a href="/standby" class="button" id="stdby">standby</a> <a href="/settings.html" class="button" target="_blank">settings</a></div>
         <div class="rowed"><a href="/daywatch" class="button" id="daywatch">daywatch</a> <a href="/videoking" class="button" id="videoking">videoking</a></div>
-        <div class="rowed"><a href="/stations/selectstations.html" class="button">rare birds</a> <a href="/api/delete" class="button">Delete</a></div>
-        <div class="rowed"><a href="/vidshot3.html" class="button">back</a></div>
-        <hr>
-        <div class="rowed"><a href="/hxanalyze/hxsignal.html" class="button">HX Signal</a> <a href="/hxanalyze/hx-report.html" class="button">HX Analyze</a></div>
+        <div class="rowed"><a href="/stations/selectstations.html" class="button">rare birds</a> <a href="/api/delete" class="button">delete</a></div>
+        <div class="rowed"><a href="/vidshot3.html" class="button">back</a> <a href="/testmodeconfirm.html" class="button" id="testbtn">test OFF</a></div>
+        <div id="testsuite" class="undisplayed">
+            <hr>
+            <div class="rowed"><a href="/hxanalyze/hxsignal.html" class="button">HX Signal</a> <a href="/hxanalyze/hx-report.html" class="button">HX Analyze</a></div>
+        </div>
     </div>
     <hr>
     <div>Version <span id="version"></span>, herber7be7z@gmail.com</div>
@@ -34,6 +44,8 @@
     const versionElem = document.getElementById('version');
     const lastdownElem = document.getElementById('lastDown');
     const stdbyElem = document.getElementById('stdby');
+    const testbtn = document.getElementById('testbtn');
+    const testsuite = document.getElementById('testsuite');
     const vidmsgJson = "/msgjson2"; //"ramdisk/vidmsg.json";
     
     function getVersion() {
@@ -51,7 +63,15 @@
             if (data) {
                 let msg = data['msg'];
                 let date = data['date'];
+                let testmode = data['testmode'];
                 lastdownElem.textContent = msg + " at " + date;
+                if (testmode > 0) {
+                    testsuite.className = 'displayed';
+                    testbtn.textContent = "test ON";
+                } else {
+                    testsuite.className = 'undisplayed';
+                    testbtn.textContent = "test OFF";
+                }
             }
         })    
     }

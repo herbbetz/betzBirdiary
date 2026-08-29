@@ -197,6 +197,64 @@ def shutdown():
         subprocess.call(cmd, shell=True)
         return send_from_directory(app.static_folder, 'shutdown.html')
 
+@app.route('/testmode') # call like '/testmode?action = toggle'
+def testmode():
+    jsonfile = f"{birdpath['appdir']}/lastdown.json"
+    if os.path.exists(jsonfile):
+        with open("data.json", "r", encoding="utf-8") as file:
+            data = json.load(file)
+    else:
+        return {'error': 'json not found'}, 400
+    action = request.args.get('action')
+    if action == 'toggle':
+        if data['testmode'] == 0:
+            data['testmode'] = 1
+        elif data['testmode'] == 1:
+            data['testmode'] = 0
+        else:
+            data['testmode'] = 0
+        with open(jsonfile, "w", encoding="utf-8") as file:
+            json.dump(data, file)
+        time.sleep(0.5)
+        cmd = "sudo shutdown -r now"
+        subprocess.call(cmd, shell=True)
+        return send_from_directory(app.static_folder, 'reboot.html')
+    elif action == 'get':
+        return {'testmode': data['testmode']}
+    return {'error': 'unknown action'}, 400
+
+def testmode():
+    jsonfile = f"{birdpath['appdir']}/lastdown.json"
+    if not os.path.exists(jsonfile):
+        return {"error": "JSON file not found"}, 404
+    try:
+        with open(jsonfile, "r", encoding="utf-8") as file:
+            data = json.load(file)
+    except json.JSONDecodeError:
+        return {"error": "Invalid JSON"}, 500
+    except OSError as error:
+        return {"error": f"Could not read JSON file: {error}"}, 500
+
+    action = request.args.get("action")
+    if action == "get":
+        # If the property is missing, treat testmode as disabled.
+        return {"testmode": data.get("testmode", 0)}
+    if action == "toggle":
+        # Missing testmode is treated as 0, so toggle changes it to 1.
+        if data.get("testmode", 0) == 0:
+            data["testmode"] = 1
+        else:
+            data["testmode"] = 0
+        try:
+            with open(jsonfile, "w", encoding="utf-8") as file:
+                json.dump(data, file, indent=4, ensure_ascii=False)
+        except OSError as error:
+            return {"error": f"Could not write JSON file: {error}"}, 500
+        time.sleep(0.5)
+        subprocess.Popen(["sudo", "shutdown", "-r", "now"])
+        return send_from_directory(app.static_folder, "reboot.html")
+    return {"error": "unknown action"}, 400
+
 @app.route('/upload') # no button for this, good for testing
 def upload():
    fifo_path = birdpath['fifo']

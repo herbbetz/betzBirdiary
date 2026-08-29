@@ -26,14 +26,7 @@ if ss -H -tn state established '( sport = :22 or dport = :22 or sport = :5900 )'
 fi
 
 # 3. Write lastdown.json for config3.html
-formatted_date=$(date "+%y-%m-%d %H:%M")
-msg="plannedReboot"
-jq -n \
-  --arg msg "$msg" \
-  --arg date "$formatted_date" \
-  '{msg: $msg, date: $date}' > "$APPDIR/lastdown.json"
-
+bash "$APPDIR/lastwritedown.sh" "$msg"
 log "$(date): Initiating planned reboot."
-
 sudo sync
 sudo reboot

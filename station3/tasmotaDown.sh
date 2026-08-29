@@ -54,11 +54,7 @@ fi
 # rm $APPDIR/daydir/*.csv >/dev/null 2>&1
 
 # Write lastdown.json for showing in config3.html
-formatted_date=$(date "+%y-%m-%d %H:%M")
-jq -n \
-  --arg msg "$msg" \
-  --arg date "$formatted_date" \
-  '{msg: $msg, date: $date}' > "$APPDIR/lastdown.json"
+bash "$APPDIR/lastwritedown.sh" "$msg"
 
 sudo sync
 sudo shutdown -h +1
