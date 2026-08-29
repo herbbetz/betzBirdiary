@@ -10,3 +10,9 @@ $appdir/wavMeta.sh
 
 echo "Anonymize config.json..."
 $appdir/config-yaml.sh ANONconfig.yml
+
+secrets=$appdir/BETZconfig.yml
+if [ -f $secrets ]; then 
+echo "Shred $secrets"
+$appdir/shredfile.sh $secrets
+fi 

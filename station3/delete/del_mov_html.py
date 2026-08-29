@@ -100,11 +100,13 @@ def delete_movements(session, ids, label):
     add_html(f"Deleted {deleted}/{total} ({ratio:.2f}) in {label}.")
 
 # main prog part#2:
+former_month = CURRENT_MONTH
 for _ in range(months_back):
-    current_month = prev_month(current_month)
-newtime_date = datetime.strptime(f"{current_month}-01", "%Y-%m-%d").date()
+    former_month = prev_month(former_month)
+newtime_date = datetime.strptime(f"{former_month}-01", "%Y-%m-%d").date()
 
-add_html(f'<h2>Delete Report of {today}</h2>')
+add_html(f'<h2>Delete Report of {today.strftime("%Y-%m-%d")}</h2>')
+add_html(f'API = {API_URL}')
 add_html(f'<p><b>Alle unvalidierten Movements der Station {STATION_NAME} vor {newtime_date} werden gelöscht, sobald ein gültiger _deleteKey_ in config.json eingetragen ist !!</b></p>')
 
 if ACCESS_TOKEN and not ACCESS_TOKEN.endswith('X'):
