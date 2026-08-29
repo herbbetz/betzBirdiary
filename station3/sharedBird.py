@@ -1,5 +1,5 @@
 # shared functions
-import os, sys, subprocess
+import json, os, sys, subprocess
 
 app_dir = '/home/pi/station3/'
 PIDfile = ["mainPID.txt", "hxFiPID.txt"] # PIDfile ids for programms
@@ -119,6 +119,22 @@ def prev_month(month_str): # e.g. month_str = '2026-04'
         month = 12
     # Return formatted string with zero-padding (:02d)
     return f"{year}-{month:02d}"
+
+def getTestmode():
+    # return 'testmode' directly from lastdown.json (not from flask EP /testmode)
+    jsonfile = f"{app_dir}/lastdown.json"
+    if not os.path.exists(jsonfile):
+        return {"error": "JSON file not found"}, 404
+    try:
+        with open(jsonfile, "r", encoding="utf-8") as file:
+            data = json.load(file)
+        # If the property is missing, treat testmode as disabled.
+        return {"testmode": data.get("testmode", 0)}
+    except json.JSONDecodeError:
+        return {"error": "Invalid JSON"}, 500
+    except OSError as error:
+        return {"error": f"Could not read JSON file: {error}"}, 500
+
 
 ''' for the old /acknowledge version:
 def copy2mp4(movesaved):

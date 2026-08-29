@@ -246,6 +246,7 @@ def setSysmonEvt():
         return data
     updatemsg(change)
 
+'''
 #### disk read/write VidDateStr for after reboot of mainAckBird2/uploadBird/keepBird:
 viddateFname = 'movements/lastvid.txt'
 def readSavedVidDate():
@@ -261,3 +262,4 @@ def writeSavedVidDate(vidDate):
 
 def setSavedVidDate():
     setVidDateStr(readSavedVidDate())
+'''

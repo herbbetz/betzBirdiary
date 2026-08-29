@@ -200,31 +200,6 @@ def shutdown():
 @app.route('/testmode') # call like '/testmode?action = toggle'
 def testmode():
     jsonfile = f"{birdpath['appdir']}/lastdown.json"
-    if os.path.exists(jsonfile):
-        with open("data.json", "r", encoding="utf-8") as file:
-            data = json.load(file)
-    else:
-        return {'error': 'json not found'}, 400
-    action = request.args.get('action')
-    if action == 'toggle':
-        if data['testmode'] == 0:
-            data['testmode'] = 1
-        elif data['testmode'] == 1:
-            data['testmode'] = 0
-        else:
-            data['testmode'] = 0
-        with open(jsonfile, "w", encoding="utf-8") as file:
-            json.dump(data, file)
-        time.sleep(0.5)
-        cmd = "sudo shutdown -r now"
-        subprocess.call(cmd, shell=True)
-        return send_from_directory(app.static_folder, 'reboot.html')
-    elif action == 'get':
-        return {'testmode': data['testmode']}
-    return {'error': 'unknown action'}, 400
-
-def testmode():
-    jsonfile = f"{birdpath['appdir']}/lastdown.json"
     if not os.path.exists(jsonfile):
         return {"error": "JSON file not found"}, 404
     try:
