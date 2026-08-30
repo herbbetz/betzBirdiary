@@ -29,14 +29,16 @@ import libcamera
 import importlib.metadata # only for picamera2 version printing, because there is no 'picamera2.__version__'
 
 import msgBird as ms
-from sharedBird import fifoExists, write_gallery, write_binVideo
+from sharedBird import fifoExists, getTestmode, write_gallery, write_binVideo
 from configBird3 import *
 
 testmode = False # define outside any block ('if __name__ == "__main__":' also is a block) and use 'global testmode' in all functions, that write to it (only main()), but not in the ones that only read it.
+localsave = False
 
 def readable_cam_time() -> str:
     return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
+### Recorders
 class CamRecorder:
     def __init__(self) -> None:
         self.file = os.path.join(
@@ -57,11 +59,18 @@ class CamRecorder:
                 f"cam_{event}\n"
             )
 
+class NullRecorder:
+    def __init__(self) -> None:
+        pass
+    def log(self, *args, **kwargs) -> None:
+        pass
+###
+
 def capture_img(picam, dest):
     tmp_dest = dest + ".tmp"
     picam.capture_file(tmp_dest, name="lores", format="jpeg") # lores YUV420 and jpeg were not compatible (error: Buffer has wrong number of dimensions (expected 2, got 3))
     os.replace(tmp_dest, dest)
-    if testmode: ms.log(f"Captured still to {dest}")
+    # if testmode: ms.log(f"Captured still to {dest}")
 
 def whitebalance(picam):
     # Enable AWB to get correct gains
@@ -261,8 +270,8 @@ def send_movement(circ_output, picam, wght, stop_event, preTrigImg): # first par
     full_video = posttrigger.read()
     '''
 
-    if testmode:
-        ms.log("Test mode: skipping upload")
+    if localsave:
+        ms.log("Localsave mode: skipping upload")
         ms.log(f"full_video size: {len(full_video)} bytes")
         write_binVideo(movementStartStr, full_video)
         ms.log("Test video saved locally in /keep.")
@@ -362,26 +371,35 @@ def cleanAndExit(picam, child):
         sys.exit(0)
 
 def main():
-    global testmode
+    global testmode, localsave
     ms.init()
     # Check for available camera
     if not Picamera2.global_camera_info():
         ms.log("No camera detected. Exiting.")
         sys.exit(1)
-    
-    if len(sys.argv) > 1 and sys.argv[1] == "test":
-        ms.log(f"{sys.argv[0]} running in test mode")
-        testmode = True
-    else: 
-        testmode = False
-        ms.log(f"Starting {sys.argv[0]} at {datetime.now()}")
 
+    if len(sys.argv) > 1 and sys.argv[1] == "test":
+        testmode = True
+        localsave = True
+    # from lastdown.json:
+    if getTestmode() > 0:
+        testmode = True
+    if testmode:
+        ms.log(f"Testmode of {sys.argv[0]}")
+    else:
+        ms.log(sys.argv[0])    
+    ms.log(f"... starting at {time.ctime()}")
     ms.log(f'picam2 version {importlib.metadata.version("picamera2")}')
     ms.setVidCnt(0)
     ms.emptyVidDateStr()
     # ms.setUpmode(1) # direct upload
     ms.setLux(3) # set luxcategory to normal
-    camRecorder = CamRecorder()
+
+    if testmode:
+        camRecorder = CamRecorder()
+    else:
+        camRecorder = NullRecorder()
+
     ms.log("Set up balance receive as child process")
     bQueue = multiprocessing.Queue()
     stop_recording_event = multiprocessing.Event() # this can span 2 processes, while a simple boolean flag were only present inside one process

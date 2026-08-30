@@ -50,7 +50,7 @@ import urllib.parse
 import urllib.error
 import urllib.request
 
-from sharedBird import fifoExists, writePID, clearPID
+from sharedBird import fifoExists, writePID, clearPID, getTestmode
 from configBird3 import (
     birdpath,
     hxDataPin,
@@ -764,10 +764,13 @@ ms.init()
 testmode = False
 if len(sys.argv) > 1 and sys.argv[1] == "test":
     testmode = True
+# from lastdown.json:
+if getTestmode() > 0:
+    testmode = True
+if testmode:
     ms.log(f"Testmode of {sys.argv[0]}")
 else:
     ms.log(sys.argv[0])
-
 ms.log(f"... starting at {time.ctime()}")
 
 writePID(1)

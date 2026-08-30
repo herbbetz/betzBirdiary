@@ -67,9 +67,10 @@ sleep 8 # the child process takes time to establish
 TOTAL_CPUS=$(nproc --all)
 if [ "$TOTAL_CPUS" -ge 4 ]; then
     # Pass taskset directly with sudo
-    setsid sudo taskset -c 3 chrt -f 80 "$PYTHON" "$APPDIR/hxFiBirdStateCt.py" test >> "$APPDIR/ramdisk/hxFiBird.log" 2>&1 &
+    setsid sudo taskset -c 3 chrt -f 80 "$PYTHON" "$APPDIR/hxFiBirdStateCt.py" >> "$APPDIR/ramdisk/hxFiBird.log" 2>&1 &
+    # setsid sudo taskset -c 3 chrt -f 80 "$PYTHON" "$APPDIR/hxFiBirdStateCt.py" test >> "$APPDIR/ramdisk/hxFiBird.log" 2>&1 &
 else
-    setsid sudo chrt -f 80 "$PYTHON" "$APPDIR/hxFiBirdStateCt.py" test >> "$APPDIR/ramdisk/hxFiBird.log" 2>&1 &
+    setsid sudo chrt -f 80 "$PYTHON" "$APPDIR/hxFiBirdStateCt.py" >> "$APPDIR/ramdisk/hxFiBird.log" 2>&1 &
 fi
 sleep 1
 # widgets for wayfire desktop will not work here, because wayfire or vnc/X11 env not yet ready! Moreover no use running it, when no desktop shown.

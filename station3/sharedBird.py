@@ -129,7 +129,7 @@ def getTestmode():
         with open(jsonfile, "r", encoding="utf-8") as file:
             data = json.load(file)
         # If the property is missing, treat testmode as disabled.
-        return {"testmode": data.get("testmode", 0)}
+        return data.get("testmode", 0)
     except json.JSONDecodeError:
         return {"error": "Invalid JSON"}, 500
     except OSError as error:

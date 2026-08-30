@@ -54,7 +54,7 @@ Die Birdiary API hat bereits einige Parameter, um nicht immer den kompletten Dat
 
 ## Löschen von Movements ##
 
-- siehe `python .\del_movements.py` und `python .\del_movements.py delete <ACCESS_TOKEN>`
+- siehe `python delete/del_movements.py` und `python delete/del_movements.py delete <ACCESS_TOKEN>`
 - Vor 4.8.2026 war nach einem *delete* das Movement zwar nicht mehr auf `https://wiediversistmeingarten.org/api/movement/87bab185-7630-461c-85e6-c04cf5bab180`, aber der zuvor dokumentierte Videolink immer noch abrufbar. Unreferenzierte Videos wurden nicht gelöscht ohne `?apikey={ACCESS_TOKEN}&deleteData=True`. Das wurde aber dann geändert und `deleteData` überflüssig.
 - Statt ohne `deleteData` das Movement zu löschen und das unreferenzierte Video zu behalten (das mangels Validierung keiner mehr betrachtet), wäre es früher besser gewesen, das Video/Audio zu löschen und das Movement (ohne Videoreferenz) zu behalten. Dann könnte man später noch wissen, wie viele Videos zu welchen Zeiten/Temperaturen erzeugt wurden und zugleich die Server Festplatte von platzfressenden Medien befreien.
 
