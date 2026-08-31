@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+    <title>Lux Signal</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="/button.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            font-family: sans-serif;
+            background: #111;
+            color: #eee;
+        }
+
+        h1 {
+            margin-top: 0;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            max-width: 1200px;
+            height: 400px;
+            background: #181818;
+            border: 1px solid #444;
+        }
+
+        #status {
+            margin-top: 10px;
+            color: #aaa;
+        }
+
+        #legend {
+            margin-top: 10px;
+        }
+
+        .metalux {
+            color: #ee0;
+        }
+
+        #luxlabel {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #ee0;
+        }
+    </style>
+</head>
+<body>
+    <h1>Lux Signal</h1>
+
+    <canvas id="signalCanvas"></canvas>
+
+    <div id="legend">
+        <span class="metalux">■ Metalux</span>
+        &nbsp;&nbsp;
+        <span id="luxlabel"></span>
+    </div>
+
+    <div id="status">Waiting for data...</div>
+    <div><a href="/config3.html" class="button">back</a></div>
+
+<script>
+"use strict";
+
+const BUFFER_SECONDS = 60;
+const FETCH_INTERVAL = 1.0;
+const REDRAW_INTERVAL = 0.3;
+const LUX_MIN = 100; // log-scale floor is 1
+const LUX_MAX = 10000;
+
+const LUX_LABELS = {
+    1: "dark",
+    2: "dim",
+    3: "normal",
+    4: "bright",
+    5: "underexposed",
+    6: "overexposed"
+};
+
+const canvas = document.getElementById("signalCanvas");
+const context = canvas.getContext("2d");
+const status = document.getElementById("status");
+const luxlabel = document.getElementById("luxlabel");
+
+const samples = [];
+
+let latestSample = null;
+let lastFetchTime = 0;
+
+function resizeCanvas() {
+    const rect = canvas.getBoundingClientRect();
+    const ratio = window.devicePixelRatio || 1;
+
+    canvas.width = rect.width * ratio;
+    canvas.height = rect.height * ratio;
+
+    context.setTransform(ratio, 0, 0, ratio, 0, 0);
+}
+
+function addSample(sample) {
+    samples.push(sample);
+
+    const cutoff = sample.t - BUFFER_SECONDS;
+
+    while (
+        samples.length > 0
+        && samples[0].t < cutoff
+    ) {
+        samples.shift();
+    }
+}
+
+async function fetchSignal() {
+    try {
+        const response = await fetch(
+            `/luxsignal?_=${Date.now()}`,
+            {
+                cache: "no-store"
+            }
+        );
+
+        if (!response.ok) {
+            throw new Error(
+                `HTTP ${response.status}`
+            );
+        }
+
+        const data = await response.json();
+
+        if (
+            typeof data.t !== "number"
+            || typeof data.metalux !== "number"
+            || typeof data.luxcategory !== "number"
+        ) {
+            throw new Error("Invalid signal data");
+        }
+
+        const sample = {
+            t: data.t,
+            metalux: data.metalux,
+            luxcategory: Math.round(data.luxcategory)
+        };
+
+        if (
+            latestSample === null
+            || sample.t !== latestSample.t
+        ) {
+            addSample(sample);
+            latestSample = sample;
+        }
+
+        const label =
+            LUX_LABELS[sample.luxcategory]
+            ?? `cat ${sample.luxcategory}`;
+
+        luxlabel.textContent = label;
+        status.textContent =
+            `Metalux: ${sample.metalux.toFixed(0)} | `
+            + `Category: ${label}`;
+
+    } catch (error) {
+        console.error(
+            "fetch /luxsignal failed:",
+            error
+        );
+
+        status.textContent =
+            `Connection error: ${error.message}`;
+    }
+}
+
+function luxToFrac(value) {
+    const v = Math.max(value, LUX_MIN);
+    const logMin = Math.log10(LUX_MIN);
+    const logMax = Math.log10(LUX_MAX);
+    return (Math.log10(v) - logMin) / (logMax - logMin);
+}
+
+function drawGrid(width, height) {
+    context.strokeStyle = "#333";
+    context.lineWidth = 1;
+
+    const horizontalLines = 7;
+
+    for (let i = 0; i <= horizontalLines; i++) {
+        const y = i * height / horizontalLines;
+
+        context.beginPath();
+        context.moveTo(0, y);
+        context.lineTo(width, y);
+        context.stroke();
+    }
+}
+
+function drawYAxis(width, height) {
+    const logMin = Math.log10(LUX_MIN);
+    const logMax = Math.log10(LUX_MAX);
+    const ticks = [];
+
+    for (let e = Math.ceil(logMin); e <= Math.floor(logMax); e++) {
+        ticks.push(Math.pow(10, e));
+    }
+
+    context.fillStyle = "#aaa";
+    context.font = "12px sans-serif";
+
+    ticks.forEach(v => {
+        const y = height - luxToFrac(v) * height;
+        context.fillText(String(v), 5, y + 12);
+    });
+}
+
+function drawLine(
+    firstTime,
+    timeRange,
+    width,
+    height
+) {
+    if (samples.length < 2) {
+        return;
+    }
+
+    context.lineWidth = 2;
+    context.strokeStyle = "#ee0";
+
+    context.beginPath();
+
+    samples.forEach((sample, index) => {
+        const x =
+            (sample.t - firstTime)
+            / timeRange
+            * width;
+        const y = height - luxToFrac(sample.metalux) * height;
+
+        if (index === 0) {
+            context.moveTo(x, y);
+        } else {
+            context.lineTo(x, y);
+        }
+    });
+
+    context.stroke();
+}
+
+function drawSignal() {
+    const width = canvas.clientWidth;
+    const height = canvas.clientHeight;
+
+    context.clearRect(0, 0, width, height);
+
+    if (samples.length < 2) {
+        return;
+    }
+
+    const firstTime = samples[0].t;
+    const lastTime = samples[samples.length - 1].t;
+
+    const timeRange = Math.max(
+        lastTime - firstTime,
+        BUFFER_SECONDS
+    );
+
+    drawGrid(width, height);
+    drawYAxis(width, height);
+    drawLine(firstTime, timeRange, width, height);
+}
+
+function update() {
+    const now = performance.now();
+
+    if (
+        now - lastFetchTime
+        >= FETCH_INTERVAL * 1000
+    ) {
+        lastFetchTime = now;
+        fetchSignal();
+    }
+
+    drawSignal();
+}
+
+window.addEventListener(
+    "resize",
+    resizeCanvas
+);
+
+resizeCanvas();
+fetchSignal();
+
+setInterval(
+    update,
+    REDRAW_INTERVAL * 1000
+);
+</script>
+
+</body>
+</html>

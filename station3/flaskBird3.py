@@ -547,6 +547,26 @@ def api_validation_data():
     '''
     return jsonify(validation_data)
 
+#--------luxsignal updated from mainFoBird.py, and polled by hxanalyze/luxsignal.html
+luxsignal_latest: dict[str, float | int] = {
+    "t": 0.0,
+    "metalux": 0.0,
+    "luxcategory": 0
+}
+@app.route("/luxsignal", methods=["GET"]) # GET better than POST for polling by luxsignal.html (only bodyless query string, no cacheing)
+def luxsignal() -> tuple[dict[str, float | str], int]:
+    return luxsignal_latest, 200
+
+@app.route("/luxsignal/update", methods=["GET"])
+def luxsignal_update() -> tuple[dict[str, float | str], int]:
+    try:
+        luxsignal_latest["t"] = float(request.args["t"])
+        luxsignal_latest["metalux"] = float(request.args["metalux"])
+        luxsignal_latest["luxcategory"] = float(request.args["luxcategory"])
+    except (KeyError, TypeError, ValueError):
+        return {"error": "invalid data"}, 400
+    return luxsignal_latest, 200
+#--------end of luxsignal
 #--------signal updated from hxFiBirdStateCt.py, and polled by hxanalyze/hxsignal.html
 hxsignal_latest: dict[str, float] = {
     "t": 0.0,
@@ -554,12 +574,12 @@ hxsignal_latest: dict[str, float] = {
     "offset": 0.0,
     "hxscale": 0.0
 }
-@app.route("/hxsignal", methods=["GET"]) # GET better than POST for polling by hxanalyze.html (only bodyless query string, no cacheing)
-def hxsignal() -> tuple[dict[str, float], int]:
+@app.route("/hxsignal", methods=["GET"]) # GET better than POST for polling by hxsignal.html (only bodyless query string, no cacheing)
+def hxsignal() -> tuple[dict[str, float | str], int]:
     return hxsignal_latest, 200
 
 @app.route("/hxsignal/update", methods=["GET"])
-def hxsignal_update() -> tuple[dict[str, float], int]:
+def hxsignal_update() -> tuple[dict[str, float | str], int]:
     try:
         hxsignal_latest["t"] = float(request.args["t"])
         hxsignal_latest["weight"] = float(request.args["weight"])

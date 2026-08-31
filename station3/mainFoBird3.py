@@ -21,6 +21,10 @@ import requests
 import multiprocessing
 import io
 import numpy as np
+# for LiveLogger:
+import urllib.parse
+import urllib.error
+import urllib.request
 
 from picamera2 import Picamera2
 from picamera2.encoders import H264Encoder, Quality
@@ -58,6 +62,36 @@ class CamRecorder:
                 f"{weight:.2f},"
                 f"cam_{event}\n"
             )
+
+class LiveLogger:
+    def __init__(self) -> None:
+        self.url = "http://127.0.0.1:8080/luxsignal/update" # absolute URL, only the browser can access "/luxsignal/update"
+        self.timeout = 0.2
+
+    def log(self, sample) -> None:
+        query = urllib.parse.urlencode({
+            "t": time.monotonic(),
+            "metalux": sample['metaLux'],
+            "luxcategory": sample['luxcategory'],
+        })
+
+        request = urllib.request.Request(
+            f"{self.url}?{query}",
+            method="GET"
+        )
+
+        try:
+            with urllib.request.urlopen(
+                request,
+                timeout=self.timeout
+            ):
+                pass
+        except (
+            urllib.error.URLError,
+            TimeoutError,
+            OSError
+        ):
+            pass
 
 class NullRecorder:
     def __init__(self) -> None:
@@ -134,6 +168,7 @@ def get_brightness(picam, now):
                 picam.set_controls({'ExposureTime': 0, 'AnalogueGain': 1.5}) # 0 means "AeEnable resets exposure according to preselected gain", see https://github.com/raspberrypi/picamera2/issues/1305
                 time.sleep(0.5)
 
+    return luxdata # for LiveLogger
 get_brightness.last_logged_minute = -1 #static var
 
 def luxProtocol(lData):
@@ -397,8 +432,10 @@ def main():
 
     if testmode:
         camRecorder = CamRecorder()
+        liveLogger = LiveLogger()
     else:
         camRecorder = NullRecorder()
+        liveLogger = NullRecorder()
 
     ms.log("Set up balance receive as child process")
     bQueue = multiprocessing.Queue()
@@ -501,7 +538,8 @@ def main():
                         # clear forgotten standby after 300 secs of webGUI inactivity:
                         inactive_counter += 1 if inactive_counter < 32760 else 0
                         if inactive_counter == 300: ms.clearStandby()
-                        get_brightness(picam, now)
+                        luxData=get_brightness(picam, now)
+                        liveLogger.log(luxData)
                 time.sleep(sleepTime)
 
         except Exception as e:
