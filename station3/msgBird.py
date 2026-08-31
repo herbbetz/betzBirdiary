@@ -24,7 +24,7 @@ from configBird3 import birdpath
 #   recording: 0 or 1, set by mainFoBird3.py
 #   scaleready: 0 or 1, set by hxFiBirdStateCt.py
 message = {"imgid": 0, "lastvid": "", "vidcnt": 0, "linecnt": 0, "linetxt": "", "envirEvt": 0, "sysmonEvt": 0,
-           "upmode": 0, "confirm": 0, "standby": 0, "clientactive": 0, "lux": 0, "luxraw": 0, "recording": 0, "scaleready": 0} # define dictionary
+           "upmode": 0, "confirm": 0, "standby": 0, "clientactive": 0, "lux": 0, "luxraw": "", "recording": 0, "scaleready": 0} # define dictionary
 # Use as cache for reducing read/write in params that might be changed often inside loops (only read/write if value changed), e.g. scaleready inside hxFiBird*.py
 # However cache must not be used, if the function is not called by different scripts!?
 

@@ -54,7 +54,7 @@ fi
 # rm $APPDIR/daydir/*.csv >/dev/null 2>&1
 
 # Write lastdown.json for showing in config3.html
-bash "$APPDIR/lastwritedown.sh" "$msg"
+bash "$APPDIR/lastdownwrite.sh" "$msg"
 
 sudo sync
 sudo shutdown -h +1
