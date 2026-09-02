@@ -1,0 +1,21 @@
+[Unit]
+Description=hxFiBird Weight Detection
+Requires=bird-startup.service
+After=bird-startup.service
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/home/pi/station3
+
+ExecStart=/home/pi/station3/hxFiBird.sh
+
+# Do not automatically restart the script
+Restart=no
+
+# Give the script enough time to start
+TimeoutStartSec=15
+
+[Install]
+WantedBy=multi-user.target

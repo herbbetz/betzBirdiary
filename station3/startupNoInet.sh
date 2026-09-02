@@ -22,6 +22,7 @@ fi
 # event IPC hxFiBirdState.py -> mainFoBird.py:
 if [[ ! -p "$FIFO" ]]; then
     mkfifo "$FIFO"
+    chmod 666 "$FIFO" # allow read/write for all users, otherwise FIFO may not be writable when script runs as root (sudo)
     # echo "created: "$fifo
 fi
 

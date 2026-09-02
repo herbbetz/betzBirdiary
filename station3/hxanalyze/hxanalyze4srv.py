@@ -516,7 +516,7 @@ def create_plot(
     )
     ax.set_xlabel("time")
     ax.set_ylabel("grams")
-    ax.legend(loc="upper left")
+    ax.legend(loc="upper right", framealpha=0.4) # 0=transparent legend background
     ax.grid(True, alpha=0.3)
     plt.tight_layout()
     plt.savefig(output_path)

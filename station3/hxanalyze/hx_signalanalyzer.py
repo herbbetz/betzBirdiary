@@ -364,7 +364,7 @@ def create_plot(rows:list[dict],periods:list[tuple[str,int,int]],weight_threshol
     ax.xaxis.set_major_formatter(plt.matplotlib.dates.DateFormatter("%H:%M"))
     ax.set_xlabel("time")
     ax.set_ylabel("grams")
-    ax.legend(loc="upper left")
+    ax.legend(loc="upper right", framealpha=0.4) # 0=transparent legend background
     ax.grid(True,alpha=0.3)
     plt.tight_layout()
     plt.savefig("signal_timeline.svg")

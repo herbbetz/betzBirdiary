@@ -5,9 +5,14 @@
 # log to /dev/null for sparing the sd-card
 APPDIR="$HOME/station3"
 PYTHON="/usr/bin/python3"
-LOGFILE="/dev/null" # "/home/pi/station3/logs/startup.log"
+LOGFILE="/home/pi/station3/logs/startup.log" # "/dev/null"
 log() {
     echo "$*" >> "$LOGFILE" 2>&1
+}
+
+START_TIME=$(date +%s)
+elapsed() {
+    log "$1: $(( $(date +%s) - START_TIME )) seconds since startup"
 }
 
 log "startup2stage.sh started at $(date)"
@@ -36,6 +41,7 @@ if [ "$dns_ok" = false ]; then
 else
     setsid bash internetTest2.sh > /dev/null 2>&1 & # >> "$APPDIR/logs/internet.log" 2>&1 & # not in hotspot without internet! will drop ssh connection after 3 min
 fi
+elapsed "DNS check/internetTest2.sh"
 # from now on start programs
 setsid bash "$APPDIR/mdroid.sh" stationLoaded & # mdroid.sh writes to startup.log
 #
@@ -46,44 +52,36 @@ setsid bash "$APPDIR/mdroid.sh" stationLoaded & # mdroid.sh writes to startup.lo
 # flaskBird first, central to communication (WebGUI)
 # flaskBird thread can write to FIFO too, but only when asked to:
 setsid $PYTHON "$APPDIR/flaskBird3.py" > /dev/null 2>&1 & # >> "$APPDIR/logs/flask.log" 2>&1 &
-sleep 4
+sleep 1
+elapsed "flaskBird3.py +sleep 1"
 # after flaskBird, needs time to find cmd 'ifconfig':
 # mainFoBird.py contains the only FIFO reader in child process:
 # python3 mainAckBird2.py &>> logs/main.log & # watch logs live on flask webserver or in terminal, using 'tail -f ~station/logs/main.log' or 'less +F ~station/logs/main.log'
 setsid $PYTHON "$APPDIR/mainFoBird3.py" > /dev/null 2>&1 & # >> "$APPDIR/logs/main.log" 2>&1 & # birdpipe reader
 # setsid $PYTHON "$APPDIR/mainFoBird3.py" test > /dev/null 2>&1 &
-sleep 8 # the child process takes time to establish
+sleep 1 # the child process takes time to establish
+elapsed "mainFoBird3.py +sleep 1"
 # looping shutdown scripts, when system more stable:
 # these now have their own systemd timer:
 # setsid bash "$APPDIR/sysmon2.sh" > /dev/null 2>&1 & # >> "$APPDIR/logs/sysmon.log" 2>&1 # once at boot in foreground, then every 15 min via pi's crontab -l
 # sleep 2
 # setsid $PYTHON "$APPDIR/dhtBird3.py" > /dev/null 2>&1 & # >> "$APPDIR/logs/dht_sun.log" 2>&1 &
 #
-# first FIFO writer, seems the most critical to init
-# setsid $PYTHON "$APPDIR/hxFiBirdStateCt.py" test > /dev/null 2>&1 & # >> "$APPDIR/logs/hxFiBird.log" 2>&1 & # first birdpipe FIFO writer
-# high user space priority: sudo chrt -f 80 <script> (chrt needs root permissions, later run 'sudo python hxFiBirdStateCt.py test' as 'ramdisk/hxFiPID.txt' will belong to root)
-# dedicated CPU core: taskset -c 3 <script> (CPU core 3 is least used by system, see 'top' or 'htop'), set isolcpus=3 in /boot/firmware/cmdline.txt to isolate CPU core 3 from system tasks, so it can be used for real-time tasks.
-# nproc --all ensures isolated cores like isolcpus=3 are counted
-TOTAL_CPUS=$(nproc --all)
-if [ "$TOTAL_CPUS" -ge 4 ]; then
-    # Pass taskset directly with sudo
-    setsid sudo taskset -c 3 chrt -f 80 "$PYTHON" "$APPDIR/hxFiBirdStateCt.py" >> "$APPDIR/ramdisk/hxFiBird.log" 2>&1 &
-    # setsid sudo taskset -c 3 chrt -f 80 "$PYTHON" "$APPDIR/hxFiBirdStateCt.py" test >> "$APPDIR/ramdisk/hxFiBird.log" 2>&1 &
-else
-    setsid sudo chrt -f 80 "$PYTHON" "$APPDIR/hxFiBirdStateCt.py" >> "$APPDIR/ramdisk/hxFiBird.log" 2>&1 &
-fi
-sleep 1
+# hxFiBirdStateCt.py is the first FIFO writer, seems the most critical to init, it is started in hxFiBird.service -> hxFiBird.sh
 # widgets for wayfire desktop will not work here, because wayfire or vnc/X11 env not yet ready! Moreover no use running it, when no desktop shown.
 # setsid $PYTHON widgets.py &
 STATDIR="$APPDIR/statist"
 cd "$STATDIR" || { log "$STATDIR missing"; exit 1; } # avoids output into wrong path
 bash "$STATDIR/getStats.sh" > /dev/null 2>&1 # >> "$APPDIR/logs/statist.log" 2>&1 # only once at boot, fst contact with birdiary platform
 sleep 1
+elapsed "getStats.sh +sleep 1"
 STATIONSDIR="$APPDIR/stations"
 cd "$STATIONSDIR" || { log "$STATIONSDIR missing"; exit 1; } # avoids output into wrong path
 $PYTHON "$STATIONSDIR/stations.py" > /dev/null 2>&1
 sleep 1
+elapsed "stations.py +sleep 1"
 $PYTHON "$STATIONSDIR/vk_lastmonth_pag.py" > /dev/null 2>&1
 cd "$APPDIR"
+elapsed "vk_lastmonth_pag.py -> last task, all done"
 log "startup2stage.sh ended at $(date)"
 exit # status reflects last cmds success

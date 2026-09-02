@@ -1,0 +1,17 @@
+Testmode of /home/pi/station3/hxFiBirdStateCt.py
+... starting at Tue Sep  1 00:28:46 2026
+Startup zeroing...
+STARTUP_ZERO spread=684
+FSM Event Triggered: IDLE->ARRIVAL
+FSM Event Triggered: ARRIVAL->PRESENT
+/home/pi/station3/hxFiBirdStateCt.py stopped Tue Sep  1 17:58:47 2026
+Traceback (most recent call last):
+  File "/home/pi/station3/hxFiBirdStateCt.py", line 874, in <module>
+    timeout_event = fsm.check_timeout(
+        sample,
+        baseline
+    )
+  File "/home/pi/station3/hxFiBirdStateCt.py", line 438, in check_timeout
+    event_str = f"BASELINE_RESET {old_state} -> IDLE"
+                                  ^^^^^^^^^
+NameError: name 'old_state' is not defined

@@ -342,6 +342,7 @@ class NoiseGuard:
         return self.current_std() / abs(hxScale)
 # ============================================================
 # FSM (pure state machine, no I/O, no logging)
+# abs(weight) makes it agnostic of decreasing ADC raw values on loading the cell.
 # ============================================================
 
 STATE_IDLE = 0
@@ -435,7 +436,7 @@ class WeightFSM:
             if time.monotonic() - self.state_t0 > STATE_TIMEOUT:
                 old = STATE_NAME[self.state]
                 self.force_idle()
-                event_str = f"BASELINE_RESET {old_state} -> IDLE"
+                event_str = f"BASELINE_RESET {old} -> IDLE"
                 sample.events.append(event_str)
                 return event_str
             return None
@@ -475,11 +476,12 @@ class WeightFSM:
         weight: float,
         sample: Sample
     ) -> str | None:
-        if weight > self.threshold_on:
+        absweight = abs(weight)
+        if absweight > self.threshold_on:
             self.above_count += 1
             if self.above_count >= 3:
-                self.peak = weight
-                if weight > weightlimit:
+                self.peak = absweight
+                if absweight > weightlimit:
                     return self._transition(
                         STATE_OVERSIZE,
                         sample,
@@ -499,9 +501,9 @@ class WeightFSM:
         weight: float,
         sample: Sample
     ) -> str | None:
-        self.peak = max(self.peak, weight)
+        self.peak = max(self.peak, abs(weight))
 
-        if weight < self.threshold_off:
+        if abs(weight) < self.threshold_off:
             return self._transition(
                 STATE_IDLE,
                 sample,
@@ -533,7 +535,7 @@ class WeightFSM:
         weight: float,
         sample: Sample
     ) -> str | None:
-        self.peak = max(self.peak, weight)
+        self.peak = max(self.peak, abs(weight))
 
         if self.peak > weightlimit:
             return self._transition(
@@ -542,7 +544,7 @@ class WeightFSM:
                 "PRESENT->OVERSIZE"
             )
 
-        if weight < self.threshold_off:
+        if abs(weight) < self.threshold_off:
             self.below_count += 1
             if self.below_count >= 2:
                 return self._transition(
@@ -561,9 +563,9 @@ class WeightFSM:
         weight: float,
         sample: Sample
     ) -> str | None:
-        self.peak = max(self.peak, weight)
+        self.peak = max(self.peak, abs(weight))
 
-        if weight < self.threshold_off:
+        if abs(weight) < self.threshold_off:
             self.below_count += 1
             if self.below_count >= 2:
                 return self._transition(
@@ -590,9 +592,9 @@ class WeightFSM:
                 keep_peak=False
             )
 
-        if weight > self.threshold_on:
-            self.peak = weight
-            if weight > weightlimit:
+        if abs(weight) > self.threshold_on:
+            self.peak = abs(weight)
+            if abs(weight) > weightlimit:
                 return self._transition(
                     STATE_OVERSIZE,
                     sample,
@@ -733,11 +735,20 @@ class NullRecorder:
 # ============================================================
 
 fifo = birdpath["fifo"]
-
+'''
+# easier to leave this to prepended bash code inside hxFiBird.sh:
 if not fifoExists(fifo):
     os.mkfifo(fifo)
     ms.log("FIFO created")
+# is the script running as root (sudo), then fifo may not be writable.
+    if os.geteuid() == 0: os.chmod(fifo, 0o666)  # Allow read/write for all users
 
+import pwd, grp
+if os.geteuid() == 0:
+    pi_uid = pwd.getpwnam("pi").pw_uid
+    pi_gid = grp.getgrnam("pi").gr_gid
+    os.chown(fifo, pi_uid, pi_gid)
+'''
 def send_fifo(value: int) -> None:
     try:
         fd = os.open(fifo, os.O_WRONLY | os.O_NONBLOCK)
@@ -782,10 +793,12 @@ baseline = Baseline(hx)
 baseline.startup(sample)
 
 # Configuration
+RECAL_MIN_DELTA = hxScale  # 533 counts ≈ 1 g
 MEDIAN_SAMPLES = 7
 NOISEGUARD_SAMPLES = 210
 # Adaptive threshold logic
 dyn_threshold = weightThreshold
+max_dyn_threshold = 15 # 15 grams
 
 # Initialize filters
 median = MedianFilter(size=MEDIAN_SAMPLES)
@@ -853,7 +866,7 @@ try:
 
             if (
                 candidate is not None
-                and abs(candidate - baseline.offset) > 0
+                and abs(candidate - baseline.offset) > RECAL_MIN_DELTA
             ):
                 baseline.adopt_raw_value(
                     candidate,
@@ -894,7 +907,7 @@ try:
             noiseguard.add_sample(sample.raw)
             sample.sigma = noiseguard.current_std_grams()
 
-            dyn_threshold = 2 * sample.sigma + weightThreshold
+            dyn_threshold = min(2 * sample.sigma + weightThreshold, max_dyn_threshold)
             sample.dyn_threshold = dyn_threshold
             fsm.set_thresholds(dyn_threshold)
         else:

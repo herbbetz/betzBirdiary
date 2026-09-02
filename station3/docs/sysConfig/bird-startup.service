@@ -4,7 +4,9 @@ After=network-online.target
 Wants=network-online.target
 
 [Service]
-Type=simple
+# oneshot instead of simple: dependant script 'hxFiBird.service' waits until startup.sh (FIFO setup) has finished
+#   therefore TimeoutStartSec must be longer than startup.sh takes!!
+Type=oneshot
 User=pi
 Group=pi
 WorkingDirectory=/home/pi/station3
@@ -26,8 +28,7 @@ StandardError=append:/home/pi/station3/logs/startup.service.log
 
 # Don't try to track this long-running tree
 Restart=no
-# No need to wait long for "start"
-TimeoutStartSec=15
+TimeoutStartSec=60
 
 [Install]
 WantedBy=multi-user.target
