@@ -85,7 +85,7 @@ def reconstruct_visits(
                 "arrival": period[0]["time"],
                 "arrival_i": start,
                 "peak": max(
-                    row["weight"]
+                    abs(row["weight"])
                     for row in period
                 )
             }
@@ -98,7 +98,7 @@ def reconstruct_visits(
                     - period[0]["mono_t"]
                 )
                 weights = [
-                    row["weight"]
+                    abs(row["weight"])
                     for row in period
                 ]
                 current["mean"] = (
@@ -116,7 +116,7 @@ def reconstruct_visits(
                     - period[0]["mono_t"]
                 ),
                 "peak": max(
-                    row["weight"]
+                    abs(row["weight"])
                     for row in period
                 )
             }
@@ -434,7 +434,7 @@ def create_plot(
         )
         for row in rows
     ]
-    weights = [row["weight"] for row in rows]
+    weights = [abs(row["weight"]) for row in rows]
     thresholds = [row["threshold"] for row in rows]
     sigmas = [row["sigma"] for row in rows]
     offset_g = [
@@ -516,7 +516,7 @@ def create_plot(
     )
     ax.set_xlabel("time")
     ax.set_ylabel("grams")
-    ax.legend(loc="upper right", framealpha=0.4) # 0=transparent legend background
+    ax.legend(loc="upper right", framealpha=0.4)
     ax.grid(True, alpha=0.3)
     plt.tight_layout()
     plt.savefig(output_path)

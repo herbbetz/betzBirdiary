@@ -1,9 +1,9 @@
 #!/bin/bash
 # do not rely on sourced path variables during boot!
-appdir=/home/pi/station3
-msgfile=$appdir/ramdisk/vidmsg.json
-LOGFILE=/dev/null # $appdir/logs/startup.log
-config_file="$appdir/config.json"
+APPDIR="/home/pi/station3"
+msgfile="$APPDIR/ramdisk/vidmsg.json"
+LOGFILE="$APPDIR/ramdisk/startup.log"
+config_file="$APPDIR/config.json"
 
 log() {
     echo "$*" >> "$LOGFILE" 2>&1
@@ -20,7 +20,7 @@ check4speed(){
     local linetxt="$target ${duration} ms (exit: $exit_code)"
     log "$linetxt"
     if [[ -f "$msgfile" ]]; then
-        flock "$msgfile" "$appdir/log_vidmsg.sh" "$msgfile" "$linetxt"
+        flock "$msgfile" "$APPDIR/log_vidmsg.sh" "$msgfile" "$linetxt"
     fi
     sleep 1
 }

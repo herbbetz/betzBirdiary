@@ -1,8 +1,8 @@
 #!/bin/bash
 # softlink this to startup.sh for testing and load all scripts manually:
-APPDIR=/home/pi/station3
-FIFO=/home/pi/station3/ramdisk/birdpipe
-LOGFILE="/dev/null" # "/home/pi/station3/logs/startup.log"
+APPDIR="/home/pi/station3"
+FIFO="$APPDIR/ramdisk/birdpipe"
+LOGFILE="$APPDIR/ramdisk/startup.log"
 log() {
     echo "$*" >> "$LOGFILE" 2>&1
 }

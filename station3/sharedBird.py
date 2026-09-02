@@ -44,6 +44,10 @@ def writePID(id):
         os.makedirs(os.path.dirname(fname), exist_ok=True)
         with open(fname, 'w') as f:
             f.write(str(thepid))
+        # sharedBird.py is imported by different scripts, which may run as root or pi, so:
+        os.chmod(fname, 0o666) # allow read/write for all users
+        os.chown(fname, 1000, 1000) # keep current owner and group, but allow read/write for all users
+
         return True
     except PermissionError:
         print(f"Permission denied writing PID to {fname}. Try sudo", file=sys.stderr)

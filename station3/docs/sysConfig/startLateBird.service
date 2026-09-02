@@ -1,0 +1,18 @@
+[Unit]
+Description=Net- & API scripts which start late
+Requires=hxFiBird.service
+After=hxFiBird.service
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+Type=simple
+User=pi
+Group=pi
+WorkingDirectory=/home/pi/station3
+ExecStart=/home/pi/station3/startLateNet.sh
+Restart=no
+TimeoutStartSec=60
+
+[Install]
+WantedBy=multi-user.target

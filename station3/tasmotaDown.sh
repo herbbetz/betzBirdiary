@@ -1,7 +1,7 @@
 #!/bin/bash
 # called from crontab and scripts of bash and python:
 APPDIR="$HOME/station3"
-LOGFILE=$APPDIR/logs/startup.log
+LOGFILE=$APPDIR/ramdisk/startup.log
 config_file="$APPDIR/config.json"
 
 log() {

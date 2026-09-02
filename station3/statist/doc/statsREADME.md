@@ -14,7 +14,7 @@ Voraussetzung ist ein installiertes Modul 'matplotlib' für Python3: sudo apt-ge
 Dann werden die API Daten statistisch aufbereitet:
 
 - getStats.sh koordiniert die Pythonskripte und wird von crontab initiiert.
-- dloadStats.py lädt die APIdaten von Birdiary und speichert sie in apidata.json.
+- dloadStats.py lädt die APIdaten von Birdiary und speichert sie in ramdisk/apidata.json.
 - Hat das geklappt, erzeugen die Pythonscripte hours_histo.py, month_histo.py und countsbytemp.py und countbyhumid.py aus apidata.json jeweils eine SVG Grafik mittels 'matplotlib'.
 - showstats.html präsentiert diese SVG Grafiken.
 
@@ -54,7 +54,7 @@ Required is installing the python3 module 'matplotlib', which builds SVGs: sudo 
 The API data can then be statistically processed:
 
 - getStats.sh coordinates the Python scripts and is initiated by crontab.
-- dloadStats.py loads the API data from Birdiary and saves it to apidata.json.
+- dloadStats.py loads the API data from Birdiary and saves it to ramdisk/apidata.json.
 - If this works, the Python scripts hours_histo.py, month_histo.py, and countsbytemp.py each generate an SVG graphic from apidata.json.
 - showstats.html presents these SVG graphics.
 

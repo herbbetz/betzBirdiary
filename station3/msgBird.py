@@ -49,6 +49,9 @@ def init(): # first create empty msg file
         finally:
             fcntl.flock(jfile, fcntl.LOCK_UN)
             jfile.close()
+            # msgBird.py is imported by different scripts, which may run as root or pi, so:
+            os.chmod(filename, 0o666) # allow read/write for all users
+            os.chown(filename, 1000, 1000) # keep current owner and group, but allow read/write for all users (in termainal see 'id pi')
 
         if badcontent:
             os.remove(filename)
