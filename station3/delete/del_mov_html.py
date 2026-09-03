@@ -40,7 +40,8 @@ for f in Path(BASE_DIR).glob("del*.html"):
 
 start_time = time.time()  # Record the start time
 
-html = f"""<!DOCTYPE html>
+# CSS curley brackets inside f-string would need to be doubled for distinction from f-string brackets, e.g. {{ color: black }}.
+html = """<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
@@ -49,6 +50,10 @@ html = f"""<!DOCTYPE html>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="stylesheet" href="/button.css">
 <link rel="stylesheet" href="/birdmd.css">
+<style>
+.new { background-color: pink; }
+.old { background-color: gray; }
+</style>
 </head>
 <body>
 """
@@ -159,8 +164,10 @@ else:
     id_ratio = len(movement_ids) / cnt_all if cnt_all > 0 else 0
     det_ratio = cnt_detect / cnt_all if cnt_all > 0 else 0
     val_ratio = cnt_valid / cnt_all if cnt_all > 0 else 0
-    add_html(f"Found {len(movement_ids)} movements out of {cnt_all} total ({id_ratio:.2f}) since {newtime_date}.")
-    add_html(f"Aphelocoma: {cnt_detect} ({det_ratio:.2f}), NoBird: {cnt_valid} ({val_ratio:.2f})")
+    html += '<div class="new">'
+    add_html(f'Found {len(movement_ids)} movements for deletion out of {cnt_all} total ({id_ratio:.2f}) since {newtime_date}.')
+    add_html(f'Aphelocoma: {cnt_detect} ({det_ratio:.2f}), NoBird: {cnt_valid} ({val_ratio:.2f})')
+    html += '</div>'
 html += '<hr>'
 
 oldtime_date = newtime_date - timedelta(days=1) # one day before
@@ -199,8 +206,10 @@ else:
     old_valid_cnt = cnt_old_all - cnt_no_valid
     old_valid_ratio = old_valid_cnt / cnt_old_all if cnt_old_all > 0 else 0
     nobird_valid_ratio = cnt_nobird_valid / old_valid_cnt if old_valid_cnt > 0 else 0
-    add_html(f"{old_valid_cnt} movements out of {cnt_old_all} ({old_valid_ratio:.2f}) have human validation before incl. {oldtime_date}.")
-    add_html(f"Among these, {cnt_nobird_valid} ({nobird_valid_ratio:.2f}) are validated as 'NoBird'.")
+    html += '<div class="old">'
+    add_html(f'{old_valid_cnt} movements out of {cnt_old_all} ({old_valid_ratio:.2f}) have human validation before incl. {oldtime_date}.')
+    add_html(f'Among these, {cnt_nobird_valid} ({nobird_valid_ratio:.2f}) are validated as \'NoBird\'.')
+    html += '</div>'
 html += '<hr>'
 
 if not deleteMode:
@@ -208,16 +217,18 @@ if not deleteMode:
 else:
     # SPEED OPTIMIZATION: Use a Session block to keep TCP connection alive
     if new_movs_exist:
-        add_html(f"Deleting {len(movement_ids)} movements since {newtime_date}…")
+        html += '<div class="new">'
+        add_html(f'Deleting {len(movement_ids)} movements since {newtime_date}…')
         with requests.Session() as session:
             delete_movements(session, movement_ids, f"since {newtime_date}")
-        html += '<hr>'
+        html += '</div><hr>'
 
     if old_movs_exist:
-        add_html(f"Deleting {len(oldmovement_ids)} movements before {oldtime_date}…")
+        html += '<div class="old">'
+        add_html(f'Deleting {len(oldmovement_ids)} movements before {oldtime_date}…')
         with requests.Session() as session:
             delete_movements(session, oldmovement_ids, f"before {oldtime_date}")
-        html += '<hr>'
+        html += '</div><hr>'
 
 end_time = time.time()    # Record the end time
 duration = end_time - start_time  # Calculate duration in seconds

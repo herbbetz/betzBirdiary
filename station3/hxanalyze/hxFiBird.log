@@ -1,31 +1,41 @@
 Testmode of /home/pi/station3/hxFiBirdStateCt.py
-... starting at Thu Sep  3 00:57:21 2026
+... starting at Thu Sep  3 22:17:48 2026
 Startup zeroing...
-STARTUP_ZERO spread=651
+STARTUP_ZERO spread=568
+FSM Event Triggered: IDLE->ARRIVAL
+FSM Event Triggered: ARRIVAL->PRESENT
+FSM Event Triggered: BASELINE_RESET PRESENT -> IDLE
 FSM Event Triggered: BASELINE_RESET
-FSM Event Triggered: IDLE->ARRIVAL
-FSM Event Triggered: ARRIVAL->PRESENT
-FSM Event Triggered: PRESENT->DEPARTURE
-FSM Event Triggered: TIMEOUT->IDLE
-FSM Event Triggered: IDLE->ARRIVAL
-FSM Event Triggered: ARRIVAL->PRESENT
-FSM Event Triggered: PRESENT->DEPARTURE
-FSM Event Triggered: TIMEOUT->IDLE
-FSM Event Triggered: IDLE->ARRIVAL
-FSM Event Triggered: ARRIVAL->PRESENT
-FSM Event Triggered: PRESENT->DEPARTURE
-FSM Event Triggered: TIMEOUT->IDLE
-FSM Event Triggered: IDLE->ARRIVAL
-FSM Event Triggered: ARRIVAL->PRESENT
-FSM Event Triggered: BASELINE_RESET PRESENT -> IDLE
-FSM Event Triggered: IDLE->ARRIVAL
-FSM Event Triggered: ARRIVAL->PRESENT
-FSM Event Triggered: PRESENT->DEPARTURE
-FSM Event Triggered: DEPARTURE->ARRIVAL
-FSM Event Triggered: ARRIVAL->PRESENT
-FSM Event Triggered: BASELINE_RESET PRESENT -> IDLE
-FSM Event Triggered: IDLE->ARRIVAL
-FSM Event Triggered: ARRIVAL->PRESENT
-FSM Event Triggered: BASELINE_RESET PRESENT -> IDLE
-FSM Event Triggered: IDLE->ARRIVAL
-FSM Event Triggered: ARRIVAL->PRESENT
+FSM Event Triggered: BASELINE_RESET
+FSM Event Triggered: BASELINE_RESET
+FSM Event Triggered: BASELINE_RESET
+FSM Event Triggered: BASELINE_RESET
+FSM Event Triggered: BASELINE_RESET
+FSM Event Triggered: BASELINE_RESET
+FSM Event Triggered: BASELINE_RESET
+FSM Event Triggered: BASELINE_RESET
+FSM Event Triggered: BASELINE_RESET
+FSM Event Triggered: BASELINE_RESET
+FSM Event Triggered: BASELINE_RESET
+FSM Event Triggered: BASELINE_RESET
+FSM Event Triggered: BASELINE_RESET
+FSM Event Triggered: BASELINE_RESET
+FSM Event Triggered: BASELINE_RESET
+FSM Event Triggered: BASELINE_RESET
+FSM Event Triggered: BASELINE_RESET
+FSM Event Triggered: BASELINE_RESET
+FSM Event Triggered: BASELINE_RESET
+FSM Event Triggered: BASELINE_RESET
+FSM Event Triggered: BASELINE_RESET
+FSM Event Triggered: BASELINE_RESET
+FSM Event Triggered: BASELINE_RESET
+FSM Event Triggered: BASELINE_RESET
+FSM Event Triggered: BASELINE_RESET
+FSM Event Triggered: BASELINE_RESET
+FSM Event Triggered: BASELINE_RESET
+FSM Event Triggered: BASELINE_RESET
+FSM Event Triggered: BASELINE_RESET
+FSM Event Triggered: BASELINE_RESET
+FSM Event Triggered: BASELINE_RESET
+FSM Event Triggered: BASELINE_RESET
+FSM Event Triggered: BASELINE_RESET
