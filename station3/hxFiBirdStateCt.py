@@ -435,23 +435,31 @@ class WeightFSM:
         if self.state in (STATE_ARRIVAL, STATE_PRESENT, STATE_DEPARTURE):
             if time.monotonic() - self.state_t0 > STATE_TIMEOUT:
                 old = STATE_NAME[self.state]
+                
+                # 1. Force-adopt current reading to clear the phantom weight
+                raw_value = baseline.stable_raw()
+                if raw_value is None:
+                    raw_value = float(sample.raw) # Fallback to current filtered raw
+                
+                baseline.adopt_raw_value(raw_value, sample)
+                
+                # 2. Return to IDLE clean
                 self.force_idle()
                 event_str = f"BASELINE_RESET {old} -> IDLE"
                 sample.events.append(event_str)
                 return event_str
+                
             return None
 
         if self.state == STATE_IDLE:
             if abs(sample.weight) > self.threshold_off:
                 if time.monotonic() - self.state_t0 > STATE_TIMEOUT:
-                    raw_value = baseline.stable_raw()
-                    if raw_value is not None:
-                        baseline.adopt_raw_value(raw_value, sample)
-                        self.reset(keep_peak=False)
-                        sample.events.append("BASELINE_RESET")
-                        return "BASELINE_RESET"
-            return None
-
+                    raw_value = baseline.stable_raw() or float(sample.raw)
+                    baseline.adopt_raw_value(raw_value, sample)
+                    self.reset(keep_peak=False)
+                    sample.events.append("BASELINE_RESET")
+                    return "BASELINE_RESET"
+                    
         return None
 
     def process_weight(
@@ -861,23 +869,19 @@ try:
 
         if fsm.state == STATE_IDLE:
             baseline.update_stable_buffer(sample.raw)
-
             candidate = baseline.stable_raw()
 
+            # Recalibrate if the stable raw value deviates from offset by more than 1 gram equivalent
             if (
                 candidate is not None
                 and abs(candidate - baseline.offset) > RECAL_MIN_DELTA
             ):
-                baseline.adopt_raw_value(
-                    candidate,
-                    sample
-                )
-                sample.events.append(
-                    "IDLE_STABLE_RECAL"
-                )
+                baseline.adopt_raw_value(candidate, sample)
+                sample.events.append("IDLE_STABLE_RECAL")
 
             elif abs(sample.weight) < fsm.threshold_off:
                 baseline.follow_idle(sample)
+
         else:
             baseline.stable_buf_reset()
         # ----------------------------------------------------
