@@ -2,7 +2,10 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
     <title>HX Signal</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="/button.css">
@@ -59,19 +62,14 @@
 
     <div id="status">Waiting for data...</div>
     <div><a href="/config3.html" class="button">back</a></div>
-
 <script>
 "use strict";
 
 const BUFFER_SECONDS = 60;
 const FETCH_INTERVAL = 1.0;
 const REDRAW_INTERVAL = 0.3;
-
-const MAX_WEIGHT = 250;
-const LOG_BASE = 5;
-const MAX_LOG_VAL = Math.log(1 + MAX_WEIGHT) / Math.log(LOG_BASE);
-
-const GRID_TICKS = [250, 125, 25, 5, 1, 0, -1, -5, -25, -125, -250];
+const WEIGHT_MIN = -5;
+const WEIGHT_MAX = 30;
 
 const canvas = document.getElementById("signalCanvas");
 const context = canvas.getContext("2d");
@@ -175,43 +173,42 @@ async function fetchSignal() {
     }
 }
 
-function weightToY(weight, height) {
-    const sign = Math.sign(weight);
-    const absVal = Math.min(Math.abs(weight), MAX_WEIGHT);
-    const logVal = Math.log(1 + absVal) / Math.log(LOG_BASE);
-    const normalized = (sign * logVal) / MAX_LOG_VAL; // Range -1.0 to +1.0
-    
-    return (height / 2) - (normalized * (height / 2));
-}
-
 function drawGrid(width, height) {
-    GRID_TICKS.forEach((val) => {
-        const y = weightToY(val, height);
+    context.strokeStyle = "#333";
+    context.lineWidth = 1;
 
-        context.strokeStyle = val === 0 ? "#666" : "#2a2a2a";
-        context.lineWidth = val === 0 ? 1.5 : 1;
+    const horizontalLines = 7;
+
+    for (let i = 0; i <= horizontalLines; i++) {
+        const y = i * height / horizontalLines;
 
         context.beginPath();
         context.moveTo(0, y);
         context.lineTo(width, y);
         context.stroke();
-    });
+    }
 }
 
 function drawYAxis(width, height) {
     context.fillStyle = "#aaa";
-    context.font = "11px sans-serif";
+    context.font = "12px sans-serif";
 
-    GRID_TICKS.forEach((val) => {
-        const y = weightToY(val, height);
-        const label = val > 0 ? `+${val}` : `${val}`;
-        
+    const lines = 7;
+
+    for (let i = 0; i <= lines; i++) {
+        const fraction = i / lines;
+        const value =
+            WEIGHT_MAX
+            - fraction * (WEIGHT_MAX - WEIGHT_MIN);
+
+        const y = fraction * height;
+
         context.fillText(
-            label,
+            value.toFixed(0),
             5,
-            y + (val === 0 ? -4 : 4)
+            y + 12
         );
-    });
+    }
 }
 
 function drawLine(
@@ -237,7 +234,12 @@ function drawLine(
             / timeRange
             * width;
 
-        const y = weightToY(sample[property], height);
+        const y =
+            height
+            - (
+                (sample[property] - WEIGHT_MIN)
+                / (WEIGHT_MAX - WEIGHT_MIN)
+            ) * height;
 
         if (index === 0) {
             context.moveTo(x, y);
