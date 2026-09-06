@@ -234,6 +234,7 @@ class Baseline:
             sample.raw - self.offset
         ) / hxScale
 
+    # During IDLE, the baseline offset follows slow environmental drift using an exponential moving average (EMA):
     def follow_idle(self, sample: Sample) -> None:
         self.offset += (
             sample.raw - self.offset
@@ -697,7 +698,6 @@ baseline = Baseline(hx)
 baseline.startup(sample)
 
 # Configuration
-RECAL_MIN_DELTA = hxScale  # 533 counts ≈ 1 g
 MEDIAN_SAMPLES = 7
 NOISEGUARD_SAMPLES = 210
 # Adaptive threshold logic
@@ -763,16 +763,17 @@ try:
             candidate = baseline.stable_raw()
 
             # Recalibrate if the stable raw value deviates from offset by more than 1 gram equivalent
-            if (
-                candidate is not None
-                and abs(candidate - baseline.offset) > RECAL_MIN_DELTA
-            ):
-                baseline.adopt_raw_value(candidate, sample)
-                sample.events.append("IDLE_STABLE_RECAL")
+            if candidate is not None:
+                    delta_grams = abs(candidate - baseline.offset) / abs(hxScale)
+
+                    # Allow recalibration only for small environmental drifts (e.g., 1g < delta < 3g).
+                    # Any step larger than 3.0g belongs to WeightFSM processing.
+                    if 1.0 < delta_grams < 3.0:
+                        baseline.adopt_raw_value(candidate, sample)
+                        sample.events.append("IDLE_STABLE_RECAL")
 
             elif abs(sample.weight) < fsm.threshold_off:
                 baseline.follow_idle(sample)
-
         else:
             baseline.stable_buf_reset()
         # ----------------------------------------------------
@@ -783,7 +784,6 @@ try:
             sample,
             baseline
         )
-
         if timeout_event:
             event = timeout_event
             sample.state = fsm.state
