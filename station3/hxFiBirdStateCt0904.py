@@ -77,6 +77,7 @@ class Sample:
     dyn_threshold: float = 0.0
 
     state: int = 0
+    peak: float = 0.0
 
     startup_spread: int = 0
     startup_attempts: int = 0 # HX711 samples read until a stable baseline was successfully found (ideally equals STABLE_SAMPLES = 60)
@@ -211,7 +212,7 @@ class Baseline:
                     self.offset = raw_value
                     sample.offset = self.offset
                     sample.weight = 0.0
-                    sample.startup_spread = self._stable_spread()
+                    sample.startup_spread = self.stable_spread()
                     sample.startup_attempts = attempts
                     sample.startup_maxspread = STABLE_SPREAD_LIMIT
                     sample.startup_delay = time.monotonic() - t0
@@ -329,7 +330,6 @@ class NoiseGuard:
             return 0.0
 
         return self.current_std() / abs(hxScale)
-
 # ============================================================
 # FSM (pure state machine, no I/O, no logging)
 # abs(weight) makes it agnostic of decreasing ADC raw values on loading the cell.
@@ -359,6 +359,7 @@ class WeightFSM:
         self.state_t0 = time.monotonic()
         self.above_count = 0
         self.below_count = 0
+        self.peak = 0.0
         self.departure_t0 = 0.0
         self.present_t0 = 0.0
         self.camera_sent = False
@@ -371,14 +372,16 @@ class WeightFSM:
         self.threshold_on = base_threshold
         self.threshold_off = 0.7 * base_threshold
 
-    def reset(self) -> None:
+    def reset(self, keep_peak: bool = True) -> None:
         self.above_count = 0
         self.below_count = 0
+        if not keep_peak:
+            self.peak = 0.0
 
     def force_idle(self) -> None:
         self.state = STATE_IDLE
         self.state_t0 = time.monotonic()
-        self.reset()
+        self.reset(keep_peak=False)
         self.camera_sent = False
 
     def _transition(
@@ -386,11 +389,12 @@ class WeightFSM:
         new_state: int,
         sample: Sample,
         event: str,
+        keep_peak: bool = True,
         departure: bool = False
     ) -> str:
         self.state = new_state
         self.state_t0 = time.monotonic()
-        self.reset()
+        self.reset(keep_peak=keep_peak)
 
         if new_state == STATE_PRESENT:
             self.present_t0 = self.state_t0
@@ -427,7 +431,7 @@ class WeightFSM:
                 if raw_value is None:
                     raw_value = float(sample.raw) # Fallback to current filtered raw
                 
-                baseline.adopt_raw_value(raw_value, sample) # current baseline offset is set to current raw value, weight becomes 0.0
+                baseline.adopt_raw_value(raw_value, sample)
                 
                 # 2. Return to IDLE clean
                 self.force_idle()
@@ -442,7 +446,7 @@ class WeightFSM:
                 if time.monotonic() - self.state_t0 > STATE_TIMEOUT:
                     raw_value = baseline.stable_raw() or float(sample.raw)
                     baseline.adopt_raw_value(raw_value, sample)
-                    self.reset()
+                    self.reset(keep_peak=False)
                     sample.events.append("BASELINE_RESET")
                     return "BASELINE_RESET"
                     
@@ -474,6 +478,7 @@ class WeightFSM:
         if absweight > self.threshold_on:
             self.above_count += 1
             if self.above_count >= 3:
+                self.peak = absweight
                 if absweight > weightlimit:
                     return self._transition(
                         STATE_OVERSIZE,
@@ -494,14 +499,17 @@ class WeightFSM:
         weight: float,
         sample: Sample
     ) -> str | None:
+        self.peak = max(self.peak, abs(weight))
+
         if abs(weight) < self.threshold_off:
             return self._transition(
                 STATE_IDLE,
                 sample,
-                "ARRIVAL_CANCELLED"
+                "ARRIVAL_CANCELLED",
+                keep_peak=False
             )
 
-        if abs(weight) > weightlimit:
+        if self.peak > weightlimit:
             return self._transition(
                 STATE_OVERSIZE,
                 sample,
@@ -525,7 +533,9 @@ class WeightFSM:
         weight: float,
         sample: Sample
     ) -> str | None:
-        if abs(weight) > weightlimit:
+        self.peak = max(self.peak, abs(weight))
+
+        if self.peak > weightlimit:
             return self._transition(
                 STATE_OVERSIZE,
                 sample,
@@ -551,6 +561,8 @@ class WeightFSM:
         weight: float,
         sample: Sample
     ) -> str | None:
+        self.peak = max(self.peak, abs(weight))
+
         if abs(weight) < self.threshold_off:
             self.below_count += 1
             if self.below_count >= 2:
@@ -574,10 +586,12 @@ class WeightFSM:
             return self._transition(
                 STATE_IDLE,
                 sample,
-                "TIMEOUT->IDLE"
+                "TIMEOUT->IDLE",
+                keep_peak=False
             )
 
         if abs(weight) > self.threshold_on:
+            self.peak = abs(weight)
             if abs(weight) > weightlimit:
                 return self._transition(
                     STATE_OVERSIZE,
@@ -836,6 +850,7 @@ try:
         )
 
         sample.state = fsm.state
+        sample.peak = fsm.peak
 
         # ----------------------------------------------------
         # BASELINE
@@ -871,6 +886,7 @@ try:
         if timeout_event:
             event = timeout_event
             sample.state = fsm.state
+            sample.peak = fsm.peak
 
         # ----------------------------------------------------
         # NOISEGUARD
@@ -901,7 +917,7 @@ try:
 
         if fsm.camera_trigger():
             sample.events.append("CAMERA_TRIGGER")
-            send_fifo(int(sample.weight))
+            send_fifo(sample.peak)
 
         elif (
             event
