@@ -239,6 +239,7 @@ class Baseline:
             sample.raw - self.offset
         ) * OFFSET_ALPHA
 
+    # raw_value is not sample.raw unless the 60-sample stable buffer is not yet filled, see Baseline.stable_raw() and caller weightFSM.check_timeout().
     def adopt_raw_value(
         self,
         raw_value: float,
@@ -375,9 +376,9 @@ class WeightFSM:
         self.above_count = 0
         self.below_count = 0
 
-    def force_idle(self) -> None:
+    def force_idle(self, current_time: float) -> None:
         self.state = STATE_IDLE
-        self.state_t0 = time.monotonic()
+        self.state_t0 = current_time
         self.reset()
         self.camera_sent = False
 
@@ -385,8 +386,7 @@ class WeightFSM:
         self,
         new_state: int,
         sample: Sample,
-        event: str,
-        departure: bool = False
+        event: str
     ) -> str:
         self.state = new_state
         self.state_t0 = time.monotonic()
@@ -396,7 +396,7 @@ class WeightFSM:
             self.present_t0 = self.state_t0
             self.camera_sent = False
 
-        if departure:
+        if new_state == STATE_DEPARTURE:
             self.departure_t0 = self.state_t0
 
         sample.events.append(event)
@@ -418,8 +418,9 @@ class WeightFSM:
         sample: Sample,
         baseline: Baseline
     ) -> str | None:
+        current_time = time.monotonic()
         if self.state in (STATE_ARRIVAL, STATE_PRESENT, STATE_DEPARTURE):
-            if time.monotonic() - self.state_t0 > STATE_TIMEOUT:
+            if current_time - self.state_t0 > STATE_TIMEOUT:
                 old = STATE_NAME[self.state]
                 
                 # 1. Force-adopt current reading to clear the phantom weight
@@ -430,7 +431,7 @@ class WeightFSM:
                 baseline.adopt_raw_value(raw_value, sample) # current baseline offset is set to current raw value, weight becomes 0.0
                 
                 # 2. Return to IDLE clean
-                self.force_idle()
+                self.force_idle(current_time)
                 event_str = f"BASELINE_RESET {old} -> IDLE"
                 sample.events.append(event_str)
                 return event_str
@@ -439,159 +440,78 @@ class WeightFSM:
 
         if self.state == STATE_IDLE:
             if abs(sample.weight) > self.threshold_off:
-                if time.monotonic() - self.state_t0 > STATE_TIMEOUT:
+                if current_time - self.state_t0 > STATE_TIMEOUT:
                     raw_value = baseline.stable_raw() or float(sample.raw)
                     baseline.adopt_raw_value(raw_value, sample)
-                    self.reset()
+                    self.force_idle(current_time)
                     sample.events.append("BASELINE_RESET")
                     return "BASELINE_RESET"
                     
         return None
 
-    def process_weight(
-        self,
-        weight: float,
-        sample: Sample
-    ) -> str | None:
+    def process_weight(self, sample: Sample) -> str | None:
         if self.state == STATE_IDLE:
-            return self.state_idle(weight, sample)
+            return self.state_idle(sample)
         if self.state == STATE_ARRIVAL:
-            return self.state_arrival(weight, sample)
+            return self.state_arrival(sample)
         if self.state == STATE_PRESENT:
-            return self.state_present(weight, sample)
+            return self.state_present(sample)
         if self.state == STATE_DEPARTURE:
-            return self.state_departure(weight, sample)
+            return self.state_departure(sample)
         if self.state == STATE_OVERSIZE:
-            return self.state_oversize(weight, sample)
+            return self.state_oversize(sample)
         return None
 
-    def state_idle(
-        self,
-        weight: float,
-        sample: Sample
-    ) -> str | None:
-        absweight = abs(weight)
+    def state_idle(self, sample: Sample) -> str | None:
+        absweight = abs(sample.weight)
         if absweight > self.threshold_on:
             self.above_count += 1
             if self.above_count >= 3:
                 if absweight > weightlimit:
-                    return self._transition(
-                        STATE_OVERSIZE,
-                        sample,
-                        "IDLE->OVERSIZE"
-                    )
-                return self._transition(
-                    STATE_ARRIVAL,
-                    sample,
-                    "IDLE->ARRIVAL"
-                )
+                    return self._transition(STATE_OVERSIZE, sample, "IDLE->OVERSIZE")
+                return self._transition(STATE_ARRIVAL, sample, "IDLE->ARRIVAL")
         else:
             self.above_count = 0
         return None
 
-    def state_arrival(
-        self,
-        weight: float,
-        sample: Sample
-    ) -> str | None:
-        if abs(weight) < self.threshold_off:
-            return self._transition(
-                STATE_IDLE,
-                sample,
-                "ARRIVAL_CANCELLED"
-            )
-
-        if abs(weight) > weightlimit:
-            return self._transition(
-                STATE_OVERSIZE,
-                sample,
-                "ARRIVAL->OVERSIZE"
-            )
-
+    def state_arrival(self, sample: Sample) -> str | None:
+        if abs(sample.weight) < self.threshold_off:
+            return self._transition(STATE_IDLE, sample, "ARRIVAL_CANCELLED")
+        if abs(sample.weight) > weightlimit:
+            return self._transition(STATE_OVERSIZE, sample, "ARRIVAL->OVERSIZE")
         self.above_count += 1
-
-        # FIX: Removed (+ 2.0) hardcoded offset and global variable reference
         if self.above_count >= ARRIVAL_CONFIRM_SAMPLES:
-            return self._transition(
-                STATE_PRESENT,
-                sample,
-                "ARRIVAL->PRESENT"
-            )
-
+            return self._transition(STATE_PRESENT, sample, "ARRIVAL->PRESENT")
         return None
 
-    def state_present(
-        self,
-        weight: float,
-        sample: Sample
-    ) -> str | None:
-        if abs(weight) > weightlimit:
-            return self._transition(
-                STATE_OVERSIZE,
-                sample,
-                "PRESENT->OVERSIZE"
-            )
-
-        if abs(weight) < self.threshold_off:
+    def state_present(self, sample: Sample) -> str | None:
+        if abs(sample.weight) > weightlimit:
+            return self._transition(STATE_OVERSIZE, sample, "PRESENT->OVERSIZE")
+        if abs(sample.weight) < self.threshold_off:
             self.below_count += 1
             if self.below_count >= 2:
-                return self._transition(
-                    STATE_DEPARTURE,
-                    sample,
-                    "PRESENT->DEPARTURE",
-                    departure=True
-                )
+                return self._transition(STATE_DEPARTURE, sample, "PRESENT->DEPARTURE")
         else:
             self.below_count = 0
-
         return None
 
-    def state_oversize(
-        self,
-        weight: float,
-        sample: Sample
-    ) -> str | None:
-        if abs(weight) < self.threshold_off:
+    def state_oversize(self, sample: Sample) -> str | None:
+        if abs(sample.weight) < self.threshold_off:
             self.below_count += 1
             if self.below_count >= 2:
-                return self._transition(
-                    STATE_DEPARTURE,
-                    sample,
-                    "OVERSIZE->DEPARTURE",
-                    departure=True
-                )
+                return self._transition(STATE_DEPARTURE, sample, "OVERSIZE->DEPARTURE")
         else:
             self.below_count = 0
-
         return None
 
-    def state_departure(
-        self,
-        weight: float,
-        sample: Sample
-    ) -> str | None:
+    def state_departure(self, sample: Sample) -> str | None:
         if time.monotonic() - self.departure_t0 > 2.0:
-            return self._transition(
-                STATE_IDLE,
-                sample,
-                "TIMEOUT->IDLE"
-            )
-
-        if abs(weight) > self.threshold_on:
-            if abs(weight) > weightlimit:
-                return self._transition(
-                    STATE_OVERSIZE,
-                    sample,
-                    "DEPARTURE->OVERSIZE"
-                )
-            return self._transition(
-                STATE_ARRIVAL,
-                sample,
-                "DEPARTURE->ARRIVAL"
-            )
-
+            return self._transition(STATE_IDLE, sample, "TIMEOUT->IDLE")
+        if abs(sample.weight) > self.threshold_on:
+            if abs(sample.weight) > weightlimit:
+                return self._transition(STATE_OVERSIZE, sample, "DEPARTURE->OVERSIZE")
+            return self._transition(STATE_ARRIVAL, sample, "DEPARTURE->ARRIVAL")
         return None
-
 # ============================================================
 # RECORDERS
 # ============================================================
@@ -830,11 +750,7 @@ try:
         # FSM
         # ----------------------------------------------------
 
-        event = fsm.process_weight(
-            sample.weight,
-            sample
-        )
-
+        event = fsm.process_weight(sample)
         sample.state = fsm.state
 
         # ----------------------------------------------------
