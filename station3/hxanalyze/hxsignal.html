@@ -14,11 +14,9 @@
             background: #111;
             color: #eee;
         }
-
         h1 {
             margin-top: 0;
         }
-
         canvas {
             display: block;
             width: 100%;
@@ -27,22 +25,27 @@
             background: #181818;
             border: 1px solid #444;
         }
-
         #status {
             margin-top: 10px;
             color: #aaa;
         }
-
         #legend {
             margin-top: 10px;
         }
-
+        #explain {
+            margin-top: 10px;
+            font-size: 0.9em;
+            color: #aaa;
+            white-space: pre-line;
+        }
         .weight {
             color: #6cf;
         }
-
         .offset {
             color: #fc6;
+        }
+        .sigma {
+            color: #f66;
         }
     </style>
 </head>
@@ -55,10 +58,19 @@
         <span class="weight">■ Weight (g)</span>
         &nbsp;&nbsp;
         <span class="offset">■ Offset drift (g)</span>
+        &nbsp;&nbsp;
+        <span class="sigma">■ Sigma (g)</span>
     </div>
 
     <div id="status">Waiting for data...</div>
     <div><a href="/config3.html" class="button">back</a></div>
+    <div id="explain">
+        The weight signal is shown in blue.
+        The offset drift signal in orange is the reference signal. It is updated after a timeout to reset the weight to zero for the supposedly unloaded load cell.
+        Sigma in red is the standard deviation of the weight signal's jitter around zero (baseline).
+        The vertical axis is logarithmic, with a range of ±250 grams.
+        The horizontal axis shows the last 60 seconds of data.
+    </div>
 
 <script>
 "use strict";
@@ -87,18 +99,14 @@ let hxScale = null;
 function resizeCanvas() {
     const rect = canvas.getBoundingClientRect();
     const ratio = window.devicePixelRatio || 1;
-
     canvas.width = rect.width * ratio;
     canvas.height = rect.height * ratio;
-
     context.setTransform(ratio, 0, 0, ratio, 0, 0);
 }
 
 function addSample(sample) {
     samples.push(sample);
-
     const cutoff = sample.t - BUFFER_SECONDS;
-
     while (
         samples.length > 0
         && samples[0].t < cutoff
@@ -115,43 +123,37 @@ async function fetchSignal() {
                 cache: "no-store"
             }
         );
-
         if (!response.ok) {
             throw new Error(
                 `HTTP ${response.status}`
             );
         }
-
         const data = await response.json();
-
         if (
             typeof data.t !== "number"
             || typeof data.weight !== "number"
             || typeof data.offset !== "number"
+            || typeof data.sigma !== "number"
             || typeof data.hxscale !== "number"
         ) {
             throw new Error("Invalid signal data");
         }
-
         if (startOffset === null) {
             startOffset = data.offset;
         }
-
         if (hxScale === null && data.hxscale !== 0) {
             hxScale = Math.abs(data.hxscale);
         }
-
         const offsetGrams =
             hxScale
                 ? (startOffset - data.offset) / hxScale
                 : 0;
-
         const sample = {
             t: data.t,
             weight: data.weight,
-            offset: offsetGrams
+            offset: offsetGrams,
+            sigma: data.sigma
         };
-
         if (
             latestSample === null
             || sample.t !== latestSample.t
@@ -159,17 +161,15 @@ async function fetchSignal() {
             addSample(sample);
             latestSample = sample;
         }
-
         status.textContent =
             `Weight: ${sample.weight.toFixed(2)} g | `
-            + `Offset drift: ${sample.offset.toFixed(2)} g`;
-
+            + `Offset drift: ${sample.offset.toFixed(2)} g | `
+            + `Sigma: ${sample.sigma.toFixed(2)} g`;
     } catch (error) {
         console.error(
             "fetch /hxsignal failed:",
             error
         );
-
         status.textContent =
             `Connection error: ${error.message}`;
     }
@@ -179,18 +179,15 @@ function weightToY(weight, height) {
     const sign = Math.sign(weight);
     const absVal = Math.min(Math.abs(weight), MAX_WEIGHT);
     const logVal = Math.log(1 + absVal) / Math.log(LOG_BASE);
-    const normalized = (sign * logVal) / MAX_LOG_VAL; // Range -1.0 to +1.0
-    
+    const normalized = (sign * logVal) / MAX_LOG_VAL;
     return (height / 2) - (normalized * (height / 2));
 }
 
 function drawGrid(width, height) {
     GRID_TICKS.forEach((val) => {
         const y = weightToY(val, height);
-
         context.strokeStyle = val === 0 ? "#666" : "#2a2a2a";
         context.lineWidth = val === 0 ? 1.5 : 1;
-
         context.beginPath();
         context.moveTo(0, y);
         context.lineTo(width, y);
@@ -201,11 +198,9 @@ function drawGrid(width, height) {
 function drawYAxis(width, height) {
     context.fillStyle = "#aaa";
     context.font = "11px sans-serif";
-
     GRID_TICKS.forEach((val) => {
         const y = weightToY(val, height);
         const label = val > 0 ? `+${val}` : `${val}`;
-        
         context.fillText(
             label,
             5,
@@ -225,51 +220,39 @@ function drawLine(
     if (samples.length < 2) {
         return;
     }
-
     context.lineWidth = 2;
     context.strokeStyle = color;
-
     context.beginPath();
-
     samples.forEach((sample, index) => {
         const x =
             (sample.t - firstTime)
             / timeRange
             * width;
-
         const y = weightToY(sample[property], height);
-
         if (index === 0) {
             context.moveTo(x, y);
         } else {
             context.lineTo(x, y);
         }
     });
-
     context.stroke();
 }
 
 function drawSignal() {
     const width = canvas.clientWidth;
     const height = canvas.clientHeight;
-
     context.clearRect(0, 0, width, height);
-
     if (samples.length < 2) {
         return;
     }
-
     const firstTime = samples[0].t;
     const lastTime = samples[samples.length - 1].t;
-
     const timeRange = Math.max(
         lastTime - firstTime,
         BUFFER_SECONDS
     );
-
     drawGrid(width, height);
     drawYAxis(width, height);
-
     drawLine(
         "weight",
         "#6cf",
@@ -278,10 +261,17 @@ function drawSignal() {
         width,
         height
     );
-
     drawLine(
         "offset",
         "#fc6",
+        firstTime,
+        timeRange,
+        width,
+        height
+    );
+    drawLine(
+        "sigma",
+        "#f66",
         firstTime,
         timeRange,
         width,
@@ -291,7 +281,6 @@ function drawSignal() {
 
 function update() {
     const now = performance.now();
-
     if (
         now - lastFetchTime
         >= FETCH_INTERVAL * 1000
@@ -299,7 +288,6 @@ function update() {
         lastFetchTime = now;
         fetchSignal();
     }
-
     drawSignal();
 }
 

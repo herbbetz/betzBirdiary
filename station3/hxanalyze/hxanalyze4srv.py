@@ -135,7 +135,16 @@ def reconstruct_visits(
                     current["mean"] = 0.0
                 visits.append(current)
                 current = None
+    # also add the last visit if it was not closed by a DEPARTURE or IDLE
+    if current:
+        if "stay" not in current:
+            current["stay"] = 0.0
+            current["mean"] = 0.0
+        visits.append(current)
+    if over:
+        oversize.append(over)
     return visits, oversize
+
 def get_configuration(meta: dict) -> dict:
     weight_threshold = meta.get("weightThreshold", 0)
     return {

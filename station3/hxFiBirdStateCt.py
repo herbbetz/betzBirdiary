@@ -436,8 +436,11 @@ class WeightFSM:
                 event_str = f"BASELINE_RESET {old} -> IDLE"
                 sample.events.append(event_str)
                 return event_str
-                
-            return None
+            else:
+                since = current_time - self.state_t0    
+                event_str = f"since_{since:.0f}s"
+                sample.events.append(event_str)
+                return None
 
         if self.state == STATE_IDLE:
             if abs(sample.weight) > self.threshold_off:
@@ -605,6 +608,7 @@ class LiveLogger:
             "t": f"{sample.t:.3f}",
             "weight": f"{sample.weight:.2f}",
             "offset": f"{sample.offset:.0f}",
+            "sigma": f"{sample.sigma:.2f}",
             "hxscale": f"{hxScale:.0f}"
         })
 
@@ -826,15 +830,9 @@ try:
             sample.events.append("DEPARTURE_TRIGGER")
             send_fifo(-1)
 
-        # ----------------------------------------------------
-        # STATE EVENT
-        # ----------------------------------------------------
-
-        if event is not None:
-            print(
-                f"FSM Event Triggered: {event}",
-                flush=True
-            )
+        # in ramdisk/hxFiBird.log:
+        # if event is not None:
+        #     print(f"FSM Event Triggered: {event}", flush=True)
 
         # ----------------------------------------------------
         # RECORDERS

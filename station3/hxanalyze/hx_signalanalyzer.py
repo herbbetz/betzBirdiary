@@ -108,7 +108,16 @@ def reconstruct_visits(rows:list[dict],periods:list[tuple[str,int,int]])->tuple[
                     current["mean"]=0.0
                 visits.append(current)
                 current=None
+    # also add the last visit if it was not closed by a DEPARTURE or IDLE
+    if current:
+        if "stay" not in current:
+            current["stay"] = 0.0
+            current["mean"] = 0.0
+        visits.append(current)
+    if over:
+        oversize.append(over)
     return visits,oversize
+
 def print_configuration(meta:dict)->None:
     weight_threshold=meta.get("weightThreshold",0)
     threshold_off=meta.get("threshold_off",weight_threshold*0.7)
