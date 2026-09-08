@@ -97,22 +97,6 @@ ERR_FRAME_PREEMPT = ERR_BASE - 2  # -10000002
 
 class HX711_CT:
     def __init__(self, testmode: bool = False) -> None:
-        self.open(testmode=testmode)
-
-    def read(self) -> int:
-        value = self.lib.hx711_read()
-
-        if value <= ERR_BASE:
-            if value == ERR_WAIT_TIMEOUT:
-                raise RuntimeError("HX711 timeout: DOUT pin remained HIGH (Hardware disconnect or unready)")
-            elif value == ERR_FRAME_PREEMPT:
-                raise RuntimeError("HX711 preemption: OS scheduling delay invalidated frame timing")
-            else:
-                raise RuntimeError(f"HX711 driver error code: {value}")
-
-        return value
-
-    def open(self, testmode: bool = False) -> None:
         if testmode:
             libpath = f"{birdpath['appdir']}/c/libhx711_debug.so"
         else:
@@ -130,6 +114,19 @@ class HX711_CT:
         ret = self.lib.hx711_init(hxDataPin, hxClckPin)
         if ret != 0:
             raise RuntimeError("HX711 init failed")
+
+    def read(self) -> int:
+        value = self.lib.hx711_read()
+
+        if value <= ERR_BASE:
+            if value == ERR_WAIT_TIMEOUT:
+                raise RuntimeError("HX711 timeout: DOUT pin remained HIGH (Hardware disconnect or unready)")
+            elif value == ERR_FRAME_PREEMPT:
+                raise RuntimeError("HX711 preemption: OS scheduling delay invalidated frame timing")
+            else:
+                raise RuntimeError(f"HX711 driver error code: {value}")
+
+        return value
 
     def close(self) -> None:
         self.lib.hx711_close()
@@ -152,10 +149,11 @@ class MedianFilter:
 # ============================================================
 
 STARTUP_SETTLE_TIME = 2.0
-STARTUP_MAX_TIME = 60.0
+STARTUP_MAX_TIME = 30.0
 STABLE_SAMPLES = 60
-STABLE_SPREAD_LIMIT = 3000 # rather high initially, the actual spread is usually < 1000.
-STARTUP_MAX_ATTEMPTS  = 3 # max attempts before raising RuntimeError.
+STABLE_SPREAD_LIMIT = 3000
+IDLE_RECAL_WINDOW = 60
+IDLE_RECAL_SPREAD_LIMIT = 3000
 OFFSET_ALPHA = 0.0025
 
 class Baseline:
@@ -187,86 +185,48 @@ class Baseline:
         return p90 - p10
 
     def startup(self, sample: Sample) -> bool:
-        attempts = 0
-        for attempt in range(1, STARTUP_MAX_ATTEMPTS + 1):
-            if attempt > 1:
-                ms.log(f"Startup retry {attempt}/{STARTUP_MAX_ATTEMPTS}")
-                # Re-init the C driver to flush any stuck state
-                self.hx.close()
-                self.hx.open(testmode=testmode)
-            result = self._startup_attempt(sample, attempt)
+            time.sleep(STARTUP_SETTLE_TIME)
+            ms.log("Startup zeroing...")
 
-            if result is None:
-                return True  # clean success, sample already populated
-            best = min(best, result)
-            attempts += 1
+            t0 = time.monotonic()
+            attempts = 0
+            self.stable_buf.clear()
 
-        raise RuntimeError(
-            f"HX711 startup did not stabilize "
-            f"({attempts} attempts, "
-            f"spread {best:.0f} > {STABLE_SPREAD_LIMIT})"
-        )
+            while time.monotonic() - t0 < STARTUP_MAX_TIME:
+                try:
+                    # hx.read() naturally blocks for ~100ms in 10Hz mode
+                    raw = self.hx.read()
+                except RuntimeError as e:
+                    ms.log(f"Startup sample warning: {e}", terminal=False)
+                    # On error, sleep 100ms to match 10Hz frame timing before retrying
+                    time.sleep(0.1)
+                    continue
 
-    def _startup_attempt(
-        self,
-        sample: Sample,
-        attempt: int
-    ) -> float | None:
-        ms.log(f"Startup zeroing (attempt {attempt})...")
-        time.sleep(STARTUP_SETTLE_TIME)
+                self.update_stable_buffer(raw)
+                attempts += 1
 
-        # --- burn-in: discard 5 initial unstable readings ---
-        for _ in range(5):
-            try:
-                self.hx.read()
-            except RuntimeError:
-                # On error, sleep 100ms to match 10Hz frame timing before retrying
-                time.sleep(0.1)
-                continue
+                raw_value = self.stable_raw()
 
-
-        # --- fill stable buffer, tracking best window ---
-        self.stable_buf.clear()
-
-        best_spread  = float("inf")
-        best_median  = 0.0
-        t0 = time.monotonic()
-        attempts = 0
-
-        while time.monotonic() - t0 < STARTUP_MAX_TIME:
-            try:
-                raw = self.hx.read()
-            except RuntimeError as e:
-                ms.log(f"Startup sample warning: {e}", terminal=False)
-                # On error, sleep 100ms to match 10Hz frame timing before retrying
-                time.sleep(0.1)
-                continue
-
-            self.update_stable_buffer(raw)
-            attempts += 1
-
-            # Evaluate current window
-            if len(self.stable_buf) >= STABLE_SAMPLES:
-                spread = self._stable_spread()
-                if spread < best_spread:
-                    best_spread = spread
-                    best_median = float(np.median(self.stable_buf))
-
-                if spread <= STABLE_SPREAD_LIMIT:
-                    self.offset = best_median
+                if raw_value is not None:
+                    self.offset = raw_value
                     sample.offset = self.offset
                     sample.weight = 0.0
-                    sample.startup_spread = spread
+                    sample.startup_spread = self._stable_spread()
                     sample.startup_attempts = attempts
                     sample.startup_maxspread = STABLE_SPREAD_LIMIT
                     sample.startup_delay = time.monotonic() - t0
-                    event = f"STARTUP_ZERO spread={spread:.0f} < {STABLE_SPREAD_LIMIT}"
+                    event = (
+                        f"STARTUP_ZERO "
+                        f"spread={sample.startup_spread:.0f}"
+                    )
                     sample.events.append(event)
                     ms.log(event)
-                    return None  # success
+                    return True
 
-        # Window expired without meeting STABLE_SPREAD_LIMIT
-        return best_spread
+                # No extra sleep needed here on success; hx.read() on the next loop 
+                # will cleanly block until the next hardware conversion completes (~100ms).
+
+            raise RuntimeError("HX711 startup did not stabilize within 30s")
 
     def process(self, sample: Sample) -> None:
         sample.offset = self.offset

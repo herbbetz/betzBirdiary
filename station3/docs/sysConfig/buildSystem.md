@@ -155,3 +155,8 @@ Da für leichtere Konfiguration die Vollversion (mit Desktop) von Trixie grundge
    - Deanonymisierung: eigene Werte in `config.json` und `crontab crontab.txt`.
    - Im Betrieb verbessern, dann wiederum `anonimize.sh` und neues `tar -cvzf stat3.tar.gz --exclude='*/__pycache__' station3/`.
    - `stat3.tar.gz` ist unter 80MB groß und benötigt zur Verteilung oder Portabilität auf andere Basissysteme für Raspberry das Wissen um seine Installation via `ssh`. Dieses Wissen wird nicht benötigt, wenn es gleich insgesamt als Datei-Image ausgeliefert wird.
+
+### systemd boot control (optional)
+
+- `systemd-analyze, systemd-analyze blame, systemd-analyze plot > boot.svg`, siehe `sysdBoot.sh`
+- `systemctl list-units --type=service --all`, `systemctl status any.service`
