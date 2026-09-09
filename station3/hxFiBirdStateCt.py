@@ -405,6 +405,93 @@ class WeightFSM:
         self.below_count = 0
         self.departure_t0 = 0.0
         self.present_t0 = 0.0
+        self.idle_cooldown_t0 = 0.0  # Cooldown tracker after departure
+        self.camera_sent = False
+        self.threshold_on = 0.0
+        self.threshold_off = 0.0
+        self.set_thresholds(weight_threshold)
+
+    def set_thresholds(self, base_threshold: float) -> None:
+        self.threshold_on = base_threshold
+        self.threshold_off = 0.7 * base_threshold
+
+    def reset(self) -> None:
+        self.above_count = 0
+        self.below_count = 0
+
+    def force_idle(self, current_time: float) -> None:
+        self.state = STATE_IDLE
+        self.state_t0 = current_time
+        self.reset()
+        self.camera_sent = False
+
+    def _transition(
+        self,
+        new_state: int,
+        sample: Sample,
+        event: str
+    ) -> str:
+        old_state = self.state
+        self.state = new_state
+        self.state_t0 = time.monotonic()
+        self.reset()  # Resets above_count and below_count to 0
+
+        if new_state == STATE_PRESENT:
+            self.present_t0 = self.state_t0
+            self.camera_sent = False
+
+        if new_state == STATE_DEPARTURE:
+            self.departure_t0 = self.state_t0
+
+        # Start 3-second IDLE cooldown when exiting DEPARTURE
+        if old_state == STATE_DEPARTURE and new_state == STATE_IDLE:
+            self.idle_cooldown_t0 = time.monotonic()
+
+        sample.events.append(event)
+        return event
+
+    def state_idle(self, sample: Sample) -> str | None:
+        # Ignore triggers during post-departure cooldown
+        if time.monotonic() - self.idle_cooldown_t0 < 3.0:
+            self.above_count = 0
+            return None
+
+        absweight = abs(sample.weight)
+        if absweight > self.threshold_on:
+            self.above_count += 1
+            if self.above_count >= 3:
+                if absweight > weightlimit:
+                    return self._transition(STATE_OVERSIZE, sample, "IDLE->OVERSIZE")
+                return self._transition(STATE_ARRIVAL, sample, "IDLE->ARRIVAL")
+        else:
+            self.above_count = 0
+        return None
+
+    def state_present(self, sample: Sample) -> str | None:
+        if abs(sample.weight) > weightlimit:
+            return self._transition(STATE_OVERSIZE, sample, "PRESENT->OVERSIZE")
+        
+        if abs(sample.weight) < self.threshold_off:
+            self.below_count += 1
+            if self.below_count >= 3:
+                return self._transition(STATE_DEPARTURE, sample, "PRESENT->DEPARTURE")
+        else:
+            self.below_count = 0
+        return None
+
+    def state_departure(self, sample: Sample) -> str | None:
+        if time.monotonic() - self.departure_t0 > 2.0:
+            return self._transition(STATE_IDLE, sample, "DEPARTURE->IDLE")
+        return None
+
+class WeightFSM:
+    def __init__(self, weight_threshold: float) -> None:
+        self.state = STATE_IDLE
+        self.state_t0 = time.monotonic()
+        self.above_count = 0
+        self.below_count = 0
+        self.departure_t0 = 0.0
+        self.present_t0 = 0.0
         self.camera_sent = False
         self.threshold_on = 0.0
         self.threshold_off = 0.0
@@ -805,17 +892,24 @@ try:
         # ----------------------------------------------------
 
         # if event == "IDLE->ARRIVAL": # avoid contamination of sample.sigma by bird arrival
+        # Feed NoiseGuard continuously across ALL states to maintain valid rolling sigma
+        noiseguard.add_sample(sample.raw)
+        sample.sigma = noiseguard.current_std_grams()
+
         if fsm.state == STATE_IDLE:
-            noiseguard.add_sample(sample.raw)
-            sample.sigma = noiseguard.current_std_grams()
+            # Continuously update dynamic threshold during IDLE
+            # unlatches dyn_threshold to weightThreshold, should sigma drop backto near zero
             dyn_threshold = min(2 * sample.sigma + weightThreshold, max_dyn_threshold)
         else:
-            # Freeze/Latch dyn_threshold during active states (ARRIVAL, PRESENT, DEPARTURE, OVERSIZE)
-            noiseguard.reset()
-            sample.sigma = 0.0
+            # During ARRIVAL/PRESENT/DEPARTURE, keep dyn_threshold latched at entry level
+            pass
 
         sample.dyn_threshold = dyn_threshold
         fsm.set_thresholds(dyn_threshold)
+
+        # Process state machine
+        event = fsm.process_weight(sample)
+        sample.state = fsm.state
 
         # ----------------------------------------------------
         # FSM
