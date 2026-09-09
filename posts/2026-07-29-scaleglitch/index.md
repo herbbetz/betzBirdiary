@@ -85,6 +85,7 @@ Die KI ist zwar eine hervorragende Kodierhilfe. Sie nimmt es aber nicht ab, stab
 - Die Finite State Maschine (*FSM*) definiert States der Sitzstange wie IDLE, ARRIVAL, PRESENT, DEPARTURE, OVERWEIGHT. Im laufenden Betrieb wird immer wieder überprüft, ob IDLE noch der Nullinie entspricht und ob die anderen States nach einem stabilen Timeout nicht als das neue IDLE angesehen werden müssen.
 - Die FSM arbeitet richtungsunabhängig (polarity agnostic). Es kann passieren, dass eine Last auf der Stange zu einem Abfall des ADC raw value und damit zu einem negativen Gewicht führt, welches beim Abflug wieder auf Null zurückgeht. Deswegen arbeitet die FSM mit `abs(weight)`. Das läuft auf dasselbe hinaus, als hätte man die Triggerschwelle ins Negative gespiegelt.
 - Die Waage (hx711 load cell) wird bezüglich Fehlauslösung (leere Videos) weniger durch Temperaturdrift/Sonne als noch viel mehr durch Feuchte (selbst ohne Regentropfen oder Wind) auf die Probe gestellt. Die Feuchte erhöht deutlich die Schwankungen um die Nullinie (noise), was der Triggermechanismus schlechter von einem Vogel unterscheiden kann als die allmählichere Temperaturdrift. Dieser `baseline noise` kann durch Standardabweichung (Welford σ) ausgedrückt werden und auch zur Erhöhung der Auslöseschwelle verwendet werden, z.B.`dyn_weightThreshold = 2 * sigma + weightThreshold`.
+- Als weiteres Kriterium kann eine lokale KI-Analyse mit Annis Model vor dem Hochladen von Leervideos auf die Plattform bewahren. 
 
 
 

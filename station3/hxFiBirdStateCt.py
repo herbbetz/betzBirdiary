@@ -508,8 +508,10 @@ class WeightFSM:
             return self.state_oversize(sample)
         return None
 
+
     def state_idle(self, sample: Sample) -> str | None:
         absweight = abs(sample.weight)
+        # threshold_on is dyn_threshold (e.g. 14.5g during high noise)
         if absweight > self.threshold_on:
             self.above_count += 1
             if self.above_count >= 3:
@@ -517,6 +519,7 @@ class WeightFSM:
                     return self._transition(STATE_OVERSIZE, sample, "IDLE->OVERSIZE")
                 return self._transition(STATE_ARRIVAL, sample, "IDLE->ARRIVAL")
         else:
+            # Instantly clears counter if a sample dips below active noise threshold
             self.above_count = 0
         return None
 
@@ -794,6 +797,27 @@ try:
         baseline.process(sample)
 
         # ----------------------------------------------------
+        # NOISEGUARD
+        # check noise before FSM, also to avoid contamination of sample.sigma by bird arrival
+        # Completely independent measurement lifecycle:
+        #   IDLE     -> collect samples
+        #   non-IDLE -> discard all samples
+        # ----------------------------------------------------
+
+        # if event == "IDLE->ARRIVAL": # avoid contamination of sample.sigma by bird arrival
+        if fsm.state == STATE_IDLE:
+            noiseguard.add_sample(sample.raw)
+            sample.sigma = noiseguard.current_std_grams()
+            dyn_threshold = min(2 * sample.sigma + weightThreshold, max_dyn_threshold)
+        else:
+            # Freeze/Latch dyn_threshold during active states (ARRIVAL, PRESENT, DEPARTURE, OVERSIZE)
+            noiseguard.reset()
+            sample.sigma = 0.0
+
+        sample.dyn_threshold = dyn_threshold
+        fsm.set_thresholds(dyn_threshold)
+
+        # ----------------------------------------------------
         # FSM
         # ----------------------------------------------------
 
@@ -834,29 +858,6 @@ try:
         if timeout_event:
             event = timeout_event
             sample.state = fsm.state
-
-        # ----------------------------------------------------
-        # NOISEGUARD
-        # Completely independent measurement lifecycle:
-        #   IDLE     -> collect samples
-        #   non-IDLE -> discard all samples
-        # ----------------------------------------------------
-        if event == "IDLE->ARRIVAL": # avoid contamination of sample.sigma by bird arrival
-            noiseguard.reset()
-            sample.sigma = 0.0
-        elif fsm.state == STATE_IDLE:
-            noiseguard.add_sample(sample.raw)
-            sample.sigma = noiseguard.current_std_grams()
-
-            dyn_threshold = min(2 * sample.sigma + weightThreshold, max_dyn_threshold)
-            sample.dyn_threshold = dyn_threshold
-            fsm.set_thresholds(dyn_threshold)
-        else:
-            noiseguard.reset()
-            sample.sigma = 0.0
-            dyn_threshold = weightThreshold
-            sample.dyn_threshold = dyn_threshold
-            fsm.set_thresholds(dyn_threshold)
 
         # ----------------------------------------------------
         # CAMERA / DEPARTURE TRIGGERS
