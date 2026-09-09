@@ -1,0 +1,73 @@
+
+# send_movement() could return an event for camRecorder.log(weight,event)
+def send_movement(circ_output, picam, wght, stop_event, preTrigImg):
+    ...
+    # for video with circ output (dashcam):
+    video_ack = False
+    video_ack_timeout = 120
+    stop_event.clear()   # ensure clean state
+    outmem = io.BytesIO()
+    circ_output.fileoutput = outmem
+    circ_output.start()
+
+    # instead of 'time.sleep(videodurate)' poll for stop_event from readBalance():
+    ms.log(f"video started at {datetime.now()}")
+     # time.perf_counter() is monotonic and only for time diff, time.time() is different and returns seconds.msecs since epoch (1.1.1970)
+    deadline = time.perf_counter() + videodurate
+    while time.perf_counter() < deadline:
+        # Check for stop signal first
+        if stop_event.is_set():
+            stop_event.clear()
+            video_ack = True
+            ms.log("Rec stop by -1 signal")
+            time.sleep(1.0)  # record ~1 second extra
+            break            # This exits the while loop completely!
+
+        # Handle image capture
+        if imgCnt < imgMax:
+            imgName = f"{daydir}/{videoUrlStr}.{imgCnt}.jpg"
+            capture_img(picam, imgName) # this slows the loop down implicitely
+            # ms.log(f"img#{imgCnt} taken at {time.time()}")
+            imgCnt += 1
+            # record img interval:
+            time.sleep(0.1) 
+        else:
+            # Once 30 images are taken, explicitly drop into a longer, 
+            # low-overhead sleep to protect the CPU until the deadline hits
+            time.sleep(0.25)
+    
+    circ_output.stop()
+    outmem.seek(0)
+    full_video = outmem.getvalue()
+
+    if localsave:
+        ms.log("Localsave mode: skipping upload")
+        ms.log(f"full_video size: {len(full_video)} bytes")
+        write_binVideo(movementStartStr, full_video)
+        ms.log("Test video saved locally in /keep.")
+        return "SND_MOV_localkeep"
+
+
+    if not video_ack:
+        deadline = time.perf_counter() + video_ack_timeout
+        while time.perf_counter() < deadline:
+            if ms.classified() == 1:
+                video_ack = True
+                ms.log("vid_ack by classified()")
+                break
+            if stop_event.is_set():
+                stop_event.clear()
+                video_ack = True
+                ms.log("vid_ack by -1 signal")
+                break
+            time.sleep(0.2)  # poll for stop_event or AI-classification every 200ms
+
+    if not video_ack:
+        ms.log("video_ack timeout")
+        return "SND_MOV_noack"
+
+    # upload video to server
+    ... code to upload video ...
+    upfail = send_realtime_movement(files)
+    ...
+    return "SND_MOV_ok" # or "SND_MOV_fail" depending on upload success
