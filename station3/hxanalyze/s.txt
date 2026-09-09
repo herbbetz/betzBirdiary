@@ -1,7 +1,7 @@
 
-samples : 1955
-first   : 2026-09-07 17:05:34
-last    : 2026-09-07 17:38:38
+samples : 7611
+first   : 2026-09-09 06:01:34
+last    : 2026-09-09 08:04:52
 
 Configuration
 -------------
@@ -9,23 +9,29 @@ weight threshold : 5.00 g
 threshold off    : 3.50 g
 weight limit     : 300 g
 hxScale          : 533.0
-startup offset   : 168883
-startup note     : STARTUP_ZERO spread=674 (within 3000)
+startup offset   : 172036
+startup note     : STARTUP_ZERO spread=2967 (within 3000)
 CAMERA_DELAY     : 2.00 s
 
 Baseline statistics
 -------------------
-startup offset : 168883
-minimum offset : 156950
-maximum offset : 170280
-offset range   : 13330
-idle mean      : 168965
+startup offset : 172036
+minimum offset : 165265
+maximum offset : 178214
+offset range   : 12949
+idle mean      : 170110
 
 Baseline maintenance
 --------------------
-baseline resets : 2
-  1. 2026-09-07 17:16:34 offset=170280 delta=+0
-  2. 2026-09-07 17:28:57 offset=169689 delta=-591
+baseline resets : 8
+  1. 2026-09-09 06:14:00 offset=172297 delta=+0
+  2. 2026-09-09 06:45:15 offset=167868 delta=-4429
+  3. 2026-09-09 06:50:35 offset=165266 delta=-2602
+  4. 2026-09-09 07:00:41 offset=167609 delta=+2343
+  5. 2026-09-09 07:05:56 offset=171796 delta=+4187
+  6. 2026-09-09 07:25:26 offset=171978 delta=+182
+  7. 2026-09-09 07:41:03 offset=178214 delta=+6236
+  8. 2026-09-09 07:53:56 offset=167408 delta=-10806
 
 Oversize events
 ----------------
@@ -33,44 +39,103 @@ none
 
 Visit statistics
 ----------------
-visits   : 4
+visits   : 34
 oversize : 0
 
 Visit durations
 ----------------
-minimum : 2.97 s
-maximum : 298.99 s
-mean    : 152.95 s
+minimum : 0.00 s
+maximum : 298.86 s
+mean    : 9.37 s
 
 Camera events
 -------------
-hx triggers             : 5
-FIFO triggers           : 4
-followed by recording   : 4
+hx triggers             : 61
+FIFO triggers           : 58
+followed by recording   : 17
 blocked by CLR_Q        : 0
-blocked by STDBY        : 0
-unrelated FIFO events   : 1
+blocked by STDBY        : 41
+unrelated FIFO events   : 0
 
 Idle statistics
 ----------------
-mean weight   : 0.39 g
-minimum       : -17.65 g
-maximum       : 16.77 g
-peak-to-peak   : 34.42 g
+mean weight   : -0.24 g
+minimum       : -17.97 g
+maximum       : 14.72 g
+peak-to-peak   : 32.69 g
 
 Warnings
 --------
-IDLE outside threshold_off started at 2026-09-07 17:22:10 duration=26.0s max=16.77 g.
+IDLE outside threshold_off started at 2026-09-09 06:21:30 duration=5.0s max=9.40 g.
+IDLE outside threshold_off started at 2026-09-09 06:22:34 duration=26.9s max=11.88 g.
+IDLE outside threshold_off started at 2026-09-09 06:37:02 duration=7.1s max=9.58 g.
+IDLE outside threshold_off started at 2026-09-09 06:37:12 duration=6.0s max=10.72 g.
+IDLE outside threshold_off started at 2026-09-09 06:37:20 duration=11.9s max=10.55 g.
+IDLE outside threshold_off started at 2026-09-09 06:37:49 duration=6.0s max=6.00 g.
+IDLE outside threshold_off started at 2026-09-09 06:38:28 duration=5.0s max=7.42 g.
+IDLE outside threshold_off started at 2026-09-09 06:38:39 duration=5.0s max=5.41 g.
+IDLE outside threshold_off started at 2026-09-09 06:38:47 duration=5.1s max=7.86 g.
+IDLE outside threshold_off started at 2026-09-09 06:38:53 duration=8.1s max=7.65 g.
+IDLE outside threshold_off started at 2026-09-09 06:39:05 duration=5.0s max=4.80 g.
+IDLE outside threshold_off started at 2026-09-09 06:39:14 duration=5.0s max=7.03 g.
+IDLE outside threshold_off started at 2026-09-09 06:39:23 duration=7.1s max=13.68 g.
+IDLE outside threshold_off started at 2026-09-09 06:39:46 duration=6.0s max=8.79 g.
+IDLE outside threshold_off started at 2026-09-09 06:45:44 duration=5.0s max=6.02 g.
+IDLE outside threshold_off started at 2026-09-09 06:50:47 duration=6.9s max=10.28 g.
+IDLE outside threshold_off started at 2026-09-09 06:51:07 duration=5.0s max=8.61 g.
+IDLE outside threshold_off started at 2026-09-09 06:51:54 duration=9.0s max=7.30 g.
+IDLE outside threshold_off started at 2026-09-09 06:52:03 duration=8.0s max=5.87 g.
+IDLE outside threshold_off started at 2026-09-09 06:52:14 duration=6.0s max=6.06 g.
+IDLE outside threshold_off started at 2026-09-09 06:52:29 duration=5.0s max=5.38 g.
+IDLE outside threshold_off started at 2026-09-09 06:52:46 duration=5.1s max=4.30 g.
+IDLE outside threshold_off started at 2026-09-09 07:03:05 duration=5.0s max=5.89 g.
+IDLE outside threshold_off started at 2026-09-09 07:07:23 duration=14.0s max=10.28 g.
+IDLE outside threshold_off started at 2026-09-09 07:07:38 duration=10.1s max=11.68 g.
+IDLE outside threshold_off started at 2026-09-09 07:07:52 duration=8.9s max=8.39 g.
+IDLE outside threshold_off started at 2026-09-09 07:08:36 duration=8.0s max=8.35 g.
+IDLE outside threshold_off started at 2026-09-09 07:08:49 duration=5.0s max=6.44 g.
+IDLE outside threshold_off started at 2026-09-09 07:09:48 duration=6.0s max=7.09 g.
+IDLE outside threshold_off started at 2026-09-09 07:09:58 duration=7.1s max=5.71 g.
+IDLE outside threshold_off started at 2026-09-09 07:10:19 duration=9.9s max=6.02 g.
+IDLE outside threshold_off started at 2026-09-09 07:25:33 duration=8.0s max=8.07 g.
+IDLE outside threshold_off started at 2026-09-09 07:25:44 duration=24.0s max=7.91 g.
+IDLE outside threshold_off started at 2026-09-09 07:26:09 duration=5.1s max=7.30 g.
+IDLE outside threshold_off started at 2026-09-09 07:26:15 duration=9.0s max=6.96 g.
+IDLE outside threshold_off started at 2026-09-09 07:37:01 duration=5.0s max=8.86 g.
+IDLE outside threshold_off started at 2026-09-09 07:41:07 duration=5.0s max=13.03 g.
+IDLE outside threshold_off started at 2026-09-09 07:49:02 duration=6.0s max=9.93 g.
+IDLE outside threshold_off started at 2026-09-09 07:49:43 duration=6.9s max=9.52 g.
+IDLE outside threshold_off started at 2026-09-09 07:53:10 duration=6.0s max=7.37 g.
+IDLE outside threshold_off started at 2026-09-09 07:53:23 duration=18.9s max=7.28 g.
+IDLE outside threshold_off started at 2026-09-09 08:01:17 duration=28.0s max=17.97 g.
+IDLE outside threshold_off started at 2026-09-09 08:01:48 duration=11.0s max=5.55 g.
+IDLE outside threshold_off started at 2026-09-09 08:02:00 duration=9.0s max=5.22 g.
+IDLE outside threshold_off started at 2026-09-09 08:02:15 duration=8.0s max=4.84 g.
+IDLE outside threshold_off started at 2026-09-09 08:02:24 duration=9.1s max=4.85 g.
+IDLE outside threshold_off started at 2026-09-09 08:02:45 duration=9.0s max=4.70 g.
+IDLE outside threshold_off started at 2026-09-09 08:02:56 duration=5.1s max=5.00 g.
+IDLE outside threshold_off started at 2026-09-09 08:03:03 duration=27.0s max=5.61 g.
+IDLE outside threshold_off started at 2026-09-09 08:03:37 duration=10.0s max=5.81 g.
+IDLE outside threshold_off started at 2026-09-09 08:03:49 duration=5.1s max=4.99 g.
+IDLE outside threshold_off started at 2026-09-09 08:03:59 duration=5.1s max=5.44 g.
+IDLE outside threshold_off started at 2026-09-09 08:04:14 duration=13.0s max=5.08 g.
+IDLE outside threshold_off started at 2026-09-09 08:04:27 duration=7.1s max=5.37 g.
+IDLE outside threshold_off started at 2026-09-09 08:04:42 duration=6.0s max=5.14 g.
 
 Offset discontinuities (threshold: 3.0 g)
 --------------------
-2026-09-07 17:21:48 jump=+25.01 g state=IDLE
-2026-09-07 17:28:57 jump=-18.34 g state=IDLE
+2026-09-09 06:50:35 jump=+6.64 g state=IDLE
+2026-09-09 07:02:24 jump=+3.03 g state=IDLE
+2026-09-09 07:05:56 jump=-7.32 g state=IDLE
+2026-09-09 07:25:26 jump=-8.01 g state=IDLE
+2026-09-09 07:41:03 jump=-11.32 g state=IDLE
+2026-09-09 07:48:19 jump=+8.80 g state=IDLE
+2026-09-09 07:53:56 jump=+9.87 g state=IDLE
 
 Summary
 -------
-visits   : 4
-mean stay: 153.0 s
-longest  : 299.0 s
-highest  : 22.15 g
+visits   : 34
+mean stay: 9.4 s
+longest  : 298.9 s
+highest  : 13.15 g
 timeline plot written to signal_timeline.svg

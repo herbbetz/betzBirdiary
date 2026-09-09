@@ -1,0 +1,235 @@
+/home/pi/station3/startup.sh started at Tue  8 Sep 19:49:50 CEST 2026
+cd /home/pi/station3 succeeded
+startup2stage.sh started at Tue  8 Sep 19:49:50 CEST 2026
+PYTHONPATH=/home/pi/station3
+
+***/home/pi/station3/mdroid.sh**************************
+Tue  8 Sep 19:49:50 CEST 2026 message: stationLoaded
+select: 0
+HTTP/2 200 
+curl -> google 620 ms (exit: 0)
+flaskBird3.py +sleep 1: 1 seconds since startup
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0mainFoBird3.py +sleep 1: 2 seconds since startup
+/home/pi/station3/startLateNet.sh started at Tue  8 Sep 19:49:52 CEST 2026
+DNS is up (trigger.macrodroid.com, 1 tries)
+DNS check/internetTest2.sh: 0 seconds since startup
+100     2  100     2    0     0      3      0 --:--:-- --:--:-- --:--:--     3
+OKcurl -> mdroid.com 697 ms (exit: 0)
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100   119    0   119    0     0    460      0 --:--:-- --:--:-- --:--:--   461
+<p>Message to: +4987163678<p>Text to send: stationLoaded<p><b>Message queued.</b> You will receive it in a few seconds.curl -> wapp callmebot 298 ms (exit: 0)
+mqtt_broker not set: *X*
+getStats.sh +sleep 1: 36695 seconds since startup
+stations.py +sleep 1: 36697 seconds since startup
+vk_lastmonth_pag.py -> last task, all done: 36697 seconds since startup
+/home/pi/station3/startLateNet.sh ended at Wed  9 Sep 06:01:29 CEST 2026
+
+***/home/pi/station3/mdroid.sh**************************
+Wed  9 Sep 07:26:32 CEST 2026 message: newVideo1
+select: w
+HTTP/2 200 
+curl -> google 197 ms (exit: 0)
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100     2  100     2    0     0      3      0 --:--:-- --:--:-- --:--:--     3100     2  100     2    0     0      3      0 --:--:-- --:--:-- --:--:--     3
+OKcurl -> mdroid.com 636 ms (exit: 0)
+skipping wapp due to select flag
+mqtt_broker not set: *X*
+
+***/home/pi/station3/mdroid.sh**************************
+Wed  9 Sep 07:35:37 CEST 2026 message: newVideo2
+select: w
+HTTP/2 200 
+curl -> google 204 ms (exit: 0)
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100     2  100     2    0     0      3      0 --:--:-- --:--:-- --:--:--     3
+OKcurl -> mdroid.com 612 ms (exit: 0)
+skipping wapp due to select flag
+mqtt_broker not set: *X*
+
+***/home/pi/station3/mdroid.sh**************************
+Wed  9 Sep 07:41:25 CEST 2026 message: newVideo3
+select: w
+HTTP/2 200 
+curl -> google 200 ms (exit: 0)
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100     2  100     2    0     0      3      0 --:--:-- --:--:-- --:--:--     3100     2  100     2    0     0      3      0 --:--:-- --:--:-- --:--:--     3
+OKcurl -> mdroid.com 639 ms (exit: 0)
+skipping wapp due to select flag
+mqtt_broker not set: *X*
+
+***/home/pi/station3/mdroid.sh**************************
+Wed  9 Sep 07:41:43 CEST 2026 message: newVideo4
+select: w
+HTTP/2 200 
+curl -> google 160 ms (exit: 0)
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100     2  100     2    0     0      3      0 --:--:-- --:--:-- --:--:--     3
+OKcurl -> mdroid.com 633 ms (exit: 0)
+skipping wapp due to select flag
+mqtt_broker not set: *X*
+
+***/home/pi/station3/mdroid.sh**************************
+Wed  9 Sep 07:42:21 CEST 2026 message: newVideo5
+select: w
+HTTP/2 200 
+curl -> google 190 ms (exit: 0)
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100     2  100     2    0     0      3      0 --:--:-- --:--:-- --:--:--     3100     2  100     2    0     0      3      0 --:--:-- --:--:-- --:--:--     3
+OKcurl -> mdroid.com 623 ms (exit: 0)
+skipping wapp due to select flag
+mqtt_broker not set: *X*
+
+***/home/pi/station3/mdroid.sh**************************
+Wed  9 Sep 07:42:55 CEST 2026 message: newVideo6
+select: w
+HTTP/2 200 
+curl -> google 165 ms (exit: 0)
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100     2  100     2    0     0      3      0 --:--:-- --:--:-- --:--:--     3100     2  100     2    0     0      3      0 --:--:-- --:--:-- --:--:--     3
+OKcurl -> mdroid.com 649 ms (exit: 0)
+skipping wapp due to select flag
+mqtt_broker not set: *X*
+
+***/home/pi/station3/mdroid.sh**************************
+Wed  9 Sep 07:43:15 CEST 2026 message: newVideo7
+select: w
+HTTP/2 200 
+curl -> google 174 ms (exit: 0)
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100     2  100     2    0     0      3      0 --:--:-- --:--:-- --:--:--     3
+OKcurl -> mdroid.com 604 ms (exit: 0)
+skipping wapp due to select flag
+mqtt_broker not set: *X*
+
+***/home/pi/station3/mdroid.sh**************************
+Wed  9 Sep 07:43:30 CEST 2026 message: newVideo8
+select: w
+HTTP/2 200 
+curl -> google 154 ms (exit: 0)
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100     2  100     2    0     0      3      0 --:--:-- --:--:-- --:--:--     3
+OKcurl -> mdroid.com 645 ms (exit: 0)
+skipping wapp due to select flag
+mqtt_broker not set: *X*
+
+***/home/pi/station3/mdroid.sh**************************
+Wed  9 Sep 07:48:39 CEST 2026 message: newVideo9
+select: w
+HTTP/2 200 
+curl -> google 191 ms (exit: 0)
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100     2  100     2    0     0      2      0  0:00:01 --:--:--  0:00:01     2
+OKcurl -> mdroid.com 721 ms (exit: 0)
+skipping wapp due to select flag
+mqtt_broker not set: *X*
+
+***/home/pi/station3/mdroid.sh**************************
+Wed  9 Sep 07:54:09 CEST 2026 message: newVideo10
+select: w
+HTTP/2 200 
+curl -> google 179 ms (exit: 0)
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100     2  100     2    0     0      3      0 --:--:-- --:--:-- --:--:--     3
+OKcurl -> mdroid.com 615 ms (exit: 0)
+skipping wapp due to select flag
+mqtt_broker not set: *X*
+
+***/home/pi/station3/mdroid.sh**************************
+Wed  9 Sep 07:55:17 CEST 2026 message: newVideo11
+select: w
+HTTP/2 200 
+curl -> google 154 ms (exit: 0)
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100     2  100     2    0     0      3      0 --:--:-- --:--:-- --:--:--     3
+OKcurl -> mdroid.com 616 ms (exit: 0)
+skipping wapp due to select flag
+mqtt_broker not set: *X*
+
+***/home/pi/station3/mdroid.sh**************************
+Wed  9 Sep 07:55:47 CEST 2026 message: newVideo12
+select: w
+HTTP/2 200 
+curl -> google 173 ms (exit: 0)
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100     2  100     2    0     0      3      0 --:--:-- --:--:-- --:--:--     3
+OKcurl -> mdroid.com 622 ms (exit: 0)
+skipping wapp due to select flag
+mqtt_broker not set: *X*
+
+***/home/pi/station3/mdroid.sh**************************
+Wed  9 Sep 07:57:28 CEST 2026 message: newVideo13
+select: w
+HTTP/2 200 
+curl -> google 189 ms (exit: 0)
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100     2  100     2    0     0      3      0 --:--:-- --:--:-- --:--:--     3
+OKcurl -> mdroid.com 603 ms (exit: 0)
+skipping wapp due to select flag
+mqtt_broker not set: *X*
+
+***/home/pi/station3/mdroid.sh**************************
+Wed  9 Sep 07:57:39 CEST 2026 message: newVideo14
+select: w
+HTTP/2 200 
+curl -> google 200 ms (exit: 0)
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100     2  100     2    0     0      1      0  0:00:02  0:00:01  0:00:01     1
+OKcurl -> mdroid.com 1387 ms (exit: 0)
+skipping wapp due to select flag
+mqtt_broker not set: *X*
+
+***/home/pi/station3/mdroid.sh**************************
+Wed  9 Sep 07:58:03 CEST 2026 message: newVideo15
+select: 0
+HTTP/2 200 
+curl -> google 186 ms (exit: 0)
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100     2  100     2    0     0      3      0 --:--:-- --:--:-- --:--:--     3100     2  100     2    0     0      3      0 --:--:-- --:--:-- --:--:--     3
+OKcurl -> mdroid.com 626 ms (exit: 0)
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100   116    0   116    0     0    600      0 --:--:-- --:--:-- --:--:--   604
+<p>Message to: +4987163678<p>Text to send: newVideo15<p><b>Message queued.</b> You will receive it in a few seconds.curl -> wapp callmebot 223 ms (exit: 0)
+mqtt_broker not set: *X*
+
+***/home/pi/station3/mdroid.sh**************************
+Wed  9 Sep 07:58:28 CEST 2026 message: newVideo16
+select: w
+HTTP/2 200 
+curl -> google 196 ms (exit: 0)
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100     2  100     2    0     0      3      0 --:--:-- --:--:-- --:--:--     3
+OKcurl -> mdroid.com 650 ms (exit: 0)
+skipping wapp due to select flag
+mqtt_broker not set: *X*
+
+***/home/pi/station3/mdroid.sh**************************
+Wed  9 Sep 07:58:46 CEST 2026 message: newVideo17
+select: w
+HTTP/2 200 
+curl -> google 154 ms (exit: 0)
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:--  0:00:01 --:--:--     0  0     0    0     0    0     0      0      0 --:--:--  0:00:01 --:--:--     0100     2    0     2    0     0      0      0 --:--:--  0:00:02 --:--:--     0
+OKcurl -> mdroid.com 2266 ms (exit: 0)
+skipping wapp due to select flag
+mqtt_broker not set: *X*

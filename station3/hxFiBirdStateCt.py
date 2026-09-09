@@ -189,12 +189,13 @@ class Baseline:
     def startup(self, sample: Sample) -> bool:
         attempts = 0
         for attempt in range(1, STARTUP_MAX_ATTEMPTS + 1):
+            spread_limit = STABLE_SPREAD_LIMIT * (1 + 0.5 * (attempt - 1)) # allow more spread on subsequent attempts
             if attempt > 1:
                 ms.log(f"Startup retry {attempt}/{STARTUP_MAX_ATTEMPTS}")
                 # Re-init the C driver to flush any stuck state
                 self.hx.close()
                 self.hx.open(testmode=testmode)
-            result = self._startup_attempt(sample, attempt)
+            result = self._startup_attempt(sample, attempt, spread_limit)
 
             if result is None:
                 return True  # clean success, sample already populated
@@ -204,13 +205,14 @@ class Baseline:
         raise RuntimeError(
             f"HX711 startup did not stabilize "
             f"({attempts} attempts, "
-            f"spread {best:.0f} > {STABLE_SPREAD_LIMIT})"
+            f"spread {best:.0f} > {spread_limit})"
         )
 
     def _startup_attempt(
         self,
         sample: Sample,
-        attempt: int
+        attempt: int,
+        spread_limit: int
     ) -> float | None:
         ms.log(f"Startup zeroing (attempt {attempt})...")
         time.sleep(STARTUP_SETTLE_TIME)
@@ -252,20 +254,20 @@ class Baseline:
                     best_spread = spread
                     best_median = float(np.median(self.stable_buf))
 
-                if spread <= STABLE_SPREAD_LIMIT:
+                if spread <= spread_limit:
                     self.offset = best_median
                     sample.offset = self.offset
                     sample.weight = 0.0
                     sample.startup_spread = spread
                     sample.startup_attempts = attempts
-                    sample.startup_maxspread = STABLE_SPREAD_LIMIT
+                    sample.startup_maxspread = spread_limit
                     sample.startup_delay = time.monotonic() - t0
-                    event = f"STARTUP_ZERO spread={spread:.0f} < {STABLE_SPREAD_LIMIT}"
+                    event = f"STARTUP_ZERO spread={spread:.0f} < {spread_limit}"
                     sample.events.append(event)
                     ms.log(event)
                     return None  # success
 
-        # Window expired without meeting STABLE_SPREAD_LIMIT
+        # Window expired without meeting spread_limit
         return best_spread
 
     def process(self, sample: Sample) -> None:
@@ -441,7 +443,7 @@ class WeightFSM:
             self.departure_t0 = self.state_t0
 
         sample.events.append(event)
-        return event  # Return the transition string directly!
+        return event
 
     def camera_trigger(self) -> bool:
         if self.state != STATE_PRESENT:
@@ -464,12 +466,12 @@ class WeightFSM:
             if current_time - self.state_t0 > STATE_TIMEOUT:
                 old = STATE_NAME[self.state]
                 
-                # 1. Force-adopt current reading to clear the phantom weight
+                # 1. Force-adopt current reading to clear phantom weight
                 raw_value = baseline.stable_raw()
                 if raw_value is None:
-                    raw_value = float(sample.raw) # Fallback to current filtered raw
+                    raw_value = float(sample.raw)
                 
-                baseline.adopt_raw_value(raw_value, sample) # current baseline offset is set to current raw value, weight becomes 0.0
+                baseline.adopt_raw_value(raw_value, sample)
                 
                 # 2. Return to IDLE clean
                 self.force_idle(current_time)
@@ -533,7 +535,8 @@ class WeightFSM:
             return self._transition(STATE_OVERSIZE, sample, "PRESENT->OVERSIZE")
         if abs(sample.weight) < self.threshold_off:
             self.below_count += 1
-            if self.below_count >= 2:
+            # Requires 3 consecutive samples below threshold_off to confirm DEPARTURE
+            if self.below_count >= 3:
                 return self._transition(STATE_DEPARTURE, sample, "PRESENT->DEPARTURE")
         else:
             self.below_count = 0
@@ -542,20 +545,20 @@ class WeightFSM:
     def state_oversize(self, sample: Sample) -> str | None:
         if abs(sample.weight) < self.threshold_off:
             self.below_count += 1
-            if self.below_count >= 2:
-                return self._transition(STATE_DEPARTURE, sample, "OVERSIZE->DEPARTURE")
+            # Requires 3 consecutive samples below threshold_off to confirm DEPARTURE
+            if self.below_count >= 3:
+                return self._transition(STATE_OVERSIZE, sample, "OVERSIZE->DEPARTURE")
         else:
             self.below_count = 0
         return None
 
     def state_departure(self, sample: Sample) -> str | None:
+        # DEPARTURE state strictly transitions ONLY to IDLE after timeout or directly
+        # DEPARTURE is essentially defined within state_present() and state_oversize() as the moment when weight drops below threshold_off.
         if time.monotonic() - self.departure_t0 > 2.0:
             return self._transition(STATE_IDLE, sample, "TIMEOUT->IDLE")
-        if abs(sample.weight) > self.threshold_on:
-            if abs(sample.weight) > weightlimit:
-                return self._transition(STATE_OVERSIZE, sample, "DEPARTURE->OVERSIZE")
-            return self._transition(STATE_ARRIVAL, sample, "DEPARTURE->ARRIVAL")
         return None
+
 # ============================================================
 # RECORDERS
 # ============================================================
