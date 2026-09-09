@@ -188,6 +188,7 @@ class Baseline:
 
     def startup(self, sample: Sample) -> bool:
         attempts = 0
+        best  = float("inf")
         for attempt in range(1, STARTUP_MAX_ATTEMPTS + 1):
             spread_limit = STABLE_SPREAD_LIMIT * (1 + 0.5 * (attempt - 1)) # allow more spread on subsequent attempts
             if attempt > 1:
