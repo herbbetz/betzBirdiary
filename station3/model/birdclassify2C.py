@@ -347,7 +347,7 @@ def main():
     keep = []
 
     if recognized:
-
+        ms.setClassified()
         keep = sorted(
             recognized,
             key=lambda r: r["confidence"],

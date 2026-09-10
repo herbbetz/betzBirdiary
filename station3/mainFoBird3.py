@@ -190,6 +190,30 @@ def luxProtocol(lData):
         with open(camdatafile, "w") as outfile:
             json.dump(data, outfile, indent=2)
 
+def stills_lux(picam, oldimg, liveLogger):
+    dirName = birdpath['ramdisk']
+    maxOldImg = 3
+    now = datetime.now()
+    timestamp = int(now.timestamp() * 1000)
+    imgName = f"{dirName}/{timestamp}.jpg"
+    capture_img(picam, imgName)
+    ms.setImgCnt(timestamp)
+    oldimg.append(imgName)
+    if len(oldimg) > maxOldImg:
+        oldest = oldimg.pop(0)
+        if os.path.exists(oldest): os.remove(oldest)
+
+    if ms.getClientActive() == 0: # set by flaskBird.py
+        # clear forgotten standby after 300 secs of webGUI inactivity:
+        stills_lux.inactive_counter += 1
+        if stills_lux.inactive_counter >= 300:
+            stills_lux.inactive_counter = 0 
+            ms.clearStandby()
+        luxData=get_brightness(picam, now)
+        liveLogger.log(luxData)
+stills_lux.inactive_counter = 0 #static var
+
+
 def files_payload_size(files):
     json_str = files["json"][1]          # str
     audio_bytes = files["audioKey"][1]   # bytes
@@ -226,13 +250,13 @@ def send_realtime_movement(files):
         ms.log(f"failed movement upload: {e}")
         return uploadFail
 
-def send_movement(circ_output, picam, wght, stop_event, preTrigImg): # first parameter is either circ_output OR picam, the latter in case of no circ_output
+def send_movement(circ_output, picam, wght, stop_event, preTrigImg, liveLogger): # first parameter is either circ_output OR picam, the latter in case of no circ_output
     # preTrigImg is oldimg[] from main() and contains e.g. 'ramdisk/1697041234567.jpg'
     if upmaxcnt > 0 and send_movement.vid_cnt >= upmaxcnt: # upmaxcnt=0 means no limit
         ms.log("upload limit reached")
         subprocess.call(f"bash {birdpath['appdir']}/tasmotaDown.sh limitdown", shell=True)
         time.sleep(2)
-        return
+        return "SND_MV_uplimit"
 
     ms.log("***movement upload***")
     movementStartDate = datetime.now()
@@ -240,6 +264,9 @@ def send_movement(circ_output, picam, wght, stop_event, preTrigImg): # first par
 
     video_filename = movementStartStr + ".h264"
     audio_filename = movementStartStr + ".wav"
+    # send only if acknowlegded by (-1) from hxFiBird (departure) or if AI-classified, else discard after video_ack_timeout
+    video_ack = False 
+    video_ack_timeout = 120
 
     # for local review:
     # "ramdisk/daydir" would have to be created first
@@ -255,7 +282,7 @@ def send_movement(circ_output, picam, wght, stop_event, preTrigImg): # first par
             newName = f"{daydir}/{videoUrlStr}.{imgCnt}.jpg" 
             os.rename(oldName, newName)
             imgCnt += 1
-    preTrigImg.clear()  # empty the renamed list for reuse as oldimg[] in main()
+    preTrigImg.clear()  # empty the renamed list for reuse as oldimg[] in main() and below calling stills_lux() in this function
 
     # for video with circ output (dashcam):
     stop_event.clear()   # ensure clean state
@@ -287,8 +314,7 @@ def send_movement(circ_output, picam, wght, stop_event, preTrigImg): # first par
             # low-overhead sleep to protect the CPU until the deadline hits
             time.sleep(0.25)
     
-    circ_output.stop()
-    stop_event.clear()
+    circ_output.stop() 
     outmem.seek(0)
     full_video = outmem.getvalue()
  
@@ -305,12 +331,41 @@ def send_movement(circ_output, picam, wght, stop_event, preTrigImg): # first par
     full_video = posttrigger.read()
     '''
 
+    # AI-classification:
+    # .Popen runs asynchronously, .call does not
+    cmd = f"{birdpath['appdir']}/{model}/run_classify.sh {videoUrlStr}"
+    ms.log(f"running subprocess: {cmd}")
+    subprocess.Popen(
+        cmd,
+        shell=True,
+        stdout=sys.stdout,
+        stderr=sys.stderr
+    )
+
     if localsave:
         ms.log("Localsave mode: skipping upload")
         ms.log(f"full_video size: {len(full_video)} bytes")
         write_binVideo(movementStartStr, full_video)
         ms.log("Test video saved locally in /keep.")
-        return
+        return "SND_MV_keeplocal"
+
+    deadline = time.perf_counter() + video_ack_timeout
+    while time.perf_counter() < deadline:
+        if stop_event.is_set(): # or early video stop from above?
+            ms.log("vid_ack -1 signal")
+            if ms.getClassified() == 1:
+                    video_ack = True
+                    ms.log("vid_ack classified")
+                    ms.clearClassified()
+                    break
+
+        stills_lux(picam, preTrigImg, liveLogger)
+        time.sleep(0.5)  # poll for stop_event or AI-classification set in birdclassify2C.py (run_classify.sh)
+
+    if not video_ack:
+        ms.log("video_ack timeout")
+        return "SND_MV_noack"
+
 
     movementEndDate = datetime.now()
 
@@ -341,6 +396,7 @@ def send_movement(circ_output, picam, wght, stop_event, preTrigImg): # first par
         write_binVideo(movementData["start_date"], full_video)
         ms.setVidDateStr(f"video#{send_movement.vid_cnt} at {movementStart} kept local")
         subprocess.call(f"bash {birdpath['appdir']}/mdroid.sh VideoUpfail_keepdir", shell=True)
+        return "SND_MV_upfail"
     else:
         if upmaxcnt>0: ms.setVidDateStr(f"video#{send_movement.vid_cnt} of {upmaxcnt} at {movementStart}")
         else: ms.setVidDateStr(f"video#{send_movement.vid_cnt} at {movementStart}")
@@ -349,19 +405,7 @@ def send_movement(circ_output, picam, wght, stop_event, preTrigImg): # first par
         else: # call mdroid.sh with 2nd arg 'w', which skips wapp message
             subprocess.call(f"bash {birdpath['appdir']}/mdroid.sh newVideo{send_movement.vid_cnt} w", shell=True)
 
-    # On Feb.2026 module 'imp' is not available in tensorflow wheel for python 3.13 on arm64
-    # ... so the following subprocess runs inside birdvenv, using python 3.11.8
-    # start tflite_runtime on daydir:
-    # .Popen runs asynchronously, .call does not
-    cmd = f"{birdpath['appdir']}/{model}/run_classify.sh {videoUrlStr}"
-    ms.log(f"running subprocess: {cmd}")
-    subprocess.Popen(
-        cmd,
-        shell=True,
-        stdout=sys.stdout,
-        stderr=sys.stderr
-    )
-
+    return "SND_MV_ok"
 send_movement.vid_cnt = 0
 
 
@@ -476,10 +520,7 @@ def main():
         time.sleep(5) # accumulate pretrigger frames
 
         sleepTime = 1.0
-        dirName = birdpath['ramdisk']
         oldimg = []
-        maxOldImg = 3
-        inactive_counter = 0
 
         try:
             while True:
@@ -501,15 +542,16 @@ def main():
                     '''
 
                     ms.setRecording(1)
-                    send_movement(
+                    event = send_movement(
                         c_output,
                         picam,
                         weight,
                         stop_recording_event,
-                        oldimg
+                        oldimg,
+                        liveLogger
                     )  # if no circ_output, replace c_output by picam
                     ms.setRecording(0)
-                    camRecorder.log(weight, "SND_MVMNT_FNSHD")
+                    camRecorder.log(weight, event)
 
                     while not bQueue.empty():
                         cleared_weight = bQueue.get()
@@ -522,24 +564,9 @@ def main():
                         f"{metadata.get('ExposureTime')} and AnalogueGain "
                         f"{metadata.get('AnalogueGain')}"
                     )
-                    inactive_counter = 0
-                else: 
-                    now = datetime.now()
-                    timestamp = int(now.timestamp() * 1000)
-                    imgName = f"{dirName}/{timestamp}.jpg"
-                    capture_img(picam, imgName)
-                    ms.setImgCnt(timestamp)
-                    oldimg.append(imgName)
-                    if len(oldimg) > maxOldImg:
-                        oldest = oldimg.pop(0)
-                        if os.path.exists(oldest): os.remove(oldest)
 
-                    if ms.getClientActive() == 0: # set by flaskBird.py
-                        # clear forgotten standby after 300 secs of webGUI inactivity:
-                        inactive_counter += 1 if inactive_counter < 32760 else 0
-                        if inactive_counter == 300: ms.clearStandby()
-                        luxData=get_brightness(picam, now)
-                        liveLogger.log(luxData)
+                else:
+                    stills_lux(picam, oldimg, liveLogger) 
                 time.sleep(sleepTime)
 
         except Exception as e:

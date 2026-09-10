@@ -51,6 +51,7 @@ def send_movement(circ_output, picam, wght, stop_event, preTrigImg):
     if not video_ack:
         deadline = time.perf_counter() + video_ack_timeout
         while time.perf_counter() < deadline:
+            
             if ms.classified() == 1:
                 video_ack = True
                 ms.log("vid_ack by classified()")
@@ -60,7 +61,7 @@ def send_movement(circ_output, picam, wght, stop_event, preTrigImg):
                 video_ack = True
                 ms.log("vid_ack by -1 signal")
                 break
-            time.sleep(0.2)  # poll for stop_event or AI-classification every 200ms
+            time.sleep(0.5)  # poll for stop_event or AI-classification every 200ms
 
     if not video_ack:
         ms.log("video_ack timeout")
