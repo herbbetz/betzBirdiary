@@ -124,9 +124,9 @@ def get_brightness(picam, now):
     # avg_brightness = round(np.mean(frame[:, :, 0]))
     metadata = picam.capture_metadata()
     # luxdata = metadata.copy()
-    metalux = round(metadata.get("Lux")) # metadata["Lux"], metadata.get("Lux", None)
-    exposure = round(metadata.get("ExposureTime"))
-    gain = round(metadata.get("AnalogueGain"))
+    metalux = round(metadata.get("Lux", 0)) # metadata["Lux"], metadata.get("Lux", None)
+    exposure = round(metadata.get("ExposureTime", 0))
+    gain = round(metadata.get("AnalogueGain", 0))
     luxdata = {
         "date": f"{now.year:04d}:{now.month:02d}:{now.day:02d}:{now.hour:02d}:{now.minute:02d}", # key "date" like for dhtBird protocol
         "metaLux": metalux,
@@ -209,8 +209,11 @@ def stills_lux(picam, oldimg, liveLogger):
         if stills_lux.inactive_counter >= 300:
             stills_lux.inactive_counter = 0 
             ms.clearStandby()
-        luxData=get_brightness(picam, now)
-        liveLogger.log(luxData)
+        else:
+            stills_lux.inactive_counter = 0 # reset on activity
+
+    luxData=get_brightness(picam, now)
+    liveLogger.log(luxData)
 stills_lux.inactive_counter = 0 #static var
 
 
@@ -239,10 +242,9 @@ def send_realtime_movement(files):
         speed_kBps = size_kbytes / elapsedtime # kBps is kiloBytes per sec
         ms.log(f"Upload {size_kbytes:.1f} kB in {elapsedtime:.2f} secs = {speed_kBps:.2f} kB/s")
 
-        resp = r.text.lower()
-        if 'error' in resp:
-            ms.log('files kept - server sent error text')
-            return uploadFail
+        if not (200 <= r.status_code < 300):
+            ms.log(f'upload failed – HTTP {r.status_code}')
+            return uploadFail  # True == "upload failed"
         else:
             uploadFail = False
             return uploadFail
@@ -317,7 +319,7 @@ def send_movement(circ_output, picam, wght, stop_event, preTrigImg, liveLogger):
     circ_output.stop() 
     outmem.seek(0)
     full_video = outmem.getvalue()
- 
+    outmem.close() # free memory advisable?
     '''
     # for video with no circ_output
     posttrigger = io.BytesIO()
@@ -360,7 +362,8 @@ def send_movement(circ_output, picam, wght, stop_event, preTrigImg, liveLogger):
                     break
 
         stills_lux(picam, preTrigImg, liveLogger)
-        time.sleep(0.5)  # poll for stop_event or AI-classification set in birdclassify2C.py (run_classify.sh)
+        # 2 secs (60 stills in 120 secs) for reduced workload:
+        time.sleep(2.0)  # poll for stop_event AND AI-classification set in birdclassify2C.py (run_classify.sh)
 
     if not video_ack:
         ms.log("video_ack timeout")
@@ -433,21 +436,13 @@ def readBalance(bQ, stop_event):
         except Exception as e:
             ms.log(f"Exception in readBalance: {e}")
 
-def cleanAndExit(picam, child):
-    try:
-        ms.log(f"{sys.argv[0]} exiting {datetime.now()}")
-        # if picam.running -> no .running or similar attribute
-        try:
-            picam.close() # freezes camsettings from the night before?
-        except Exception:
-            pass
-        if child.is_alive():
-            child.terminate()
-            child.join()
-    except Exception as e:
-        ms.log(f"Error while exiting: {e}")
-    finally:
-        sys.exit(0)
+def cleanAndExit(child):
+    if child.is_alive():
+        child.terminate()
+        child.join()
+    ms.log(f"{sys.argv[0]} exiting {datetime.now()}")
+    sys.exit(0)
+    # picam.close() is handled by the 'with' block
 
 def main():
     global testmode, localsave
@@ -572,7 +567,7 @@ def main():
         except Exception as e:
             ms.log(f"Exception in main loop: {e}")
         finally:
-            cleanAndExit(picam, child1)
+            cleanAndExit(child1)
 
 if __name__ == "__main__":
     main()

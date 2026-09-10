@@ -93,8 +93,9 @@
             moon: "moon.svg",
             underexpo: "eye-closed.svg",
             overexpo: "x-eyes.svg",
-            scalenoise: "redscale.svg",
-            scaleready: "greenscale.svg"
+            scaleoff: "redscale.svg",
+            scaleready: "greenscale.svg",
+            scalenoise: "noisescale.svg"
         };
 
         // Constants for data sources
@@ -307,8 +308,17 @@
                     dom.luximg.src = "favicon.svg"; // Default icon if no lux data
                 }
 
-                if (data['scaleready'] == 0) {dom.scaleimg.src = "icons/" + icons['scalenoise'];} //scale off or to noisy
-                else {dom.scaleimg.src = "icons/" + icons['scaleready'];}
+                switch (data['scaleready']) {
+                    case 0:
+                        dom.scaleimg.src = "icons/" + icons['scaleoff'];
+                        break;
+                    case 1:
+                        dom.scaleimg.src = "icons/" + icons['scaleready'];
+                        break;
+                    case 2:
+                        dom.scaleimg.src = "icons/" + icons['scalenoise'];
+                        break;
+                }
 
                 // Environment event
                 if (data['envirEvt'] !== state.saved.envirEvt) {

@@ -23,7 +23,7 @@ from configBird3 import birdpath
 #   luxraw: raw lux data string for webGUI display, set by mainFoBird3.py
 #   recording: 0 or 1, set by mainFoBird3.py
 #   scaleready: 0 or 1, 2 is unstable,set by hxFiBirdStateCt.py
-#   classified: 0 or 1, set by AI model2 and evaluated inmainFoBird3.py to decide upload
+#   classified: 0 or 1, set by AI model2 and (birdclassify2C.py) and evaluated in mainFoBird3.py to decide upload
 message = {"imgid": 0, "lastvid": "", "vidcnt": 0, "linecnt": 0, "linetxt": "", "envirEvt": 0, "sysmonEvt": 0,
            "upmode": 0, "confirm": 0, "standby": 0, "clientactive": 0, "lux": 0, "luxraw": "", "recording": 0, "scaleready": 0, "classified": 0} # define dictionary
 # Use as cache for reducing read/write in params that might be changed often inside loops (only read/write if value changed), e.g. scaleready inside hxFiBird*.py
@@ -185,6 +185,9 @@ def setScaleready():
 
 def clearScaleready():
     setmsgprop('scaleready', 0)
+
+def setScalenoisy():
+    setmsgprop('scaleready', 2)
 
 def getScaleready():
     m = readmsg()
