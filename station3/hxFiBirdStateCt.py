@@ -35,8 +35,7 @@ signal_hx.csv, hxFiBird.log (C driver on stderr)
 
 Offline analysis of signal_hx.csv with hx_signalanalyzer.py.
 
-direction unaware of load cell by using `abs(weight)`
-    By using direction aware code, you could avoid half of the false triggers. Just use `polarity * weight`, where polarity is a config variable of -1 or +1.
+direction aware strain gauge & load cell, so weight always positive on load. For this, hxPolarity must be defined correctly by calibrateHx.py .
 """
 
 from dataclasses import dataclass, field
@@ -58,12 +57,16 @@ from configBird3 import (
     birdpath,
     hxDataPin,
     hxClckPin,
-    hxScale,
+    hxPolScaleOff,
     weightThreshold,
-    weightlimit,
-    update_config_json
+    weightlimit
 )
 import msgBird as ms
+# this values are configured by calibrateHx.py:
+hxPolarity = hxPolScaleOff[0] # either +1 or -1 meaning strain gauge orientation is up or down, so weight should always go up on bird load
+hxPolarity = 1 if hxPolarity == 1 else -1
+hxScale = abs(hxPolScaleOff[1])
+if hxScale == 0: hxScale = 600
 
 @dataclass
 class Sample:
@@ -152,9 +155,11 @@ class MedianFilter:
 
 STARTUP_SETTLE_TIME = 2.0
 STARTUP_MAX_TIME = 60.0
-STABLE_SAMPLES = 60
+STABLE_SAMPLES = 120
 STABLE_SPREAD_LIMIT = 3000
 STARTUP_MAX_ATTEMPTS = 3
+EMA_ALPHA = 0.002   # correct all drift changes over minutes so they do not interfere with the birds
+ADOPT_MAX_STEP_G = 2.0   # max grams moved per adoption
 
 class Baseline:
     def __init__(self, hx: HX711_CT) -> None:
@@ -259,20 +264,13 @@ class Baseline:
 
     def process(self, sample: Sample) -> None:
         sample.offset = self.offset
-        sample.weight = (sample.raw - self.offset) / hxScale
+        sample.weight = (sample.raw - self.offset) / hxScale * hxPolarity
 
     def follow_idle(self, sample: Sample) -> None:
         if len(self.stable_buf) < STABLE_SAMPLES:
             return
         delta = sample.raw - self.offset
-        drift_g = abs(delta) / abs(hxScale)
-        if drift_g < 1.0:
-            alpha = 0.0025
-        elif drift_g < 5.0:
-            alpha = 0.02
-        else:
-            alpha = 0.10
-        self.offset += delta * alpha
+        self.offset += delta * EMA_ALPHA
 
     def reacquire(self, sample: Sample, burst: int = 25) -> bool:
         readings: list[int] = []
@@ -293,11 +291,18 @@ class Baseline:
         sample.weight = 0.0
         return True
 
-    def adopt(self, sample: Sample, candidate: float) -> None:
-        self.offset = candidate
+    def adopt(self, sample: Sample, candidate: float) -> bool:
+        delta = candidate - self.offset
+        if abs(delta) < hxScale:
+            return
+        max_delta_raw = ADOPT_MAX_STEP_G * hxScale
+        if abs(delta) > max_delta_raw:
+            delta = max_delta_raw if delta > 0 else -max_delta_raw
+        self.offset += delta
         self.stable_buf.clear()
         sample.offset = self.offset
         sample.weight = 0.0
+        return True
 
 # ============================================================
 # NoiseGuard (Welford's StdDev, rolling window)
@@ -342,9 +347,9 @@ class NoiseGuard:
         return float(np.sqrt(variance))
 
     def current_std_grams(self) -> float:
-        if abs(hxScale) < 1:
+        if hxScale < 1:
             return 0.0
-        return self.current_std() / abs(hxScale)
+        return self.current_std() / hxScale
 
 # ============================================================
 # FSM
@@ -413,13 +418,13 @@ class WeightFSM:
         self.reset()
 
         if new_state == STATE_ARRIVAL:
-            self.weight_at_arrival = abs(sample.weight)
+            self.weight_at_arrival = sample.weight
 
         if new_state == STATE_PRESENT:
             self.present_t0 = self.state_t0
             self.camera_sent = False
-            if self.weight_at_arrival == 0:
-                self.weight_at_arrival = abs(sample.weight)
+            if self.weight_at_arrival <= 0:
+                self.weight_at_arrival = sample.weight
 
         if new_state == STATE_DEPARTURE:
             self.departure_t0 = self.state_t0
@@ -461,7 +466,7 @@ class WeightFSM:
             return None
 
         if self.state == STATE_IDLE:
-            if abs(sample.weight) > self.threshold_off:
+            if sample.weight > self.threshold_off:
                 if current_time - self.state_t0 > STATE_TIMEOUT:
                     if not baseline.reacquire(sample, burst=25):
                         baseline.stable_buf_reset()
@@ -490,32 +495,30 @@ class WeightFSM:
             self.above_count = 0
             return None
 
-        absweight = abs(sample.weight)
-
-        if absweight > IDLE_LOADED_FRACTION * self.threshold_on:
+        if sample.weight > IDLE_LOADED_FRACTION * self.threshold_on:
             jump_required = IDLE_LOADED_JUMP * self.threshold_on
-            if absweight > jump_required:
+            if sample.weight > jump_required:
                 self.above_count += 1
             else:
                 self.above_count = 0
                 return None
         else:
-            if absweight > self.threshold_on:
+            if sample.weight > self.threshold_on:
                 self.above_count += 1
             else:
                 self.above_count = 0
                 return None
 
         if self.above_count >= 3:
-            if absweight > weightlimit:
+            if sample.weight > weightlimit:
                 return self._transition(STATE_OVERSIZE, sample, "IDLE->OVERSIZE")
             return self._transition(STATE_ARRIVAL, sample, "IDLE->ARRIVAL")
         return None
 
     def state_arrival(self, sample) -> str | None:
-        if abs(sample.weight) < self.threshold_off:
+        if sample.weight < self.threshold_off:
             return self._transition(STATE_IDLE, sample, "ARRIVAL_CANCELLED")
-        if abs(sample.weight) > weightlimit:
+        if sample.weight > weightlimit:
             return self._transition(STATE_OVERSIZE, sample, "ARRIVAL->OVERSIZE")
 
         self.above_count += 1
@@ -524,18 +527,18 @@ class WeightFSM:
         return None
 
     def state_present(self, sample) -> str | None:
-        if abs(sample.weight) > weightlimit:
+        if sample.weight > weightlimit:
             return self._transition(STATE_OVERSIZE, sample, "PRESENT->OVERSIZE")
 
         if time.monotonic() - self.present_t0 > PRESENT_DRIFT_TIMEOUT:
             entry_w = self.weight_at_arrival
-            if entry_w > 0 and abs(sample.weight) > 0.5 * entry_w:
+            if entry_w > 0 and sample.weight > 0.5 * entry_w:
                 return self._transition(
                     STATE_DEPARTURE, sample,
                     "PRESENT_DRIFT_EXIT->DEPARTURE"
                 )
 
-        if abs(sample.weight) < self.threshold_off:
+        if sample.weight < self.threshold_off:
             self.below_count += 1
             if self.below_count >= DEPARTURE_CONFIRM_SAMPLES:
                 return self._transition(STATE_DEPARTURE, sample, "PRESENT->DEPARTURE")
@@ -544,7 +547,7 @@ class WeightFSM:
         return None
 
     def state_oversize(self, sample) -> str | None:
-        if abs(sample.weight) < self.threshold_off:
+        if sample.weight < self.threshold_off:
             self.below_count += 1
             if self.below_count >= DEPARTURE_CONFIRM_SAMPLES:
                 return self._transition(STATE_DEPARTURE, sample, "OVERSIZE->DEPARTURE")
@@ -602,7 +605,7 @@ class SignalLogger:
             f"{'|'.join(sample.events)}\n"
         )
 
-    def log(self, sample: Sample) -> None:
+    def log(self, sample: Sample, readtime: str) -> None:
         important = False
         for event in sample.events:
             if event in (
@@ -623,7 +626,7 @@ class SignalLogger:
             self._last_second = second
 
         with open(self.file, "a", buffering=1) as f:
-            f.write(self._format_row(sample))
+            f.write(self._format_row(sample, readtime))
 
 class LiveLogger:
     def __init__(self) -> None:
@@ -711,6 +714,7 @@ baseline = Baseline(hx)
 baseline.startup(sample)
 
 # Configuration
+CRIT_NOISE = 6.0 # critical sigma
 MEDIAN_SAMPLES = 7
 NOISEGUARD_SAMPLES = 210
 dyn_threshold = weightThreshold
@@ -746,7 +750,7 @@ try:
 
         try:
             sample.raw_sample = hx.read()
-            if sample.sigma > 6.0:
+            if sample.sigma > CRIT_NOISE:
                 ms.setScalenoisy()
             else:
                 ms.setScaleready()
@@ -766,10 +770,10 @@ try:
         sample.sigma = noiseguard.current_std_grams()
 
         if fsm.state == STATE_IDLE:
-            dyn_threshold = min(3.0 * sample.sigma + weightThreshold, max_dyn_threshold)
-        else:
-            pass
+            target = min(3.0 * sample.sigma + weightThreshold, max_dyn_threshold)
+            dyn_threshold += (target - dyn_threshold) * EMA_ALPHA
 
+        dyn_threshold = max(dyn_threshold, weightThreshold)   # never drop below base
         sample.dyn_threshold = dyn_threshold
         fsm.set_thresholds(dyn_threshold)
 
@@ -783,9 +787,7 @@ try:
             candidate = baseline.stable_raw()
 
             if candidate is not None:
-                delta_grams = abs(candidate - baseline.offset) / abs(hxScale)
-                if delta_grams > 0.5:
-                    baseline.adopt(sample, candidate)
+                if baseline.adopt(sample, candidate):
                     sample.events.append("IDLE_STABLE_RECAL")
             else:
                 baseline.follow_idle(sample)
@@ -829,11 +831,6 @@ except (KeyboardInterrupt, SystemExit):
     ms.log(f"shutdown {sys.argv[0]}")
 
 finally:
-    update_config_json({
-        "hxOffset": baseline.offset,
-        "hxScale": hxScale
-    })
-
     hx.close()
     ms.clearScaleready()
     clearPID(1)

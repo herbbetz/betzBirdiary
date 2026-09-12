@@ -1,5 +1,5 @@
 #!/bin/bash
 # calibration of strain gauge scale hx711
-python3 calibrateHx711v2.py
-sudo reboot
+# evaluate exit state $? of python script:
+python3 calibrateHx.py && sudo reboot || echo "Calibration failed — not rebooting."
 # python3 hxFiBirdState.py

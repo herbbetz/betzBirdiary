@@ -130,8 +130,8 @@ th {
   // List of all configuration keys, including editable and non-editable
   const allConfigKeys = [
     'serverUrl', 'boxId', 'boxName', 'deleteKey', 'upmaxcnt', 'videodurate', 'hflip_val', 'vflip_val', 'vidsize', 'losize',
-    'luxThreshold', 'luxLimit', 'weightlimit', 'weightThreshold', 'hxScale', 'hxOffset', 'dhtPin',
-    'hxDataPin', 'hxClckPin', 'recordstep', 'heatdown', 'mdroid_key', 'wapp_key', 'wapp_phone', 'tasmota_ip', 'mqtt_broker', 'birdweather_token', 'geoloc', 'sun', 'version'
+    'luxThreshold', 'luxLimit', 'weightlimit', 'weightThreshold', 'hxPolScaleOff', 'dhtPin', 'hxDataPin', 'hxClckPin', 'recordstep',
+    'heatdown', 'mdroid_key', 'wapp_key', 'wapp_phone', 'tasmota_ip', 'mqtt_broker', 'birdweather_token', 'geoloc', 'sun', 'version'
   ];
 
   const editableKeys = ['boxId','boxName', 'upmaxcnt', 'videodurate', 'recordstep', 'heatdown', 'wapp_key', 'wapp_phone', 'tasmota_ip', 'mqtt_broker', 'birdweather_token'];
@@ -151,8 +151,7 @@ th {
     "luxLimit": "Lux boundaries for recording",
     "weightlimit": "Weight above this prevents recording",
     "weightThreshold": "Weight above this starts recording",
-    "hxScale": "Calibration factor for the weight sensor",
-    "hxOffset": "Zero offset for the weight sensor",
+    "hxPolScaleOff": "Weight Sensor Calibration: Polarity, Scale, Offset",
     "dhtPin": "GPIO pin for the DHT temperature/humidity sensor",
     "hxDataPin": "GPIO data pin for the HX711 weight sensor",
     "hxClckPin": "GPIO clock pin for the HX711 weight sensor",

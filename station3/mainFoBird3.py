@@ -40,7 +40,7 @@ testmode = False # define outside any block ('if __name__ == "__main__":' also i
 localsave = False
 
 def readable_cam_time() -> str:
-    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    return datetime.now().strftime("%H:%M:%S")
 
 ### Recorders
 class CamRecorder:

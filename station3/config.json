@@ -26,8 +26,11 @@
   ],
   "weightlimit": 300,
   "weightThreshold": 8,
-  "hxScale": 533,
-  "hxOffset": -179109.0,
+  "hxPolScaleOff": [
+    -1,
+    533,
+    179109
+  ],
   "dhtPin": 16,
   "hxDataPin": 17,
   "hxClckPin": 23,

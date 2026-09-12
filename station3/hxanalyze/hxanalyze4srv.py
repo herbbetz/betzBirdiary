@@ -40,7 +40,25 @@ def read_signal_file(filename: str) -> tuple[dict, list[dict], list[str]]:
             row["threshold"] = float(row["threshold"])
             row["events"] = row["events"].strip()
             rows.append(row)
+
+    # Assign full datetime with midnight-rollover.
+    base_date = datetime(2026, 1, 1)
+    current_date = base_date
+    prev_dt = None
+    for row in rows:
+        t = datetime.strptime(row["time"], "%H:%M:%S")
+        row["dt"] = current_date.replace(
+            hour=t.hour, minute=t.minute, second=t.second
+        )
+        if prev_dt is not None and row["dt"] < prev_dt:
+            current_date += timedelta(days=1)
+            row["dt"] = current_date.replace(
+                hour=t.hour, minute=t.minute, second=t.second
+            )
+        prev_dt = row["dt"]
+
     return meta, rows, header
+
 def read_camera_file(filename: str) -> list[dict]:
     rows = []
     with open(filename, encoding="utf-8") as file:
@@ -51,12 +69,26 @@ def read_camera_file(filename: str) -> list[dict]:
                 continue
             row = dict(zip(header, values))
             row["weight"] = float(row["weight"])
-            row["date_dt"] = datetime.strptime(
-                row["date"],
-                "%Y-%m-%d %H:%M:%S"
-            )
             rows.append(row)
+
+    # Assign full datetime with midnight-rollover (same anchor as signal).
+    base_date = datetime(2026, 1, 1)
+    current_date = base_date
+    prev_dt = None
+    for row in rows:
+        t = datetime.strptime(row["date"], "%H:%M:%S")
+        row["date_dt"] = current_date.replace(
+            hour=t.hour, minute=t.minute, second=t.second
+        )
+        if prev_dt is not None and row["date_dt"] < prev_dt:
+            current_date += timedelta(days=1)
+            row["date_dt"] = current_date.replace(
+                hour=t.hour, minute=t.minute, second=t.second
+            )
+        prev_dt = row["date_dt"]
+
     return rows
+
 def split_periods(
     rows: list[dict]
 ) -> list[tuple[str, int, int]]:
@@ -354,10 +386,7 @@ def get_camera_events(
     blocked_clr_q = 0
     blocked_stdby = 0
     for trigger in hx_triggers:
-        trigger_time = datetime.strptime(
-            trigger["time"],
-            "%Y-%m-%d %H:%M:%S"
-        )
+        trigger_time = trigger["dt"]
         deadline = (
             trigger_time
             + timedelta(seconds=CAMERA_MATCH_SECONDS)
@@ -433,16 +462,9 @@ def create_plot(
     weight_threshold: float,
     startup_offset: float,
     hx_scale: float,
-    weightlimit: float,
     output_path: str
 ) -> None:
-    times = [
-        datetime.strptime(
-            row["time"],
-            "%Y-%m-%d %H:%M:%S"
-        )
-        for row in rows
-    ]
+    times = [row["dt"] for row in rows]
     weights = [abs(row["weight"]) for row in rows]
     thresholds = [row["threshold"] for row in rows]
     sigmas = [row["sigma"] for row in rows]
@@ -503,18 +525,21 @@ def create_plot(
                 times[end],
                 alpha=0.08
             )
-    if hx_scale != 0:
-        for index in range(1, len(rows)):
-            delta_g = (
-                rows[index - 1]["offset"]
-                - rows[index]["offset"]
-            ) / abs(hx_scale)
-            if abs(delta_g) > JUMP_G:
-                ax.axvline(
-                    times[index],
-                    linestyle=":",
-                    alpha=0.8
-                )
+    camera_triggers = [
+        times[i] for i, row in enumerate(rows)
+        if row_has_event(row, "CAMERA_TRIGGER")
+    ]
+    if camera_triggers:
+        ax.vlines(
+            camera_triggers,
+            ymin=0,
+            ymax=max(weights) * 1.1 if max(weights) > 0 else 1,
+            color="blue",
+            linestyle="-",
+            alpha=0.6,
+            linewidth=1,
+            label="CAMERA_TRIGGER"
+        )
     plot_end = max(
         times[-1],
         times[0] + timedelta(hours=1)
@@ -575,7 +600,6 @@ def analyze_csv(
         weight_threshold,
         startup_offset,
         hx_scale,
-        weightlimit,
         output_path
     )
     return {

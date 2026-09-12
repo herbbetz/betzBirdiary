@@ -17,6 +17,26 @@ import sys
 import matplotlib.pyplot as plt
 JUMP_G=3.0
 IDLE_BAD_TIME=5.0
+
+def reconstruct_datetimes(rows:list[dict])->None:
+    """Assign a full datetime to each row from its %H:%M:%S time string.
+
+    When the clock rolls past midnight (current < previous), increment the day
+    so the X-axis stays continuous and flows to the right.
+    """
+    if not rows:
+        return
+    base_date=datetime(2026,1,1)
+    current_date=base_date
+    prev_time=None
+    for row in rows:
+        t=datetime.strptime(row["time"],"%H:%M:%S")
+        row["dt"]=current_date.replace(hour=t.hour,minute=t.minute,second=t.second)
+        if prev_time is not None and row["dt"]<prev_time:
+            current_date+=timedelta(days=1)
+            row["dt"]=current_date.replace(hour=t.hour,minute=t.minute,second=t.second)
+        prev_time=row["dt"]
+
 def read_signal_file(filename:str)->tuple[dict,list[dict],list[str]]:
     meta={}
     rows=[]
@@ -47,22 +67,38 @@ def read_signal_file(filename:str)->tuple[dict,list[dict],list[str]]:
             row["threshold"]=float(row["threshold"])
             row["events"]=row["events"].strip()
             rows.append(row)
+    reconstruct_datetimes(rows)
     return meta,rows,header
+
 def read_camera_events(filename:str)->list[dict]:
     events=[]
     with open(filename,encoding="utf-8",newline="") as f:
         reader=csv.DictReader(f)
         for row in reader:
             try:
-                row["datetime"]=datetime.strptime(
-                    row["date"],
-                    "%Y-%m-%d %H:%M:%S"
-                )
                 row["weight"]=float(row["weight"])
             except (KeyError,ValueError):
                 continue
             events.append(row)
+
+    # Same anchor + midnight-rollover as signal rows.
+    base_date=datetime(2026,1,1)
+    current_date=base_date
+    prev_dt=None
+    for row in events:
+        t=datetime.strptime(row["date"],"%H:%M:%S")
+        row["datetime"]=current_date.replace(
+            hour=t.hour,minute=t.minute,second=t.second
+        )
+        if prev_dt is not None and row["datetime"]<prev_dt:
+            current_date+=timedelta(days=1)
+            row["datetime"]=current_date.replace(
+                hour=t.hour,minute=t.minute,second=t.second
+            )
+        prev_dt=row["datetime"]
+
     return events
+
 def split_periods(rows:list[dict])->list[tuple[str,int,int]]:
     periods=[]
     start=0
@@ -74,6 +110,7 @@ def split_periods(rows:list[dict])->list[tuple[str,int,int]]:
             state=row["state"]
     periods.append((state,start,len(rows)-1))
     return periods
+
 def reconstruct_visits(rows:list[dict],periods:list[tuple[str,int,int]])->tuple[list[dict],list[dict]]:
     visits=[]
     oversize=[]
@@ -108,11 +145,10 @@ def reconstruct_visits(rows:list[dict],periods:list[tuple[str,int,int]])->tuple[
                     current["mean"]=0.0
                 visits.append(current)
                 current=None
-    # also add the last visit if it was not closed by a DEPARTURE or IDLE
     if current:
         if "stay" not in current:
-            current["stay"] = 0.0
-            current["mean"] = 0.0
+            current["stay"]=0.0
+            current["mean"]=0.0
         visits.append(current)
     if over:
         oversize.append(over)
@@ -132,6 +168,7 @@ def print_configuration(meta:dict)->None:
     print(f"startup offset   : {meta.get('startup_offset',0):.0f}")
     print(f"startup note     : {meta.get('startup_note','')}")
     print(f"CAMERA_DELAY     : {meta.get('CAMERA_DELAY',0):.2f} s")
+
 def print_baseline_statistics(rows:list[dict],meta:dict)->None:
     idle_offsets=[row["offset"] for row in rows if row["state"]=="IDLE"]
     baseline_resets=[row for row in rows if "BASELINE_RESET" in row["events"].split()]
@@ -159,6 +196,7 @@ def print_baseline_statistics(rows:list[dict],meta:dict)->None:
         delta=0.0 if last_offset is None else offset-last_offset
         print(f"  {index}. {row['time']} offset={offset:.0f} delta={delta:+.0f}")
         last_offset=offset
+
 def print_visits(visits:list[dict])->None:
     print()
     print("Bird visits")
@@ -173,6 +211,7 @@ def print_visits(visits:list[dict])->None:
         print(f"  stay    : {visit['stay']:.1f} s")
         print(f"  mean    : {visit['mean']:.2f} g")
         print(f"  peak    : {visit['peak']:.2f} g")
+
 def print_oversize(oversize:list[dict])->None:
     print()
     print("Oversize events")
@@ -186,20 +225,14 @@ def print_oversize(oversize:list[dict])->None:
             print(f"  peak    : {event['peak']:.2f} g")
     else:
         print("none")
+
 def analyze_camera_events(rows:list[dict],camera_events:list[dict])->dict:
     camera_triggers=[]
     for row in rows:
         if "CAMERA_TRIGGER" in row["events"].split("|"):
-            try:
-                timestamp=datetime.strptime(
-                    row["time"],
-                    "%Y-%m-%d %H:%M:%S"
-                )
-            except ValueError:
-                continue
             camera_triggers.append({
                 "row":row,
-                "datetime":timestamp
+                "datetime":row["dt"]
             })
     fifo_events=[
         event for event in camera_events
@@ -252,6 +285,7 @@ def analyze_camera_events(rows:list[dict],camera_events:list[dict])->dict:
         "clr_q":sum(match["blocked"]=="cam_CLR_Q" for match in matched_fifo),
         "stdby":sum(match["blocked"]=="cam_STDBY" for match in matched_fifo)
     }
+
 def print_camera_events(camera_analysis:dict)->None:
     print()
     print("Camera events")
@@ -262,6 +296,7 @@ def print_camera_events(camera_analysis:dict)->None:
     print(f"blocked by CLR_Q        : {camera_analysis['clr_q']}")
     print(f"blocked by STDBY        : {camera_analysis['stdby']}")
     print(f"unrelated FIFO events   : {len(camera_analysis['unrelated_fifo'])}")
+
 def print_visit_statistics(visits:list[dict],oversize:list[dict])->None:
     print()
     print("Visit statistics")
@@ -276,6 +311,7 @@ def print_visit_statistics(visits:list[dict],oversize:list[dict])->None:
         print(f"minimum : {min(durations):.2f} s")
         print(f"maximum : {max(durations):.2f} s")
         print(f"mean    : {sum(durations)/len(durations):.2f} s")
+
 def print_idle_statistics(rows:list[dict])->None:
     idle=[row["weight"] for row in rows if row["state"]=="IDLE"]
     if idle:
@@ -286,6 +322,7 @@ def print_idle_statistics(rows:list[dict])->None:
         print(f"minimum       : {min(idle):.2f} g")
         print(f"maximum       : {max(idle):.2f} g")
         print(f"peak-to-peak   : {max(idle)-min(idle):.2f} g")
+
 def find_idle_warnings(rows:list[dict],threshold_off:float)->list[tuple[dict,float,float]]:
     idle_warnings=[]
     bad_start=None
@@ -309,6 +346,7 @@ def find_idle_warnings(rows:list[dict],threshold_off:float)->list[tuple[dict,flo
         if duration>=IDLE_BAD_TIME:
             idle_warnings.append((bad_start,duration,bad_max))
     return idle_warnings
+
 def print_warnings(idle_warnings:list[tuple[dict,float,float]],oversize:list[dict])->None:
     print()
     print("Warnings")
@@ -322,6 +360,7 @@ def print_warnings(idle_warnings:list[tuple[dict,float,float]],oversize:list[dic
         found=True
     if not found:
         print("none")
+
 def print_offset_discontinuities(rows:list[dict],hx_scale:float)->None:
     print()
     print(f"Offset discontinuities (threshold: {JUMP_G} g)")
@@ -335,6 +374,7 @@ def print_offset_discontinuities(rows:list[dict],hx_scale:float)->None:
         if abs(delta_g)>JUMP_G:
             print(f"{row['time']} jump={delta_g:+.2f} g state={row['state']}")
         last=offset
+
 def print_summary(visits:list[dict],oversize:list[dict])->None:
     print()
     print("Summary")
@@ -346,8 +386,9 @@ def print_summary(visits:list[dict],oversize:list[dict])->None:
         print(f"highest  : {max(v['peak'] for v in visits):.2f} g")
     if oversize:
         print(f"oversize : {len(oversize)}")
-def create_plot(rows:list[dict],periods:list[tuple[str,int,int]],weight_threshold:float,startup_offset:float,hx_scale:float,weightlimit:float)->None:
-    times=[datetime.strptime(row["time"],"%Y-%m-%d %H:%M:%S") for row in rows]
+
+def create_plot(rows:list[dict],periods:list[tuple[str,int,int]],weight_threshold:float,startup_offset:float,hx_scale:float)->None:
+    times=[row["dt"] for row in rows]
     weights=[row["weight"] for row in rows]
     sigmas=[row["sigma"] for row in rows]
     thresholds=[row["threshold"] for row in rows]
@@ -363,21 +404,32 @@ def create_plot(rows:list[dict],periods:list[tuple[str,int,int]],weight_threshol
     for state,start,end in periods:
         if state!="IDLE":
             ax.axvspan(times[start],times[end],alpha=0.08)
-    if hx_scale!=0:
-        for index in range(1,len(rows)):
-            delta_g=(rows[index-1]["offset"]-rows[index]["offset"])/abs(hx_scale)
-            if abs(delta_g)>JUMP_G:
-                ax.axvline(times[index],linestyle=":",alpha=0.8)
+    camera_triggers=[
+        times[i] for i,row in enumerate(rows)
+        if "CAMERA_TRIGGER" in row["events"].split("|")
+    ]
+    if camera_triggers:
+        ax.vlines(
+            camera_triggers,
+            ymin=0,
+            ymax=max(weights)*1.1 if max(weights)>0 else 1,
+            color="blue",
+            linestyle="-",
+            alpha=0.6,
+            linewidth=1,
+            label="CAMERA_TRIGGER"
+        )
     plot_end=max(times[-1],times[0]+timedelta(hours=1))
     ax.set_xlim(times[0],plot_end)
     ax.xaxis.set_major_formatter(plt.matplotlib.dates.DateFormatter("%H:%M"))
     ax.set_xlabel("time")
     ax.set_ylabel("grams")
-    ax.legend(loc="upper right", framealpha=0.4) # 0=transparent legend background
+    ax.legend(loc="upper right",framealpha=0.4)
     ax.grid(True,alpha=0.3)
     plt.tight_layout()
     plt.savefig("signal_timeline.svg")
     print("timeline plot written to signal_timeline.svg")
+
 def main()->None:
     if len(sys.argv)!=3:
         print("usage: hx_signalanalyzer.py signal_xxx.csv cam_event.csv")
@@ -408,6 +460,7 @@ def main()->None:
     print_warnings(idle_warnings,oversize)
     print_offset_discontinuities(rows,hx_scale)
     print_summary(visits,oversize)
-    create_plot(rows,periods,weight_threshold,meta.get("startup_offset",0),hx_scale,weightlimit)
+    create_plot(rows,periods,weight_threshold,meta.get("startup_offset",0),hx_scale)
+
 if __name__=="__main__":
     main()

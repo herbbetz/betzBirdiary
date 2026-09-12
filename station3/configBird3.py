@@ -106,8 +106,7 @@ try:
     luxLimit         = _config['luxLimit']
     weightlimit      = _config['weightlimit']
     weightThreshold  = _config['weightThreshold']
-    hxScale          = _config['hxScale']
-    hxOffset         = _config['hxOffset']
+    hxPolScaleOff    = _config['hxPolScaleOff'] # created by calibrateHx.py
     dhtPin           = _config['dhtPin']
     hxDataPin        = _config['hxDataPin']
     hxClckPin        = _config['hxClckPin']
