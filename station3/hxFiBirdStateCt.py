@@ -457,7 +457,7 @@ class WeightFSM:
                 return event_str
 
             since = current_time - self.state_t0
-            sample.events.append(f"since_{since:.0f}s")
+            sample.events.append(f"_{since:.0f}s")
             return None
 
         if self.state == STATE_IDLE:
@@ -562,7 +562,8 @@ class WeightFSM:
 # ============================================================
 
 def readable_time() -> str:
-    return datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    # return datetime.now().strftime("%y-%m-%d %H:%M:%S")
+    return datetime.now().strftime("%H:%M:%S")
 
 class SignalLogger:
     def __init__(self, sample: Sample) -> None:
@@ -588,9 +589,9 @@ class SignalLogger:
                 "time,mono_t,raw,offset,weight,sigma,threshold,state,events\n"
             )
 
-    def _format_row(self, sample: Sample) -> str:
+    def _format_row(self, sample: Sample, readtime: str) -> str:
         return (
-            f"{readable_time()},"
+            f"{readtime},"
             f"{sample.t:.3f},"
             f"{sample.raw},"
             f"{sample.offset:.0f},"
@@ -635,6 +636,7 @@ class LiveLogger:
             "weight": f"{sample.weight:.2f}",
             "offset": f"{sample.offset:.0f}",
             "sigma": f"{sample.sigma:.2f}",
+            "threshold": f"{sample.dyn_threshold:.2f}",
             "hxscale": f"{hxScale:.0f}"
         })
 
@@ -806,11 +808,13 @@ try:
             send_fifo(-1)
 
         # RECORDERS
-        signal_logger.log(sample)
+        read_time = readable_time()
+        signal_logger.log(sample, read_time)
         live_logger.log(sample)
 
         ms.log(
-            f"{sample.weight:.2f} g "
+            f"{read_time} "
+            f"{sample.weight:.2f}g "
             f"{STATE_NAME[sample.state]}",
             terminal=False
         )

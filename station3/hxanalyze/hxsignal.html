@@ -47,6 +47,9 @@
         .sigma {
             color: #f66;
         }
+        .threshold {
+            color: #0f0;
+        }
     </style>
 </head>
 <body>
@@ -60,6 +63,8 @@
         <span class="offset">■ Offset drift (g)</span>
         &nbsp;&nbsp;
         <span class="sigma">■ Sigma (g)</span>
+        &nbsp;&nbsp;
+        <span class="threshold">■ Threshold (g)</span>
     </div>
 
     <div id="status">Waiting for data...</div>
@@ -134,6 +139,7 @@ async function fetchSignal() {
             || typeof data.weight !== "number"
             || typeof data.offset !== "number"
             || typeof data.sigma !== "number"
+            || typeof data.threshold !== "number"
             || typeof data.hxscale !== "number"
         ) {
             throw new Error("Invalid signal data");
@@ -152,7 +158,8 @@ async function fetchSignal() {
             t: data.t,
             weight: data.weight,
             offset: offsetGrams,
-            sigma: data.sigma
+            sigma: data.sigma,
+            threshold: data.threshold
         };
         if (
             latestSample === null
@@ -162,9 +169,10 @@ async function fetchSignal() {
             latestSample = sample;
         }
         status.textContent =
-            `Weight: ${sample.weight.toFixed(2)} g | `
-            + `Offset drift: ${sample.offset.toFixed(2)} g | `
-            + `Sigma: ${sample.sigma.toFixed(2)} g`;
+            `Weight: ${sample.weight.toFixed(2)}g | `
+            + `Offset drift: ${sample.offset.toFixed(2)}g | `
+            + `Sigma: ${sample.sigma.toFixed(2)}g | `
+            + `Threshold: ${sample.threshold.toFixed(2)}g`;
     } catch (error) {
         console.error(
             "fetch /hxsignal failed:",
@@ -276,6 +284,14 @@ function drawSignal() {
         timeRange,
         width,
         height
+    );
+    drawLine(
+    "threshold",
+    "#0f0",
+    firstTime,
+    timeRange,
+    width,
+    height
     );
 }
 
