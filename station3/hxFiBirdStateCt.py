@@ -250,6 +250,11 @@ class Baseline:
     # ---- per-tick conversion ----
 
     def process(self, sample: Sample) -> None:
+        # If raw drops below offset, snap offset to current raw (Instant Rezero)
+        if sample.raw < self.offset:
+            self.offset = float(sample.raw)
+            sample.events.append("ZERO_RESET")
+
         sample.offset = self.offset
         sample.weight = (sample.raw - self.offset) / hxScale * hxPolarity
 
