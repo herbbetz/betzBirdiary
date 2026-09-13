@@ -1,25 +1,25 @@
 
-samples : 373
-first   : 22:55:26
-last    : 23:01:38
+samples : 228
+first   : 15:18:28
+last    : 15:22:09
 
 Configuration
 -------------
 weight threshold : 8.00 g
 threshold off    : 5.60 g
 weight limit     : 300 g
-hxScale          : 533.0
-startup offset   : 170444
-startup note     : STARTUP_ZERO spread=1312 < 3000.0
+hxScale          : 527.0
+startup offset   : 175818
+startup note     : STARTUP_ZERO spread=2966 < 3000.0
 CAMERA_DELAY     : 2.00 s
 
 Baseline statistics
 -------------------
-startup offset : 170444
-minimum offset : 169864
-maximum offset : 170444
-offset range   : 580
-idle mean      : 170380
+startup offset : 175818
+minimum offset : 175818
+maximum offset : 175818
+offset range   : 0
+idle mean      : 175818
 
 Baseline maintenance
 --------------------
@@ -27,17 +27,27 @@ baseline resets : none
 
 Oversize events
 ----------------
-none
+
+Event 1
+  arrival : 15:18:29
+  leave   : 15:18:31
+  peak    : 2.99 g
 
 Visit statistics
 ----------------
-visits   : 0
-oversize : 0
+visits   : 3
+oversize : 1
+
+Visit durations
+----------------
+minimum : 0.00 s
+maximum : 15.98 s
+mean    : 10.29 s
 
 Camera events
 -------------
-hx triggers             : 0
-FIFO triggers           : 0
+hx triggers             : 2
+FIFO triggers           : 2
 followed by recording   : 0
 blocked by CLR_Q        : 0
 blocked by STDBY        : 0
@@ -45,19 +55,23 @@ unrelated FIFO events   : 0
 
 Idle statistics
 ----------------
-mean weight   : -0.47 g
-minimum       : -3.61 g
-maximum       : 3.89 g
-peak-to-peak   : 7.50 g
+mean weight   : 2.06 g
+minimum       : -2.50 g
+maximum       : 333.62 g
+peak-to-peak   : 336.12 g
 
 Warnings
 --------
-none
+Oversize events detected: 1
 
 Offset discontinuities (threshold: 3.0 g)
 --------------------
 
 Summary
 -------
-visits   : 0
+visits   : 3
+mean stay: 10.3 s
+longest  : 16.0 s
+highest  : 16.95 g
+oversize : 1
 timeline plot written to signal_timeline.svg

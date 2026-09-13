@@ -18,7 +18,8 @@ from configBird3 import birdpath
 #   envirEvt, sysmonEvt: new data available as value increased
 #   confirm and upmode are only, if several mainVideo scripts can be exchanged (old acknowlegde mode)
 #   standby: 0 or 1, set by webGUI to stop video capturing
-#   clientactive: 0 or 1, set by flaskBird3.py when webclient is active
+#   clientactive: 0 or 1, set by flaskBird3.py when webclient is active.
+#       Others like log() could be made dependant on this, so they only write, when WebGUI is watched. Not yet implemented.
 #   lux: illumination category 1..6, set by mainFoBird3.py
 #   luxraw: raw lux data string for webGUI display, set by mainFoBird3.py
 #   recording: 0 or 1, set by mainFoBird3.py

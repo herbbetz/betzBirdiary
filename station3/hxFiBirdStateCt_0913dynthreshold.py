@@ -152,26 +152,41 @@ class MedianFilter:
 # ============================================================
 # BASELINE (offset management and raw -> weight conversion)
 # ============================================================
+
 STARTUP_SETTLE_TIME = 2.0
 STARTUP_MAX_TIME = 60.0
 STABLE_SAMPLES = 120
 STABLE_SPREAD_LIMIT = 3000
 STARTUP_MAX_ATTEMPTS = 3
-EMA_ALPHA = 0.002
-IDLE_FOLLOW_WARMUP = 3.0     # seconds after entering IDLE before EMA starts
-REACQ_MAX_STEP_G = 5.0       # hard cap per single reacquire call
+EMA_ALPHA = 0.002   # correct all drift changes over minutes so they do not interfere with the birds
+ADOPT_MAX_STEP_G = 2.0   # max grams moved per adoption
 
 class Baseline:
     def __init__(self, hx: HX711_CT) -> None:
         self.hx = hx
         self.offset = 0.0
-        self._idle_t0: float = 0.0
+        self.stable_buf = deque(maxlen=STABLE_SAMPLES)
 
-    # ---- called by main loop on every transition INTO IDLE ----
-    def mark_idle_start(self) -> None:
-        self._idle_t0 = time.monotonic()
+    def stable_buf_reset(self) -> None:
+        self.stable_buf.clear()
 
-    # ---- startup (unchanged) ----
+    def update_stable_buffer(self, raw: int) -> None:
+        if len(self.stable_buf) >= STABLE_SAMPLES:
+            self.stable_buf.popleft()
+        self.stable_buf.append(raw)
+
+    def stable_raw(self) -> float | None:
+        if len(self.stable_buf) < STABLE_SAMPLES:
+            return None
+        spread = self._stable_spread()
+        if spread > STABLE_SPREAD_LIMIT:
+            return None
+        return float(np.median(self.stable_buf))
+
+    def _stable_spread(self) -> float:
+        values = np.array(self.stable_buf)
+        p10, p90 = np.percentile(values, [10, 90])
+        return p90 - p10
 
     def startup(self, sample: Sample) -> bool:
         best = float("inf")
@@ -183,9 +198,11 @@ class Baseline:
                 self.hx.close()
                 self.hx.open(testmode=testmode)
             result = self._startup_attempt(sample, attempt, spread_limit)
+
             if result is None:
                 return True
             best = min(best, result)
+
         raise RuntimeError(
             f"HX711 startup did not stabilize "
             f"({STARTUP_MAX_ATTEMPTS} attempts, "
@@ -208,7 +225,8 @@ class Baseline:
                 time.sleep(0.1)
                 continue
 
-        buf: list[int] = []
+        self.stable_buf.clear()
+
         best_spread = float("inf")
         best_median = 0.0
         t0 = time.monotonic()
@@ -221,17 +239,14 @@ class Baseline:
                 time.sleep(0.1)
                 continue
 
-            buf.append(raw)
-            if len(buf) > STABLE_SAMPLES:
-                buf.pop(0)
+            self.update_stable_buffer(raw)
 
-            if len(buf) >= STABLE_SAMPLES:
-                values = np.array(buf)
-                p10, p90 = np.percentile(values, [10, 90])
-                spread = p90 - p10
+            if len(self.stable_buf) >= STABLE_SAMPLES:
+                spread = self._stable_spread()
                 if spread < best_spread:
                     best_spread = spread
-                    best_median = float(np.median(values))
+                    best_median = float(np.median(self.stable_buf))
+
                 if spread <= spread_limit:
                     self.offset = best_median
                     sample.offset = self.offset
@@ -247,21 +262,15 @@ class Baseline:
 
         return best_spread
 
-    # ---- per-tick conversion ----
-
     def process(self, sample: Sample) -> None:
         sample.offset = self.offset
         sample.weight = (sample.raw - self.offset) / hxScale * hxPolarity
 
-    # ---- slow drift tracking (replaces adopt + follow_idle) ----
-
     def follow_idle(self, sample: Sample) -> None:
-        if time.monotonic() - self._idle_t0 < IDLE_FOLLOW_WARMUP:
+        if len(self.stable_buf) < STABLE_SAMPLES:
             return
         delta = sample.raw - self.offset
         self.offset += delta * EMA_ALPHA
-
-    # ---- capped emergency recovery (replaces uncapped reacquire) ----
 
     def reacquire(self, sample: Sample, burst: int = 25) -> bool:
         readings: list[int] = []
@@ -276,18 +285,23 @@ class Baseline:
         if len(readings) < burst // 2:
             return False
 
-        candidate = float(np.median(readings))
-        delta = candidate - self.offset
-        max_step = REACQ_MAX_STEP_G * hxScale
-        if abs(delta) > max_step:
-            delta = max_step if delta > 0 else -max_step
-
-        self.offset += delta
+        self.offset = float(np.median(readings))
+        self.stable_buf.clear()
         sample.offset = self.offset
         sample.weight = 0.0
+        return True
 
-        step_g = delta / hxScale * hxPolarity
-        sample.events.append(f"REACQ {step_g:+.1f}g")
+    def adopt(self, sample: Sample, candidate: float) -> bool:
+        delta = candidate - self.offset
+        if abs(delta) < hxScale:
+            return
+        max_delta_raw = ADOPT_MAX_STEP_G * hxScale
+        if abs(delta) > max_delta_raw:
+            delta = max_delta_raw if delta > 0 else -max_delta_raw
+        self.offset += delta
+        self.stable_buf.clear()
+        sample.offset = self.offset
+        sample.weight = 0.0
         return True
 
 # ============================================================
@@ -360,6 +374,8 @@ CAMERA_DELAY = 2.0
 ARRIVAL_CONFIRM_SAMPLES = 10
 DEPARTURE_CONFIRM_SAMPLES = 20
 RESET_COOLDOWN_S = 10.0
+IDLE_LOADED_FRACTION = 0.5
+IDLE_LOADED_JUMP = 2.0
 PRESENT_DRIFT_TIMEOUT = 60.0
 STATE_TIMEOUT = 300.0
 
@@ -437,6 +453,7 @@ class WeightFSM:
             if current_time - self.state_t0 > STATE_TIMEOUT:
                 old = STATE_NAME[self.state]
                 if not baseline.reacquire(sample, burst=25):
+                    baseline.stable_buf_reset()
                     sample.events.append("BASELINE_REACQUIRE_FAIL")
 
                 self.force_idle(current_time)
@@ -452,6 +469,7 @@ class WeightFSM:
             if sample.weight > self.threshold_off:
                 if current_time - self.state_t0 > STATE_TIMEOUT:
                     if not baseline.reacquire(sample, burst=25):
+                        baseline.stable_buf_reset()
                         sample.events.append("BASELINE_REACQUIRE_FAIL")
                     self.force_idle(current_time)
                     sample.events.append("BASELINE_RESET")
@@ -477,11 +495,19 @@ class WeightFSM:
             self.above_count = 0
             return None
 
-        if sample.weight > self.threshold_on:
-            self.above_count += 1
+        if sample.weight > IDLE_LOADED_FRACTION * self.threshold_on:
+            jump_required = IDLE_LOADED_JUMP * self.threshold_on
+            if sample.weight > jump_required:
+                self.above_count += 1
+            else:
+                self.above_count = 0
+                return None
         else:
-            self.above_count = 0
-            return None
+            if sample.weight > self.threshold_on:
+                self.above_count += 1
+            else:
+                self.above_count = 0
+                return None
 
         if self.above_count >= 3:
             if sample.weight > weightlimit:
@@ -700,8 +726,10 @@ noiseguard = NoiseGuard(window_samples=NOISEGUARD_SAMPLES)
 
 # Pre-fill MedianFilter only.
 # NoiseGuard deliberately starts empty.
+baseline_val = int(np.median(baseline.stable_buf))
+
 for _ in range(MEDIAN_SAMPLES):
-    median.update(sample)
+    median.buf.append(baseline_val)
 
 fsm = WeightFSM(weightThreshold)
 
@@ -737,27 +765,34 @@ try:
         median.update(sample)
         baseline.process(sample)
 
-        # --- NoiseGuard: still computed, still logged, but not acting ---
+        # NOISEGUARD
         noiseguard.add_sample(sample.raw)
         sample.sigma = noiseguard.current_std_grams()
 
-        # --- dyn_threshold: simulated at EMA pace, logged, not fed to FSM ---
         if fsm.state == STATE_IDLE:
             target = min(3.0 * sample.sigma + weightThreshold, max_dyn_threshold)
-        else:
-            target = weightThreshold          # drift back to base when bird is on
-        dyn_threshold += (target - dyn_threshold) * EMA_ALPHA
-        dyn_threshold = max(dyn_threshold, weightThreshold)
-        sample.dyn_threshold = dyn_threshold  # logged to CSV for offline analysis
+            dyn_threshold += (target - dyn_threshold) * EMA_ALPHA
 
-        # --- FSM gets the fixed base, not the simulated value ---
-        fsm.set_thresholds(weightThreshold)
+        dyn_threshold = max(dyn_threshold, weightThreshold)   # never drop below base
+        sample.dyn_threshold = dyn_threshold
+        fsm.set_thresholds(dyn_threshold)
 
+        # FSM
         event = fsm.process_weight(sample)
         sample.state = fsm.state
+
+        # BASELINE
         if fsm.state == STATE_IDLE:
-            baseline.mark_idle_start()
-            baseline.follow_idle(sample)
+            baseline.update_stable_buffer(sample.raw)
+            candidate = baseline.stable_raw()
+
+            if candidate is not None:
+                if baseline.adopt(sample, candidate):
+                    sample.events.append("IDLE_STABLE_RECAL")
+            else:
+                baseline.follow_idle(sample)
+        else:
+            baseline.stable_buf_reset()
 
         # FSM TIMEOUT / BASELINE RECOVERY
         timeout_event = fsm.check_timeout(sample, baseline)
