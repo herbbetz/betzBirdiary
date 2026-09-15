@@ -1,0 +1,6 @@
+date,weight,event
+15:51:53,28.00,cam_FIFO
+15:52:16,28.00,cam_SND_MV_ok
+15:52:19,5.00,cam_FIFO
+15:52:37,5.00,cam_SND_MV_ok
+15:53:02,2.00,cam_FIFO

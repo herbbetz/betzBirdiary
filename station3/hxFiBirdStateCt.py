@@ -148,7 +148,6 @@ class MedianFilter:
         self.buf.append(sample.raw_sample)
         sample.raw = int(np.median(self.buf))
 
-
 # ============================================================
 # BASELINE (offset management and raw -> weight conversion)
 # ============================================================
@@ -157,15 +156,20 @@ STARTUP_MAX_TIME = 60.0
 STABLE_SAMPLES = 120
 STABLE_SPREAD_LIMIT = 3000
 STARTUP_MAX_ATTEMPTS = 3
+REACQ_MAX_STEP_G = 5.0       # hard cap per single reacquire call
+# for EMA in follow_idle():
 EMA_ALPHA = 0.002
 IDLE_FOLLOW_WARMUP = 3.0     # seconds after entering IDLE before EMA starts
-REACQ_MAX_STEP_G = 5.0       # hard cap per single reacquire call
+STABLE_SIGMA_G = 1.5        # only allow drift correction when noise is low
+MAX_FOLLOW_STEP_G = 0.05    # hard per-tick cap on IDLE drift correction (grams)
+
 
 class Baseline:
     def __init__(self, hx: HX711_CT) -> None:
         self.hx = hx
         self.offset = 0.0
         self._idle_t0: float = 0.0
+        self._primed = False  # NEW: guards ZERO_RESET until offset is real
 
     # ---- called by main loop on every transition INTO IDLE ----
     def mark_idle_start(self) -> None:
@@ -184,6 +188,7 @@ class Baseline:
                 self.hx.open(testmode=testmode)
             result = self._startup_attempt(sample, attempt, spread_limit)
             if result is None:
+                self._primed = True
                 return True
             best = min(best, result)
         raise RuntimeError(
@@ -248,24 +253,42 @@ class Baseline:
         return best_spread
 
     # ---- per-tick conversion ----
-
     def process(self, sample: Sample) -> None:
-        # If raw drops below offset, snap offset to current raw (Instant Rezero)
-        if sample.raw < self.offset:
-            self.offset = float(sample.raw)
-            sample.events.append("ZERO_RESET")
+        if not self._primed:
+            sample.offset = self.offset
+            sample.weight = 0.0
+            return
 
         sample.offset = self.offset
         sample.weight = (sample.raw - self.offset) / hxScale * hxPolarity
 
     # ---- slow drift tracking (replaces adopt + follow_idle) ----
-
+    '''
     def follow_idle(self, sample: Sample) -> None:
         if time.monotonic() - self._idle_t0 < IDLE_FOLLOW_WARMUP:
             return
         delta = sample.raw - self.offset
         self.offset += delta * EMA_ALPHA
+    '''
+    def follow_idle(self, sample: Sample) -> None:
+        if time.monotonic() - self._idle_t0 < IDLE_FOLLOW_WARMUP:
+            return
 
+        # don't drift the baseline toward what might be a real, slowly
+        # settling load (e.g. a bird easing onto the perch)
+        if sample.sigma > STABLE_SIGMA_G:
+            return
+        if abs(sample.weight) > STABLE_SIGMA_G:
+            return
+
+        delta = sample.raw - self.offset
+        step = delta * EMA_ALPHA
+        max_step = MAX_FOLLOW_STEP_G * hxScale
+        if abs(step) > max_step:
+            step = max_step if step > 0 else -max_step
+
+        self.offset += step
+        
     # ---- capped emergency recovery (replaces uncapped reacquire) ----
 
     def reacquire(self, sample: Sample, burst: int = 25) -> bool:
@@ -706,8 +729,8 @@ noiseguard = NoiseGuard(window_samples=NOISEGUARD_SAMPLES)
 # Pre-fill MedianFilter only.
 # NoiseGuard deliberately starts empty.
 for _ in range(MEDIAN_SAMPLES):
+    sample.raw_sample = hx.read()
     median.update(sample)
-
 fsm = WeightFSM(weightThreshold)
 
 if testmode:
