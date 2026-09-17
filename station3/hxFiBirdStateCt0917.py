@@ -47,6 +47,7 @@ import os
 import sys
 import time
 import numpy as np
+import math
 # for LiveLogger:
 import urllib.parse
 import urllib.error
@@ -157,6 +158,7 @@ STABLE_SAMPLES = 120
 STABLE_SPREAD_LIMIT = 3000
 STARTUP_MAX_ATTEMPTS = 3
 REACQ_MAX_STEP_G = 5.0       # hard cap per single reacquire call
+REACQ_SPREAD_LIMIT = 800  # similar spirit to STABLE_SPREAD_LIMIT, tighter since it's a short burst
 # for EMA in follow_idle():
 EMA_ALPHA = 0.002
 IDLE_FOLLOW_WARMUP = 3.0     # seconds after entering IDLE before EMA starts
@@ -263,22 +265,13 @@ class Baseline:
         sample.weight = (sample.raw - self.offset) / hxScale * hxPolarity
 
     # ---- slow drift tracking (replaces adopt + follow_idle) ----
-    '''
-    def follow_idle(self, sample: Sample) -> None:
+    def follow_idle(self, sample: Sample, noiseguard: "NoiseGuard") -> None:
         if time.monotonic() - self._idle_t0 < IDLE_FOLLOW_WARMUP:
             return
-        delta = sample.raw - self.offset
-        self.offset += delta * EMA_ALPHA
-    '''
-    def follow_idle(self, sample: Sample) -> None:
-        if time.monotonic() - self._idle_t0 < IDLE_FOLLOW_WARMUP:
+        if not noiseguard.is_ready():
+            # sample.events.append("NOISEGUARD_NOT_READY")
             return
-
-        # don't drift the baseline toward what might be a real, slowly
-        # settling load (e.g. a bird easing onto the perch)
         if sample.sigma > STABLE_SIGMA_G:
-            return
-        if abs(sample.weight) > STABLE_SIGMA_G:
             return
 
         delta = sample.raw - self.offset
@@ -287,11 +280,11 @@ class Baseline:
         if abs(step) > max_step:
             step = max_step if step > 0 else -max_step
 
-        self.offset += step
-        
+        self.offset += step        
+
     # ---- capped emergency recovery (replaces uncapped reacquire) ----
 
-    def reacquire(self, sample: Sample, burst: int = 25) -> bool:
+    def reacquire(self, sample: Sample, burst: int = 25, max_step_g: float = REACQ_MAX_STEP_G) -> bool:
         readings: list[int] = []
         for _ in range(burst):
             try:
@@ -304,27 +297,38 @@ class Baseline:
         if len(readings) < burst // 2:
             return False
 
-        candidate = float(np.median(readings))
+        values = np.array(readings)
+        p10, p90 = np.percentile(values, [10, 90])
+        spread = p90 - p10
+
+        if spread > REACQ_SPREAD_LIMIT:
+            # burst caught something moving (e.g. a bird landing) — do NOT
+            # adopt this as baseline, it would bake in a loaded reading
+            sample.events.append(f"REACQ_REJECTED spread={spread:.0f}")
+            return False
+
+        candidate = float(np.median(values))
         delta = candidate - self.offset
-        max_step = REACQ_MAX_STEP_G * hxScale
+        max_step = max_step_g * hxScale
         if abs(delta) > max_step:
             delta = max_step if delta > 0 else -max_step
 
         self.offset += delta
         sample.offset = self.offset
-        sample.weight = 0.0
+        sample.weight = (sample.raw - self.offset) / hxScale * hxPolarity
 
         step_g = delta / hxScale * hxPolarity
-        sample.events.append(f"REACQ {step_g:+.1f}g")
-        return True
+        sample.events.append(f"REACQ {step_g:+.1f}g spread={spread:.0f}")
+        return abs(candidate - self.offset) < 0.5 * hxScale # return remaining, where correction is still needed
 
 # ============================================================
 # NoiseGuard (Welford's StdDev, rolling window)
 # ============================================================
 
 class NoiseGuard:
-    def __init__(self, window_samples: int = 210) -> None:
+    def __init__(self, window_samples: int = 210, min_ready_samples: int = 30) -> None:
         self.max_samples = window_samples
+        self.min_ready_samples = min_ready_samples
         self.buf = np.zeros(self.max_samples, dtype=np.float64)
         self.count = 0
         self.head = 0
@@ -353,6 +357,9 @@ class NoiseGuard:
             self.buf[self.head] = raw
 
         self.head = (self.head + 1) % self.max_samples
+
+    def is_ready(self) -> bool:
+        return self.count >= self.min_ready_samples
 
     def current_std(self) -> float:
         if self.count < 2:
@@ -464,6 +471,9 @@ class WeightFSM:
         if self.state in (STATE_ARRIVAL, STATE_PRESENT, STATE_DEPARTURE):
             if current_time - self.state_t0 > STATE_TIMEOUT:
                 old = STATE_NAME[self.state]
+
+                # Single capped shot only — unknown/possibly-loaded platform,
+                # don't loop toward a reading that might still include a bird.
                 if not baseline.reacquire(sample, burst=25):
                     sample.events.append("BASELINE_REACQUIRE_FAIL")
 
@@ -479,8 +489,15 @@ class WeightFSM:
         if self.state == STATE_IDLE:
             if sample.weight > self.threshold_off:
                 if current_time - self.state_t0 > STATE_TIMEOUT:
+                    # Low-risk state (should be empty) — loop toward full
+                    # convergence since follow_idle should normally prevent
+                    # this from ever firing.
                     if not baseline.reacquire(sample, burst=25):
-                        sample.events.append("BASELINE_REACQUIRE_FAIL")
+                        for _ in range(4):
+                            if baseline.reacquire(sample, burst=25):
+                                break
+                        else:
+                            sample.events.append("BASELINE_REACQUIRE_INCOMPLETE")
                     self.force_idle(current_time)
                     sample.events.append("BASELINE_RESET")
                     return "BASELINE_RESET"
@@ -721,6 +738,8 @@ MEDIAN_SAMPLES = 7
 NOISEGUARD_SAMPLES = 210
 dyn_threshold = weightThreshold
 max_dyn_threshold = 15
+DYN_THRESHOLD_DEADBAND = 0.5 # only push a new dyn_threshold to FSM if it moved at least this much
+fsm_threshold_applied = weightThreshold  # what the FSM currently has, tracked separately from dyn_threshold
 
 # Initialize filters
 median = MedianFilter(size=MEDIAN_SAMPLES)
@@ -731,7 +750,9 @@ noiseguard = NoiseGuard(window_samples=NOISEGUARD_SAMPLES)
 for _ in range(MEDIAN_SAMPLES):
     sample.raw_sample = hx.read()
     median.update(sample)
+
 fsm = WeightFSM(weightThreshold)
+prev_fsm_state = fsm.state
 
 if testmode:
     signal_logger = SignalLogger(sample)
@@ -765,12 +786,16 @@ try:
         median.update(sample)
         baseline.process(sample)
 
-        # --- NoiseGuard: still computed, still logged, but not acting ---
-        noiseguard.add_sample(sample.raw)
+        is_quiet = fsm.state == STATE_IDLE and sample.weight < 0.7 * weightThreshold # weightThreshold_off
+        if is_quiet:
+            noiseguard.add_sample(sample.raw)
+        else:
+            noiseguard.reset()
+
         sample.sigma = noiseguard.current_std_grams()
 
-        # --- dyn_threshold: simulated at EMA pace, logged, not fed to FSM ---
-        if fsm.state == STATE_IDLE:
+        # --- dyn_threshold: could just simulate at EMA pace and be logged, if not fed to FSM ---
+        if fsm.state == STATE_IDLE and noiseguard.is_ready():
             target = min(3.0 * sample.sigma + weightThreshold, max_dyn_threshold)
         else:
             target = weightThreshold          # drift back to base when bird is on
@@ -779,13 +804,26 @@ try:
         sample.dyn_threshold = dyn_threshold  # logged to CSV for offline analysis
 
         # --- FSM gets the fixed base, not the simulated value ---
-        fsm.set_thresholds(weightThreshold)
-
+        # fsm.set_thresholds(weightThreshold)
+        # --- OR: ---
+        # activation: push to FSM only on IDLE-entry, or on a dead-band change
+        # while remaining IDLE -- never every tick, so threshold_on/off stay
+        # stable across the ARRIVAL confirmation-count window and don't chatter
+        if fsm.state == STATE_IDLE:
+            if prev_fsm_state != STATE_IDLE or abs(dyn_threshold - fsm_threshold_applied) >= DYN_THRESHOLD_DEADBAND:
+                fsm.set_thresholds(dyn_threshold)
+                fsm_threshold_applied = dyn_threshold
+        else:
+            if fsm_threshold_applied != weightThreshold:
+                fsm.set_thresholds(weightThreshold)
+                fsm_threshold_applied = weightThreshold
+        prev_fsm_state = fsm.state
+        
         event = fsm.process_weight(sample)
         sample.state = fsm.state
         if fsm.state == STATE_IDLE:
             baseline.mark_idle_start()
-            baseline.follow_idle(sample)
+            baseline.follow_idle(sample, noiseguard)
 
         # FSM TIMEOUT / BASELINE RECOVERY
         timeout_event = fsm.check_timeout(sample, baseline)

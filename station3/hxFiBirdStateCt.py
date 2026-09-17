@@ -152,17 +152,19 @@ class MedianFilter:
 # ============================================================
 # BASELINE (offset management and raw -> weight conversion)
 # ============================================================
-STARTUP_SETTLE_TIME = 2.0
-STARTUP_MAX_TIME = 60.0
-STABLE_SAMPLES = 120
-STABLE_SPREAD_LIMIT = 3000
-STARTUP_MAX_ATTEMPTS = 3
-REACQ_MAX_STEP_G = 5.0       # hard cap per single reacquire call
-# for EMA in follow_idle():
-EMA_ALPHA = 0.002
-IDLE_FOLLOW_WARMUP = 3.0     # seconds after entering IDLE before EMA starts
-STABLE_SIGMA_G = 1.5        # only allow drift correction when noise is low
-MAX_FOLLOW_STEP_G = 0.05    # hard per-tick cap on IDLE drift correction (grams)
+# Unified config: every offset-adopting path (startup, follow_idle,
+# reacquire) shares the same spread-based stability test and the same
+# step cap philosophy. No path may move self.offset without passing
+# through _stable_window() first.
+
+SETTLE_TIME       = 2.0     # startup settle before sampling
+MAX_WINDOW_TIME    = 60.0    # max time to wait for a stable window
+WINDOW_SAMPLES      = 120     # samples per stability window (startup + reacquire)
+SPREAD_LIMIT        = 3000    # p10-p90 ADC spread considered "quiet"
+MAX_ATTEMPTS         = 3      # retries with relaxed spread limit
+MAX_STEP_G          = 5.0     # hard cap per single offset correction (any path)
+EMA_ALPHA           = 0.002   # IDLE per-tick drift-follow rate
+IDLE_FOLLOW_WARMUP  = 3.0     # seconds after entering IDLE before EMA starts
 
 
 class Baseline:
@@ -170,88 +172,101 @@ class Baseline:
         self.hx = hx
         self.offset = 0.0
         self._idle_t0: float = 0.0
-        self._primed = False  # NEW: guards ZERO_RESET until offset is real
+        self._primed = False
 
-    # ---- called by main loop on every transition INTO IDLE ----
     def mark_idle_start(self) -> None:
         self._idle_t0 = time.monotonic()
 
-    # ---- startup (unchanged) ----
-
-    def startup(self, sample: Sample) -> bool:
-        best = float("inf")
-        spread_limit = STABLE_SPREAD_LIMIT
-        for attempt in range(1, STARTUP_MAX_ATTEMPTS + 1):
-            spread_limit = STABLE_SPREAD_LIMIT * (1 + 0.5 * (attempt - 1))
-            if attempt > 1:
-                ms.log(f"Startup retry {attempt}/{STARTUP_MAX_ATTEMPTS}")
-                self.hx.close()
-                self.hx.open(testmode=testmode)
-            result = self._startup_attempt(sample, attempt, spread_limit)
-            if result is None:
-                self._primed = True
-                return True
-            best = min(best, result)
-        raise RuntimeError(
-            f"HX711 startup did not stabilize "
-            f"({STARTUP_MAX_ATTEMPTS} attempts, "
-            f"spread {best:.0f} > {spread_limit})"
-        )
-
-    def _startup_attempt(
-        self,
-        sample: Sample,
-        attempt: int,
-        spread_limit: int
-    ) -> float | None:
-        ms.log(f"Startup zeroing (attempt {attempt})...")
-        time.sleep(STARTUP_SETTLE_TIME)
-
-        for _ in range(5):
-            try:
-                self.hx.read()
-            except RuntimeError:
-                time.sleep(0.1)
-                continue
-
+    # ---- shared stability primitive ----
+    # Collects up to `samples` readings (bounded by max_time), returns
+    # (median, spread) of the tightest window seen. Caller decides
+    # whether spread is acceptable.
+    def _collect_window(self, samples: int, max_time: float) -> tuple[float, float] | None:
         buf: list[int] = []
         best_spread = float("inf")
         best_median = 0.0
         t0 = time.monotonic()
 
-        while time.monotonic() - t0 < STARTUP_MAX_TIME:
+        while time.monotonic() - t0 < max_time:
             try:
                 raw = self.hx.read()
             except RuntimeError as e:
-                ms.log(f"Startup sample warning: {e}", terminal=False)
+                ms.log(f"Baseline sample warning: {e}", terminal=False)
                 time.sleep(0.1)
                 continue
 
             buf.append(raw)
-            if len(buf) > STABLE_SAMPLES:
+            if len(buf) > samples:
                 buf.pop(0)
 
-            if len(buf) >= STABLE_SAMPLES:
+            if len(buf) >= samples:
                 values = np.array(buf)
                 p10, p90 = np.percentile(values, [10, 90])
                 spread = p90 - p10
                 if spread < best_spread:
                     best_spread = spread
                     best_median = float(np.median(values))
+                if len(buf) == samples:
+                    # window full: return the best result seen so far,
+                    # caller checks against its own spread_limit
+                    return best_median, best_spread
+
+        return (best_median, best_spread) if buf else None
+
+    # Applies a candidate offset with a hard per-call step cap.
+    # Returns the applied (capped) delta in raw counts.
+    def _apply_capped(self, candidate: float, max_step_g: float = MAX_STEP_G) -> float:
+        delta = candidate - self.offset
+        max_step = max_step_g * hxScale
+        if abs(delta) > max_step:
+            delta = max_step if delta > 0 else -max_step
+        self.offset += delta
+        return delta
+
+    # ---- startup ----
+    def startup(self, sample: Sample) -> bool:
+        best = float("inf")
+        spread_limit = SPREAD_LIMIT
+        for attempt in range(1, MAX_ATTEMPTS + 1):
+            spread_limit = SPREAD_LIMIT * (1 + 0.5 * (attempt - 1))
+            if attempt > 1:
+                ms.log(f"Startup retry {attempt}/{MAX_ATTEMPTS}")
+                self.hx.close()
+                self.hx.open(testmode=testmode)
+
+            ms.log(f"Startup zeroing (attempt {attempt})...")
+            time.sleep(SETTLE_TIME)
+            for _ in range(5):
+                try:
+                    self.hx.read()
+                except RuntimeError:
+                    time.sleep(0.1)
+
+            t0 = time.monotonic()
+            result = self._collect_window(WINDOW_SAMPLES, MAX_WINDOW_TIME)
+            delay = time.monotonic() - t0
+
+            if result is not None:
+                median, spread = result
                 if spread <= spread_limit:
-                    self.offset = best_median
+                    self.offset = median
                     sample.offset = self.offset
                     sample.weight = 0.0
                     sample.startup_spread = spread
                     sample.startup_attempts = attempt
                     sample.startup_maxspread = spread_limit
-                    sample.startup_delay = time.monotonic() - t0
+                    sample.startup_delay = delay
                     event = f"STARTUP_ZERO spread={spread:.0f} < {spread_limit}"
                     sample.events.append(event)
                     ms.log(event)
-                    return None
+                    self._primed = True
+                    return True
+                best = min(best, spread)
 
-        return best_spread
+        raise RuntimeError(
+            f"HX711 startup did not stabilize "
+            f"({MAX_ATTEMPTS} attempts, spread {best:.0f} > {spread_limit})"
+        )
 
     # ---- per-tick conversion ----
     def process(self, sample: Sample) -> None:
@@ -259,60 +274,66 @@ class Baseline:
             sample.offset = self.offset
             sample.weight = 0.0
             return
-
         sample.offset = self.offset
         sample.weight = (sample.raw - self.offset) / hxScale * hxPolarity
 
-    # ---- slow drift tracking (replaces adopt + follow_idle) ----
+    # ---- slow drift tracking during IDLE ----
     def follow_idle(self, sample: Sample, noiseguard: "NoiseGuard") -> None:
         if time.monotonic() - self._idle_t0 < IDLE_FOLLOW_WARMUP:
             return
         if not noiseguard.is_ready():
-            # sample.events.append("NOISEGUARD_NOT_READY")
             return
-        if sample.sigma > STABLE_SIGMA_G:
+        # sigma is the live proxy for "is the platform currently quiet" —
+        # this is the ONLY gate. No weight-magnitude gate: a large offset
+        # error must remain correctable regardless of how far it has drifted.
+        if sample.sigma > (SPREAD_LIMIT / hxScale):
             return
 
         delta = sample.raw - self.offset
         step = delta * EMA_ALPHA
-        max_step = MAX_FOLLOW_STEP_G * hxScale
+        max_step = MAX_STEP_G * hxScale * 0.01  # per-tick step stays much smaller than a full correction
         if abs(step) > max_step:
             step = max_step if step > 0 else -max_step
+        self.offset += step
 
-        self.offset += step        
-
-    # ---- capped emergency recovery (replaces uncapped reacquire) ----
-    def reacquire(self, sample: Sample, burst: int = 25, max_step_g: float = REACQ_MAX_STEP_G) -> bool:
-        readings: list[int] = []
-        for _ in range(burst):
-            try:
-                readings.append(self.hx.read())
-            except RuntimeError:
-                time.sleep(0.05)
-                continue
-            time.sleep(0.1)
-
-        if len(readings) < burst // 2:
+    # ---- emergency recovery ----
+    # Only adopts a candidate offset if the burst window was itself stable
+    # (spread test) — a burst caught mid-load-transition is rejected
+    # outright rather than partially baked in.
+    def reacquire(self, sample: Sample, burst: int = 25) -> bool:
+        result = self._collect_window(burst, max_time=burst * 0.2)
+        if result is None:
             return False
 
-        candidate = float(np.median(readings))
-        delta = candidate - self.offset
-        max_step = max_step_g * hxScale
-        if abs(delta) > max_step:
-            delta = max_step if delta > 0 else -max_step
+        candidate, spread = result
+        if spread > SPREAD_LIMIT:
+            sample.events.append(f"REACQ_REJECTED spread={spread:.0f}")
+            return False
 
-        self.offset += delta
+        delta = self._apply_capped(candidate)
         sample.offset = self.offset
         sample.weight = (sample.raw - self.offset) / hxScale * hxPolarity
 
         step_g = delta / hxScale * hxPolarity
-        sample.events.append(f"REACQ {step_g:+.1f}g")
+        sample.events.append(f"REACQ {step_g:+.1f}g spread={spread:.0f}")
+        return abs(candidate - self.offset) < 0.5 * hxScale # return remaining to further correct baseline
 
-        # NEW: signal caller whether more correction is still needed,
-        # so check_timeout can loop instead of waiting another 300s.
-        remaining = abs(candidate - self.offset)
-        return remaining < 0.5 * hxScale  # True only if converged
+    # ---- single entry point for emergency recovery ----
+    # `cautious=True`: platform state is unknown (ARRIVAL/PRESENT/DEPARTURE
+    #   stuck) — a bird might still be on it, so take one capped attempt only.
+    # `cautious=False`: platform is expected empty (IDLE) — safe to loop
+    #   toward full convergence.
+    # Returns an event string; caller never needs to know about bursts,
+    # spread checks, or attempt counts.
+    def recover(self, sample: Sample, cautious: bool, max_attempts: int = 5) -> str:
+        if cautious:
+            return "REACQ_OK" if self.reacquire(sample) else "REACQ_FAIL"
 
+        for _ in range(max_attempts):
+            if self.reacquire(sample):
+                return "REACQ_OK"
+        return "REACQ_INCOMPLETE"
+    
 # ============================================================
 # NoiseGuard (Welford's StdDev, rolling window)
 # ============================================================
@@ -460,41 +481,34 @@ class WeightFSM:
     def check_timeout(self, sample, baseline) -> str | None:
         current_time = time.monotonic()
 
+        timed_out = False
+        cautious = False
+
         if self.state in (STATE_ARRIVAL, STATE_PRESENT, STATE_DEPARTURE):
             if current_time - self.state_t0 > STATE_TIMEOUT:
-                old = STATE_NAME[self.state]
+                timed_out = True
+                cautious = True
+            else:
+                since = current_time - self.state_t0
+                sample.events.append(f"_{since:.0f}s")
+                return None
 
-                # Single capped shot only — unknown/possibly-loaded platform,
-                # don't loop toward a reading that might still include a bird.
-                if not baseline.reacquire(sample, burst=25):
-                    sample.events.append("BASELINE_REACQUIRE_FAIL")
+        elif self.state == STATE_IDLE:
+            if sample.weight > self.threshold_off and current_time - self.state_t0 > STATE_TIMEOUT:
+                timed_out = True
+                cautious = False
 
-                self.force_idle(current_time)
-                event_str = f"BASELINE_RESET {old} -> IDLE"
-                sample.events.append(event_str)
-                return event_str
-
-            since = current_time - self.state_t0
-            sample.events.append(f"_{since:.0f}s")
+        if not timed_out:
             return None
 
-        if self.state == STATE_IDLE:
-            if sample.weight > self.threshold_off:
-                if current_time - self.state_t0 > STATE_TIMEOUT:
-                    # Low-risk state (should be empty) — loop toward full
-                    # convergence since follow_idle should normally prevent
-                    # this from ever firing.
-                    if not baseline.reacquire(sample, burst=25):
-                        for _ in range(4):
-                            if baseline.reacquire(sample, burst=25):
-                                break
-                        else:
-                            sample.events.append("BASELINE_REACQUIRE_INCOMPLETE")
-                    self.force_idle(current_time)
-                    sample.events.append("BASELINE_RESET")
-                    return "BASELINE_RESET"
+        old = STATE_NAME[self.state]
+        result = baseline.recover(sample, cautious=cautious)
+        sample.events.append(result)
 
-        return None
+        self.force_idle(current_time)
+        event_str = f"BASELINE_RESET {old} -> IDLE" if cautious else "BASELINE_RESET"
+        sample.events.append(event_str)
+        return event_str
 
     def process_weight(self, sample) -> str | None:
         if self.state == STATE_IDLE:
