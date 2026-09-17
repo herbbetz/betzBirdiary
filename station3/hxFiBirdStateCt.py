@@ -272,8 +272,6 @@ class Baseline:
             return
         if sample.sigma > STABLE_SIGMA_G:
             return
-        if abs(sample.weight) > STABLE_SIGMA_G:
-            return
 
         delta = sample.raw - self.offset
         step = delta * EMA_ALPHA
@@ -284,7 +282,7 @@ class Baseline:
         self.offset += step        
 
     # ---- capped emergency recovery (replaces uncapped reacquire) ----
-    def reacquire(self, sample: Sample, burst: int = 25) -> bool:
+    def reacquire(self, sample: Sample, burst: int = 25, max_step_g: float = REACQ_MAX_STEP_G) -> bool:
         readings: list[int] = []
         for _ in range(burst):
             try:
@@ -299,17 +297,21 @@ class Baseline:
 
         candidate = float(np.median(readings))
         delta = candidate - self.offset
-        max_step = REACQ_MAX_STEP_G * hxScale
+        max_step = max_step_g * hxScale
         if abs(delta) > max_step:
             delta = max_step if delta > 0 else -max_step
 
         self.offset += delta
         sample.offset = self.offset
-        sample.weight = 0.0
+        sample.weight = (sample.raw - self.offset) / hxScale * hxPolarity
 
         step_g = delta / hxScale * hxPolarity
         sample.events.append(f"REACQ {step_g:+.1f}g")
-        return True
+
+        # NEW: signal caller whether more correction is still needed,
+        # so check_timeout can loop instead of waiting another 300s.
+        remaining = abs(candidate - self.offset)
+        return remaining < 0.5 * hxScale  # True only if converged
 
 # ============================================================
 # NoiseGuard (Welford's StdDev, rolling window)
@@ -461,6 +463,9 @@ class WeightFSM:
         if self.state in (STATE_ARRIVAL, STATE_PRESENT, STATE_DEPARTURE):
             if current_time - self.state_t0 > STATE_TIMEOUT:
                 old = STATE_NAME[self.state]
+
+                # Single capped shot only — unknown/possibly-loaded platform,
+                # don't loop toward a reading that might still include a bird.
                 if not baseline.reacquire(sample, burst=25):
                     sample.events.append("BASELINE_REACQUIRE_FAIL")
 
@@ -476,8 +481,15 @@ class WeightFSM:
         if self.state == STATE_IDLE:
             if sample.weight > self.threshold_off:
                 if current_time - self.state_t0 > STATE_TIMEOUT:
+                    # Low-risk state (should be empty) — loop toward full
+                    # convergence since follow_idle should normally prevent
+                    # this from ever firing.
                     if not baseline.reacquire(sample, burst=25):
-                        sample.events.append("BASELINE_REACQUIRE_FAIL")
+                        for _ in range(4):
+                            if baseline.reacquire(sample, burst=25):
+                                break
+                        else:
+                            sample.events.append("BASELINE_REACQUIRE_INCOMPLETE")
                     self.force_idle(current_time)
                     sample.events.append("BASELINE_RESET")
                     return "BASELINE_RESET"
