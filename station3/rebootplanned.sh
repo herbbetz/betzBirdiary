@@ -2,7 +2,7 @@
 # For bird stations running without nightly shutdown, called from premidnight.service
 
 APPDIR="/home/pi/station3"
-LOGFILE="$APPDIR/logs/startup.log"
+LOGFILE="$APPDIR/ramdisk/startup.log"
 
 log() {
     echo "$*" >> "$LOGFILE" 2>&1
@@ -28,5 +28,8 @@ fi
 # 3. Write lastdown.json for config3.html
 bash "$APPDIR/lastdownwrite.sh" "$msg"
 log "$(date): Initiating planned reboot."
+
+bash "$APPDIR/cp2log.sh"
+sleep 1
 sudo sync
 sudo reboot

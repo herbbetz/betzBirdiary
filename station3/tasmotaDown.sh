@@ -55,6 +55,7 @@ fi
 
 # Write lastdown.json for showing in config3.html
 bash "$APPDIR/lastdownwrite.sh" "$msg"
-
+bash "$APPDIR/cp2log.sh"
+sleep 1
 sudo sync
 sudo shutdown -h +1
