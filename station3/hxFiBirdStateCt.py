@@ -181,7 +181,7 @@ class Baseline:
     # Collects up to `samples` readings (bounded by max_time), returns
     # (median, spread) of the tightest window seen. Caller decides
     # whether spread is acceptable.
-    def _collect_window(self, samples: int, max_time: float) -> tuple[float, float] | None:
+    def _collect_window(self, samples: int, max_time: float, spread_limit: float) -> tuple[float, float] | None:
         buf: list[int] = []
         best_spread = float("inf")
         best_median = 0.0
@@ -206,11 +206,10 @@ class Baseline:
                 if spread < best_spread:
                     best_spread = spread
                     best_median = float(np.median(values))
-                if len(buf) == samples:
-                    # window full: return the best result seen so far,
-                    # caller checks against its own spread_limit
-                    return best_median, best_spread
+                if spread <= spread_limit:
+                    return best_median, spread  # found a good-enough window, stop searching
 
+        # ran out of time: return the best window seen, caller decides what to do
         return (best_median, best_spread) if buf else None
 
     # Applies a candidate offset with a hard per-call step cap.
@@ -243,7 +242,7 @@ class Baseline:
                     time.sleep(0.1)
 
             t0 = time.monotonic()
-            result = self._collect_window(WINDOW_SAMPLES, MAX_WINDOW_TIME)
+            result = self._collect_window(WINDOW_SAMPLES, MAX_WINDOW_TIME, spread_limit)
             delay = time.monotonic() - t0
 
             if result is not None:
@@ -297,19 +296,16 @@ class Baseline:
         self.offset += step
 
     # ---- emergency recovery ----
-    # Only adopts a candidate offset if the burst window was itself stable
-    # (spread test) — a burst caught mid-load-transition is rejected
-    # outright rather than partially baked in.
+    # _collect_window only ever returns a window that already satisfies
+    # spread_limit (or None on timeout), so no separate rejection check
+    # is needed here.
     def reacquire(self, sample: Sample, burst: int = 25) -> bool:
-        result = self._collect_window(burst, max_time=burst * 0.2)
+        result = self._collect_window(burst, max_time=burst * 0.2, spread_limit=SPREAD_LIMIT)
         if result is None:
+            sample.events.append("REACQ_TIMEOUT")
             return False
 
         candidate, spread = result
-        if spread > SPREAD_LIMIT:
-            sample.events.append(f"REACQ_REJECTED spread={spread:.0f}")
-            return False
-
         delta = self._apply_capped(candidate)
         sample.offset = self.offset
         sample.weight = (sample.raw - self.offset) / hxScale * hxPolarity
