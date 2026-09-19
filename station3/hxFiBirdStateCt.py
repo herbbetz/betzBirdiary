@@ -414,6 +414,7 @@ class WeightFSM:
         self.below_count = 0
         self.departure_t0 = 0.0
         self.present_t0 = 0.0
+        self._idle_aberration_t0: float | None = None  #independent of state_t0
         self.idle_cooldown_t0 = 0.0
         self._cooldown_duration = 3.0
         self.camera_sent = False
@@ -430,6 +431,7 @@ class WeightFSM:
         self.above_count = 0
         self.below_count = 0
 
+
     def force_idle(self, current_time: float) -> None:
         self.state = STATE_IDLE
         self.state_t0 = current_time
@@ -437,6 +439,7 @@ class WeightFSM:
         self._cooldown_duration = RESET_COOLDOWN_S
         self.reset()
         self.camera_sent = False
+        self._idle_aberration_t0 = None  # NEW: clear on any forced reset
 
     def _transition(self, new_state: int, sample, event: str) -> str:
         old_state = self.state
@@ -459,6 +462,9 @@ class WeightFSM:
         if old_state == STATE_DEPARTURE and new_state == STATE_IDLE:
             self.idle_cooldown_t0 = time.monotonic()
             self._cooldown_duration = 3.0
+
+        if new_state == STATE_IDLE:
+            self._idle_aberration_t0 = None  # NEW: fresh IDLE entry, no aberration yet
 
         sample.events.append(event)
         return event
@@ -489,9 +495,18 @@ class WeightFSM:
                 return None
 
         elif self.state == STATE_IDLE:
-            if sample.weight > self.threshold_off and current_time - self.state_t0 > STATE_TIMEOUT:
-                timed_out = True
-                cautious = False
+            # Track aberration duration independently of state_t0 / threshold sign.
+            # Any |weight| beyond threshold_off while IDLE counts, whether the
+            # cause is a bird lingering (positive) or a bad/drifted baseline
+            # (negative) — both are "IDLE should read ~0 and doesn't."
+            if abs(sample.weight) > self.threshold_off:
+                if self._idle_aberration_t0 is None:
+                    self._idle_aberration_t0 = current_time
+                elif current_time - self._idle_aberration_t0 > STATE_TIMEOUT:
+                    timed_out = True
+                    cautious = False
+            else:
+                self._idle_aberration_t0 = None
 
         if not timed_out:
             return None

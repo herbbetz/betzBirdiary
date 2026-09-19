@@ -10,6 +10,10 @@ import matplotlib.pyplot as plt
 JUMP_G = 3.0
 IDLE_BAD_TIME = 5.0
 CAMERA_MATCH_SECONDS = 2.0
+THRESHOLD_OFF_FACTOR = 0.7
+def get_threshold_off(weight_threshold: float) -> float:
+    """The one place where threshold_off is defined."""
+    return weight_threshold * THRESHOLD_OFF_FACTOR
 def read_signal_file(filename: str) -> tuple[dict, list[dict], list[str]]:
     meta = {}
     rows = []
@@ -117,7 +121,7 @@ def reconstruct_visits(
                 "arrival": period[0]["time"],
                 "arrival_i": start,
                 "peak": max(
-                    abs(row["weight"])
+                    row["weight"]
                     for row in period
                 )
             }
@@ -130,7 +134,7 @@ def reconstruct_visits(
                     - period[0]["mono_t"]
                 )
                 weights = [
-                    abs(row["weight"])
+                    row["weight"]
                     for row in period
                 ]
                 current["mean"] = (
@@ -148,7 +152,7 @@ def reconstruct_visits(
                     - period[0]["mono_t"]
                 ),
                 "peak": max(
-                    abs(row["weight"])
+                    row["weight"]
                     for row in period
                 )
             }
@@ -181,10 +185,7 @@ def get_configuration(meta: dict) -> dict:
     weight_threshold = meta.get("weightThreshold", 0)
     return {
         "weight_threshold": weight_threshold,
-        "threshold_off": meta.get(
-            "threshold_off",
-            weight_threshold * 0.7
-        ),
+        "threshold_off": get_threshold_off(weight_threshold),
         "weightlimit": meta.get("weightlimit", 0),
         "hxScale": meta.get("hxScale", 0),
         "startup_offset": meta.get("startup_offset", 0),
@@ -192,7 +193,7 @@ def get_configuration(meta: dict) -> dict:
         "CAMERA_DELAY": meta.get("CAMERA_DELAY", 0)
     }
 def row_has_event(row: dict, event: str) -> bool:
-    return event in row["events"].replace("|", " ").split()
+    return event in row["events"].split("|")
 def get_baseline_statistics(rows: list[dict], meta: dict) -> dict:
     idle_offsets = [
         row["offset"]
@@ -465,7 +466,7 @@ def create_plot(
     output_path: str
 ) -> None:
     times = [row["dt"] for row in rows]
-    weights = [abs(row["weight"]) for row in rows]
+    weights = [row["weight"] for row in rows]
     thresholds = [row["threshold"] for row in rows]
     sigmas = [row["sigma"] for row in rows]
     offset_g = [
@@ -476,7 +477,7 @@ def create_plot(
         else 0.0
         for row in rows
     ]
-    threshold_off = weight_threshold * 0.7
+    threshold_off = get_threshold_off(weight_threshold)
     fig, ax = plt.subplots(figsize=(11, 4))
     ax.plot(
         times,
@@ -585,10 +586,7 @@ def analyze_csv(
     )
     idle_warnings = find_idle_warnings(
         rows,
-        meta.get(
-            "threshold_off",
-            weight_threshold * 0.7
-        )
+        get_threshold_off(weight_threshold)
     )
     output_path = os.path.join(
         os.path.dirname(signal_filename),

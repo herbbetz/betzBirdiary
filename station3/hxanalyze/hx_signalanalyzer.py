@@ -13,10 +13,20 @@ IDLE ARRIVAL PRESENT OVERSIZE DEPARTURE
 """
 from datetime import datetime,timedelta
 import csv
+import os
 import sys
 import matplotlib.pyplot as plt
 JUMP_G=3.0
 IDLE_BAD_TIME=5.0
+THRESHOLD_OFF_FACTOR=0.7
+
+def get_threshold_off(weight_threshold:float)->float:
+    """The one place where threshold_off is defined."""
+    return weight_threshold*THRESHOLD_OFF_FACTOR
+
+def row_has_event(row:dict,event:str)->bool:
+    """Events are separated by '|' only."""
+    return event in row["events"].split("|")
 
 def reconstruct_datetimes(rows:list[dict])->None:
     """Assign a full datetime to each row from its %H:%M:%S time string.
@@ -156,7 +166,7 @@ def reconstruct_visits(rows:list[dict],periods:list[tuple[str,int,int]])->tuple[
 
 def print_configuration(meta:dict)->None:
     weight_threshold=meta.get("weightThreshold",0)
-    threshold_off=meta.get("threshold_off",weight_threshold*0.7)
+    threshold_off=get_threshold_off(weight_threshold)
     hx_scale=meta.get("hxScale",0)
     print()
     print("Configuration")
@@ -171,7 +181,7 @@ def print_configuration(meta:dict)->None:
 
 def print_baseline_statistics(rows:list[dict],meta:dict)->None:
     idle_offsets=[row["offset"] for row in rows if row["state"]=="IDLE"]
-    baseline_resets=[row for row in rows if "BASELINE_RESET" in row["events"].split()]
+    baseline_resets=[row for row in rows if row_has_event(row,"BASELINE_RESET")]
     print()
     print("Baseline statistics")
     print("-------------------")
@@ -229,7 +239,7 @@ def print_oversize(oversize:list[dict])->None:
 def analyze_camera_events(rows:list[dict],camera_events:list[dict])->dict:
     camera_triggers=[]
     for row in rows:
-        if "CAMERA_TRIGGER" in row["events"].split("|"):
+        if row_has_event(row,"CAMERA_TRIGGER"):
             camera_triggers.append({
                 "row":row,
                 "datetime":row["dt"]
@@ -393,7 +403,7 @@ def create_plot(rows:list[dict],periods:list[tuple[str,int,int]],weight_threshol
     sigmas=[row["sigma"] for row in rows]
     thresholds=[row["threshold"] for row in rows]
     offset_g=[(startup_offset-row["offset"])/abs(hx_scale) if hx_scale!=0 else 0.0 for row in rows]
-    threshold_off=weight_threshold*0.7
+    threshold_off=get_threshold_off(weight_threshold)
     fig,ax=plt.subplots(figsize=(11,4))
     ax.plot(times,weights,label="weight",linewidth=1)
     ax.plot(times,offset_g,label="offset drift (g)",linewidth=1)
@@ -406,7 +416,7 @@ def create_plot(rows:list[dict],periods:list[tuple[str,int,int]],weight_threshol
             ax.axvspan(times[start],times[end],alpha=0.08)
     camera_triggers=[
         times[i] for i,row in enumerate(rows)
-        if "CAMERA_TRIGGER" in row["events"].split("|")
+        if row_has_event(row,"CAMERA_TRIGGER")
     ]
     if camera_triggers:
         ax.vlines(
@@ -430,12 +440,34 @@ def create_plot(rows:list[dict],periods:list[tuple[str,int,int]],weight_threshol
     plt.savefig("signal_timeline.svg")
     print("timeline plot written to signal_timeline.svg")
 
+def fail(message:str)->None:
+    print(f"error: {message}",file=sys.stderr)
+    sys.exit(1)
+
+def check_input_files(signal_filename:str,camera_filename:str)->None:
+    """Report every missing input file with its absolute path, then exit."""
+    missing=[
+        (label,name)
+        for label,name in (("signal file",signal_filename),("camera event file",camera_filename))
+        if not os.path.isfile(name)
+    ]
+    if not missing:
+        return
+    for label,name in missing:
+        print(f"error: {label} not found: {os.path.abspath(name)}",file=sys.stderr)
+    print(f"current directory: {os.getcwd()}",file=sys.stderr)
+    sys.exit(1)
+
 def main()->None:
     if len(sys.argv)!=3:
         print("usage: hx_signalanalyzer.py signal_xxx.csv cam_event.csv")
         sys.exit(1)
-    meta,rows,_=read_signal_file(sys.argv[1])
-    camera_events=read_camera_events(sys.argv[2])
+    check_input_files(sys.argv[1],sys.argv[2])
+    try:
+        meta,rows,_=read_signal_file(sys.argv[1])
+        camera_events=read_camera_events(sys.argv[2])
+    except OSError as error:
+        fail(f"cannot read input file: {error}")
     if not rows:
         print("no samples found")
         sys.exit(1)
@@ -455,7 +487,7 @@ def main()->None:
     camera_analysis=analyze_camera_events(rows,camera_events)
     print_camera_events(camera_analysis)
     print_idle_statistics(rows)
-    threshold_off=weight_threshold*0.7
+    threshold_off=get_threshold_off(weight_threshold)
     idle_warnings=find_idle_warnings(rows,threshold_off)
     print_warnings(idle_warnings,oversize)
     print_offset_discontinuities(rows,hx_scale)
