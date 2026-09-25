@@ -22,8 +22,8 @@ for src in "${src_files[@]}"; do
         extension="${src##*.}"
         
         # New name with date suffix (MMDDHHMMSS for uniqueness)
-        suffix=$(date +%m%d%H%M%S)
-        new_name="${file_base}${suffix}.${extension}"
+        suffix=$(date +%m%d%H%M)
+        new_name="${file_base}_${suffix}.${extension}"
         
         # Copy and rename
         if cp "$SRCDIR/$src" "${DSTDIR}/${new_name}"; then
