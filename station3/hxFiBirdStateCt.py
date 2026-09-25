@@ -806,7 +806,7 @@ try:
         median.update(sample)
         baseline.process(sample)
 
-        is_quiet = fsm.state == STATE_IDLE and sample.weight < 0.7 * weightThreshold # weightThreshold_off
+        is_quiet = fsm.state == STATE_IDLE and sample.weight < fsm.threshold_off
         if is_quiet:
             noiseguard.add_sample(sample.raw)
         else:
