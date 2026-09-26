@@ -1,8 +1,0 @@
-date,weight,event
-10:03:36,8.00,cam_FIFO
-10:05:46,8.00,cam_SND_MV_noack
-10:05:46,8.00,cam_CLR_Q
-10:05:50,10.00,cam_FIFO
-10:08:00,10.00,cam_SND_MV_noack
-10:08:00,9.00,cam_CLR_Q
-10:08:07,13.00,cam_FIFO
