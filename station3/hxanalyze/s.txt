@@ -1,0 +1,74 @@
+
+samples : 916
+first   : 09:54:39
+last    : 10:09:43
+
+Configuration
+-------------
+weight threshold : 8.00 g
+threshold off    : 5.60 g
+weight limit     : 300 g
+hxScale          : 527.0
+startup offset   : 175156
+startup note     : STARTUP_ZERO spread=4348 < 4500.0
+CAMERA_DELAY     : 2.00 s
+
+Baseline statistics
+-------------------
+startup offset : 175156
+minimum offset : 175156
+maximum offset : 175156
+offset range   : 0
+idle mean      : 175156
+
+Baseline maintenance
+--------------------
+baseline resets : none
+
+Oversize events
+----------------
+none
+
+Visit statistics
+----------------
+visits   : 7
+oversize : 0
+
+Visit durations
+----------------
+minimum : 0.00 s
+maximum : 59.08 s
+mean    : 46.57 s
+
+Camera events
+-------------
+hx triggers             : 6
+FIFO triggers           : 3
+followed by recording   : 0
+blocked by CLR_Q        : 2
+blocked by STDBY        : 0
+unrelated FIFO events   : 0
+
+Idle statistics
+----------------
+mean weight   : 1.83 g
+minimum       : -6.63 g
+maximum       : 14.33 g
+peak-to-peak   : 20.96 g
+
+Warnings
+--------
+IDLE outside threshold_off started at 10:02:38 duration=8.9s max=13.61 g.
+IDLE outside threshold_off started at 10:02:48 duration=18.0s max=12.74 g.
+IDLE outside threshold_off started at 10:03:07 duration=24.9s max=11.95 g.
+
+Offset discontinuities (threshold: 3.0 g)
+--------------------
+
+Summary
+-------
+visits   : 7
+mean stay: 46.6 s
+longest  : 59.1 s
+highest  : 18.38 g
+timeline plot written to signal_timeline.svg

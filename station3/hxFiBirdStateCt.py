@@ -833,14 +833,12 @@ try:
             if prev_fsm_state != STATE_IDLE or abs(dyn_threshold - fsm_threshold_applied) >= DYN_THRESHOLD_DEADBAND:
                 fsm.set_thresholds(dyn_threshold)
                 fsm_threshold_applied = dyn_threshold
-        else:
-            if fsm_threshold_applied != weightThreshold:
-                fsm.set_thresholds(weightThreshold)
-                fsm_threshold_applied = weightThreshold
+        # else: keep last-applied threshold through ARRIVAL/PRESENT/DEPARTURE --
         prev_fsm_state = fsm.state
         
         event = fsm.process_weight(sample)
         sample.state = fsm.state
+        sample.dyn_threshold = fsm_threshold_applied  # log what's really active, not the IDLE-only simulation
         if fsm.state == STATE_IDLE:
             baseline.mark_idle_start()
             baseline.follow_idle(sample, noiseguard)
