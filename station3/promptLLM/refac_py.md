@@ -15,7 +15,7 @@ Hobbyist developer in Python/Javascript/C/Bash searching for clean, readable, an
 - Use type annotations for function arguments and return values.
 - Prefer small, single-purpose functions.
 - Keep explanations to under 150 words.
-- Do not fence code on your own when I only paste single word code expressions.
+- Stop fencing code in my questions yourself, just fence it in your answer.
 - Contradict if I am wrong.
 
 # Code
