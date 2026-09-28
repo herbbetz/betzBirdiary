@@ -403,7 +403,6 @@ CAMERA_DELAY = 2.0
 ARRIVAL_CONFIRM_SAMPLES = 10
 DEPARTURE_CONFIRM_SAMPLES = 20
 RESET_COOLDOWN_S = 10.0
-PRESENT_DRIFT_TIMEOUT = 60.0
 STATE_TIMEOUT = 300.0
 
 class WeightFSM:
@@ -564,15 +563,6 @@ class WeightFSM:
     def state_present(self, sample) -> str | None:
         if sample.weight > weightlimit:
             return self._transition(STATE_OVERSIZE, sample, "PRESENT->OVERSIZE")
-
-        if time.monotonic() - self.present_t0 > PRESENT_DRIFT_TIMEOUT:
-            entry_w = self.weight_at_arrival
-            if entry_w > 0 and sample.weight > 0.5 * entry_w:
-                return self._transition(
-                    STATE_DEPARTURE, sample,
-                    "PRESENT_DRIFT_EXIT->DEPARTURE"
-                )
-
         if sample.weight < self.threshold_off:
             self.below_count += 1
             if self.below_count >= DEPARTURE_CONFIRM_SAMPLES:
@@ -806,7 +796,7 @@ try:
         median.update(sample)
         baseline.process(sample)
 
-        is_quiet = fsm.state == STATE_IDLE and sample.weight < fsm.threshold_off
+        is_quiet = fsm.state == STATE_IDLE and sample.weight < fsm.threshold_on
         if is_quiet:
             noiseguard.add_sample(sample.raw)
         else:
@@ -829,20 +819,20 @@ try:
         # activation: push to FSM only on IDLE-entry, or on a dead-band change
         # while remaining IDLE -- never every tick, so threshold_on/off stay
         # stable across the ARRIVAL confirmation-count window and don't chatter
-        if fsm.state == STATE_IDLE:
-            if prev_fsm_state != STATE_IDLE or abs(dyn_threshold - fsm_threshold_applied) >= DYN_THRESHOLD_DEADBAND:
-                fsm.set_thresholds(dyn_threshold)
-                fsm_threshold_applied = dyn_threshold
-        # else: keep last-applied threshold through ARRIVAL/PRESENT/DEPARTURE --
-        prev_fsm_state = fsm.state
         
         event = fsm.process_weight(sample)
         sample.state = fsm.state
-        sample.dyn_threshold = fsm_threshold_applied  # log what's really active, not the IDLE-only simulation
         if fsm.state == STATE_IDLE:
-            baseline.mark_idle_start()
+            entered_idle = prev_fsm_state != STATE_IDLE
+            if entered_idle or abs(dyn_threshold - fsm_threshold_applied) >= DYN_THRESHOLD_DEADBAND:
+                fsm.set_thresholds(dyn_threshold)
+                fsm_threshold_applied = dyn_threshold
+            if entered_idle:
+                baseline.mark_idle_start()
             baseline.follow_idle(sample, noiseguard)
-
+        # else: keep last-applied threshold through ARRIVAL/PRESENT/DEPARTURE --
+        prev_fsm_state = fsm.state
+        sample.dyn_threshold = fsm_threshold_applied
         # FSM TIMEOUT / BASELINE RECOVERY
         timeout_event = fsm.check_timeout(sample, baseline)
         if timeout_event:
