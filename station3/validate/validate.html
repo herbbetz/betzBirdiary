@@ -7,16 +7,25 @@
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/button.css">
   <link rel="stylesheet" href="/select/select.css">
+  <style>
+    .show {
+      display: block;
+    }
+    .hide {
+      display: none;
+    }
+  </style>
   <script src="/validate/birdlabels.js"></script>
 </head>
 <body>
+<div id="validator" class="show">
   <div>
     <video width="800" height="600" controls>
       <source id="vidsrc" src="" type="video/mp4">
       Your browser does not support the video tag.
     </video>
   </div>
-<hr>
+  <hr>
   <p>
     <h3>Validation</h3>
     <form action="/validate/valid_confirm.html" method="GET">
@@ -31,25 +40,45 @@
       <button type="submit">Submit</button>
     </form>
   </p>
+  </div>
+  <div id="novid" class="hide">No such video uploaded, probably not classified as bird by model2.</div>
   <div><a id="backlink" href="/daywatch" class="button">back</a></div>
-  <script>
-    // no XSS Defence needed when getting vidurl as get parameter from the same server
-    const urlParams = new URLSearchParams(window.location.search);
-    const vidkey = urlParams.get('vidkey');
-    const targetUrl = vidkey ? `https://wiediversistmeingarten.org/api/uploads/videos/${vidkey}.mp4` : null;
 
-    if (targetUrl) {
-      const vidsrc = document.getElementById('vidsrc');
-      const videoidInput = document.getElementById('videoid');
-      document.getElementById('backlink').href = "/daywatch#" + encodeURIComponent(vidkey);
-      
-      videoidInput.value = vidkey;
-      vidsrc.src = targetUrl;
-      
-      // FIXED: Reload video element so source change takes effect
-      vidsrc.parentElement.load();
-    }
-  </script>
-  <script src="/select/genselect.js"></script>
+<script>
+// no XSS Defence needed when getting vidurl as get parameter from the same server
+  const urlParams = new URLSearchParams(window.location.search);
+  const vidkey = urlParams.get('vidkey');
+  const targetUrl = vidkey ? `https://wiediversistmeingarten.org/api/uploads/videos/${vidkey}.mp4` : null;
+  const vidsrc = document.getElementById('vidsrc');
+  const videoidInput = document.getElementById('videoid');
+  const validatorDiv = document.getElementById('validator');
+  const novidDiv = document.getElementById('novid');
+  document.getElementById('backlink').href = "/daywatch#" + encodeURIComponent(vidkey);
+
+  function showNoVid() {
+    validatorDiv.classList.replace('show', 'hide');
+    novidDiv.classList.replace('hide', 'show');
+  }
+
+  if (targetUrl) {
+    // Send a HEAD request to check availability without downloading the full video
+    fetch(targetUrl, { method: 'HEAD' })
+      .then(response => {
+        if (response.ok) { // Status 200-299
+          videoidInput.value = vidkey;
+          vidsrc.src = targetUrl;
+          vidsrc.parentElement.load();
+        } else {
+          showNoVid();
+        }
+      })
+      .catch(() => {
+        showNoVid();
+      });
+  } else {
+    showNoVid();
+  }
+</script>
+<script src="/select/genselect.js"></script>
 </body>
 </html>

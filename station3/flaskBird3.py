@@ -150,22 +150,24 @@ def timeseries_svg(json_file, key_param):
         return Response(svg, mimetype="image/svg+xml")
     
 def render_csv_block(basedir, prefix):
+    model2_on = False
     csv_path = f"{birdpath['appdir']}/{basedir}/{prefix}.csv" #os.path.join(basedir, f"{prefix}.csv")
     if not os.path.exists(csv_path):
       ms.log(f"not found: {csv_path}")
-      return ""
+      return "", model2_on
 
     html = "<div class='csv-block'>"
     with open(csv_path, "r", encoding="utf-8") as f:
       # csv line: "{MODEL_NAME}, {img#}, {r['confidence']:.2f}, {r['label']}" or "{MODEL_NAME}, None"
       for line in f:
-         elems = line.strip().split(",")
+         elems = line.strip().split(",")         
          if len(elems) < 4:
             continue
+         if elems[0] == "model2":
+             model2_on = True
          html += f"<div class='csv-line'>{elems[0]}: {elems[3]} {elems[2]}%</div><br>\n"
-
     html += "</div>\n"
-    return html
+    return html, model2_on
 
 app = Flask(__name__, static_folder='.')
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0 # disable cacheing
@@ -393,9 +395,13 @@ def daygallery():
             # 1. End the PREVIOUS group's div/link (if it's not the first loop)
             if currentprefix is not None:
                html_segments.append("</div>")
-               html_segments.append(render_csv_block(dayimg_dir, current_comb_prefix))
+               csv_block, model2_on = render_csv_block(dayimg_dir, current_comb_prefix) 
+               html_segments.append(csv_block)
                # validate.html points it's back button to /daywatch#id, so no target="_blank":
-               html_segments.append(f'<div>{groupIdx} <a id="{current_comb_prefix}" href="{vidURL_prev}">{currentprefix}</a></div><hr>')
+               if model2_on:
+                    html_segments.append(f'<div id="{current_comb_prefix}">{groupIdx} <a href="{vidURL_prev}">{currentprefix}</a></div><hr>')
+               else:
+                    html_segments.append(f'<div id="{current_comb_prefix}">{groupIdx} upload requires model2</div><hr>')    
                # html += f'lastDEBUG: groupIdx={groupIdx}: csv={current_comb_prefix}, video={vidURL_prev}, videolinktext={currentprefix}'
 
             # 2. Start the NEW group's row
@@ -414,13 +420,16 @@ def daygallery():
 
     # Close the very last group
     if currentprefix is not None:
-      html_segments.append("</div>")
-      html_segments.append(render_csv_block(dayimg_dir, current_comb_prefix))
-      # validate.html points it's back button to /daywatch#id, so no target="_blank":
-      html_segments.append(f'<div>{groupIdx} <a id="{current_comb_prefix}" href="{vidURL_prev}">{currentprefix}</a></div><hr>')
+        html_segments.append("</div>")
+        csv_block, model2_on = render_csv_block(dayimg_dir, current_comb_prefix) 
+        html_segments.append(csv_block)
+        # validate.html points it's back button to /daywatch#id, so no target="_blank":
+        if model2_on:
+            html_segments.append(f'<div id="{current_comb_prefix}">{groupIdx} <a href="{vidURL_prev}">{currentprefix}</a></div><hr>')
+        else:
+            html_segments.append(f'<div id="{current_comb_prefix}">{groupIdx} upload requires model2</div><hr>')    
 
     html_segments.append("</body></html>")
-    
     # Join everything cleanly with newlines
     return "\n".join(html_segments)
 
