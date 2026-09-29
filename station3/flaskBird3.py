@@ -259,6 +259,11 @@ def chstandby():
    ms.chStandby()
    return send_from_directory(app.static_folder, 'vidshot3.html')
 
+@app.route('/manualHxReset')
+def manualHxReset():
+   ms.setHxReset()
+   return send_from_directory(app.static_folder, 'vidshot3.html')
+
 @app.route('/envupdate')
 def envupdate():
    cmd = f"{PYTHON} {birdpath['appdir']}/dhtBird3.py"

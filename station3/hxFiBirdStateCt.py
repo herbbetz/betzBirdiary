@@ -793,6 +793,16 @@ try:
             time.sleep(0.05)
             continue
 
+        # emergency switch:
+        if ms.getHxReset() == 1:
+            try:
+                ms.clearHxReset()
+                baseline.startup(sample)
+                continue
+            except RuntimeError as e:
+                ms.log(f"Startup calibration failed: {e}")
+                sys.exit(1)   # distinct code: "give the shell script a retry"            
+
         median.update(sample)
         baseline.process(sample)
 
