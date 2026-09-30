@@ -17,7 +17,7 @@ from configBird3 import birdpath
 #   linecnt, linetxt: for logging output
 #   envirEvt, sysmonEvt: new data available as value increased
 #   confirm and upmode are only, if several mainVideo scripts can be exchanged (old acknowlegde mode)
-#   standby: 0 or 1, set by webGUI to stop video capturing
+#   standby: 0 or 1, set by webGUI to block video capturing via a) locally with ms.setLux() when lux>4 b) manually from /standby in flaskBird3.py with ms.chStandby()
 #   clientactive: 0 or 1, set by flaskBird3.py when webclient is active.
 #       Others like log() could be made dependant on this, so they only write, when WebGUI is watched. Not yet implemented.
 #   lux: illumination category 1..6, set by mainFoBird3.py
@@ -239,7 +239,7 @@ def getUpmode():
     m = readmsg()
     return m['upmode']
 
-def getStandby():
+def getAnyStandby():
     m = readmsg()
     anystdby = 0
     if m['standby'] or m['lux'] > 4: anystdby = 1 # manual standby activated or bad illumination
@@ -249,6 +249,10 @@ def chStandby():
     m = readmsg()
     if m['standby'] == 0: setmsgprop('standby', 1)
     else: setmsgprop('standby', 0)
+
+def getStandby():
+    m = readmsg()
+    return m['standby']
 
 def clearStandby(): # mainFoBird clears forgotten standby after 300 secs of webGUI inactivity
     setmsgprop('standby', 0)

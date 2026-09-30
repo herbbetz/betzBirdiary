@@ -145,7 +145,7 @@ def get_brightness(picam, now):
     # check for over-/under-expo:
     # luxLimit = [500,10000] in config.json
     # expoScore = gain * exposure ? beware: high expoScore is low metaLux
-    # luxcategory > 4 leads to standby in ms.setLux() and ms.getStandby()
+    # luxcategory > 4 leads to standby in ms.setLux() and ms.getAnyStandby()
     if metalux < luxLimit[0]:
         luxcategory = 5 # too dark
     elif metalux > luxLimit[1]:
@@ -203,19 +203,8 @@ def stills_lux(picam, oldimg, liveLogger):
         oldest = oldimg.pop(0)
         if os.path.exists(oldest): os.remove(oldest)
 
-    if ms.getClientActive() == 0: # set by flaskBird.py
-        # clear forgotten standby after 300 secs of webGUI inactivity:
-        stills_lux.inactive_counter += 1
-        if stills_lux.inactive_counter >= 300:
-            stills_lux.inactive_counter = 0 
-            ms.clearStandby()
-        else:
-            stills_lux.inactive_counter = 0 # reset on activity
-
     luxData=get_brightness(picam, now)
     liveLogger.log(luxData)
-stills_lux.inactive_counter = 0 #static var
-
 
 def files_payload_size(files):
     json_str = files["json"][1]          # str
@@ -519,12 +508,12 @@ def main():
 
         try:
             while True:
-                if not bQueue.empty():  # child1 process 'readBalance()' fills bQueue after filtering for ms.getStandby()
+                if not bQueue.empty():  # child1 process 'readBalance()' fills bQueue after filtering for ms.getAnyStandby()
                     # trigger_ns = time.time_ns() # check for nanosecs till recording, is exaggerated
                     weight = bQueue.get()
                     camRecorder.log(weight, "FIFO")
 
-                    if ms.getStandby() == 1:
+                    if ms.getAnyStandby() == 1:
                         camRecorder.log(weight, "STDBY")
                         time.sleep(0.2)
                         continue

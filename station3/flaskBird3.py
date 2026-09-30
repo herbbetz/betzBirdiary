@@ -55,14 +55,19 @@ def has_active_session():
     return False
 
 def monitor_inactivity():
-   global last_activity, client_active
+   # used in main() as a thread
+   global client_active
+   stdbyTimeout = 300 # secs
    while True:
-      time.sleep(1)  # check every second
+      time.sleep(1)
       with lock:
-         if time.time() - last_activity > timeout:
+         idle = time.time() - last_activity
+         if idle > timeout:
             if client_active != 0:
                client_active = 0
                ms.setClientActive(0)
+            if idle > timeout + stdbyTimeout and ms.getStandby() == 1:
+               ms.clearStandby()
 
 ### for matplotlib in endpoint '/camdata':
 mpl_lock = threading.Lock()
