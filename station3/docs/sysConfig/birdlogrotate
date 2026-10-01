@@ -1,9 +1,10 @@
-"/home/pi/station3/logs/*.log" {
+"/home/pi/station3/logs/*.*" {
     daily
     rotate 3
     compress
     delaycompress
     missingok
     notifempty
+    su pi pi
     create 0644 pi pi
 }

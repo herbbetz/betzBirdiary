@@ -12,6 +12,8 @@
 
 - static IP (192.168.178.210), mit **NetworkManager** (default on fst boot, nmtui/nmcli, wpa_supplicant service) **oder** 'systemd-networkd' **oder** '/etc/network/interfaces (dhcdcp.conf)'. 'rpibird' als hostname. IPv6 can be disabled for wlan0. In nmtui benannte ich meine statische IP configuration mit 'bird-static210' ('nmcli connection show'). Later reset to DHCP Hotspot, before you produce an OS image for distribution to others (and remove credentials from config.json), see [buildimg](../buildimg/buildimg.md).
 
+- If you disable IPv6, you also need to look in `/etc/exim4/update-exim4.conf.conf`, so `dc_local_interfaces=` must not contain ` ::1`. This will prevent `exim4.service` to start.
+
 - prevent wlan0 sleeping mode: 'sudo nmcli connection modify static210 802-11-wireless.powersave 2' oder in '/etc/NetworkManager/conf.d/disable-powersave.conf', verifiziere mit 'iw wlan0 get power_save'
 
 - I also disable bluetooth by blacklisting its modules from loading. Or `systemctl disable bluetooth`.
