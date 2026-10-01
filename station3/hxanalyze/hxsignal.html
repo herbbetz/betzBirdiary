@@ -140,6 +140,7 @@ async function fetchSignal() {
             || typeof data.offset !== "number"
             || typeof data.sigma !== "number"
             || typeof data.threshold !== "number"
+            || typeof data.state !== "string"
             || typeof data.hxscale !== "number"
         ) {
             throw new Error("Invalid signal data");
@@ -159,7 +160,8 @@ async function fetchSignal() {
             weight: data.weight,
             offset: offsetGrams,
             sigma: data.sigma,
-            threshold: data.threshold
+            threshold: data.threshold,
+            state: data.state
         };
         if (
             latestSample === null
@@ -172,7 +174,8 @@ async function fetchSignal() {
             `Weight: ${sample.weight.toFixed(2)}g | `
             + `Offset drift: ${sample.offset.toFixed(2)}g | `
             + `Sigma: ${sample.sigma.toFixed(2)}g | `
-            + `Threshold: ${sample.threshold.toFixed(2)}g`;
+            + `Threshold: ${sample.threshold.toFixed(2)}g| `
+            + `State: ${sample.state}`;
     } catch (error) {
         console.error(
             "fetch /hxsignal failed:",

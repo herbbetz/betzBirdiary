@@ -581,21 +581,22 @@ def luxsignal_update() -> tuple[dict[str, float | str], int]:
     try:
         luxsignal_latest["t"] = float(request.args["t"])
         luxsignal_latest["metalux"] = float(request.args["metalux"])
-        luxsignal_latest["luxcategory"] = float(request.args["luxcategory"])
+        luxsignal_latest["luxcategory"] = int(request.args["luxcategory"])
     except (KeyError, TypeError, ValueError):
         return {"error": "invalid data"}, 400
     return luxsignal_latest, 200
 #--------end of luxsignal
 #--------signal updated from hxFiBirdStateCt.py, and polled by hxanalyze/hxsignal.html
-hxsignal_latest: dict[str, float] = {
+hxsignal_latest: dict[str, float | str] = {
     "t": 0.0,
     "weight": 0.0,
     "offset": 0.0,
     "sigma": 0.0,
     "threshold": 0.0,
+    "state": "",
     "hxscale": 0.0
 }
-@app.route("/hxsignal", methods=["GET"]) # GET better than POST for polling by hxsignal.html (only bodyless query string, no cacheing)
+@app.route("/hxsignal", methods=["GET"])
 def hxsignal() -> tuple[dict[str, float | str], int]:
     return hxsignal_latest, 200
 
@@ -607,6 +608,7 @@ def hxsignal_update() -> tuple[dict[str, float | str], int]:
         hxsignal_latest["offset"] = float(request.args["offset"])
         hxsignal_latest["sigma"] = float(request.args["sigma"])
         hxsignal_latest["threshold"] = float(request.args["threshold"])
+        hxsignal_latest["state"] = request.args["state"]
         hxsignal_latest["hxscale"] = float(request.args["hxscale"])
     except (KeyError, TypeError, ValueError):
         return {"error": "invalid data"}, 400

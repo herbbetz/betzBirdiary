@@ -629,6 +629,7 @@ class SignalLogger:
             f"{STATE_NAME[sample.state]},"
             f"{'|'.join(sample.events)}\n"
         )
+        # left some unnecessary f-string formatting for readability. readtime, STATE_NAME[sample.state] and '|'.join(sample.events) are already strings, but then: ` STATE_NAME[sample.state] + "," + '|'.join(sample.events) + "\n"  `...
 
     def log(self, sample: Sample, readtime: str) -> None:
         important = False
@@ -665,6 +666,7 @@ class LiveLogger:
             "offset": f"{sample.offset:.0f}",
             "sigma": f"{sample.sigma:.2f}",
             "threshold": f"{sample.dyn_threshold:.2f}",
+            "state": STATE_NAME[sample.state],
             "hxscale": f"{hxScale:.0f}"
         })
 
