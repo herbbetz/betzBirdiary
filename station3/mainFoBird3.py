@@ -34,10 +34,21 @@ import importlib.metadata # only for picamera2 version printing, because there i
 
 import msgBird as ms
 from sharedBird import fifoExists, getTestmode, write_gallery, write_binVideo
-from configBird3 import *
+from configBird3 import serverUrl, boxId, vidsize, losize, luxThreshold, luxLimit, upmaxcnt, recordstep, videodurate, hflip_val, vflip_val, sun, birdpath
 
 testmode = False # define outside any block ('if __name__ == "__main__":' also is a block) and use 'global testmode' in all functions, that write to it (only main()), but not in the ones that only read it.
 localsave = False
+
+daylight_time = [9, 15] # 9:00 to 15:00, do not set luxcategory=5 during this time
+sunrise = sun[1] # from configBird3.py
+sunset = sun[2] # from configBird3.py
+
+def setDaylightTime() -> None:
+    global daylight_time
+    offset = 1 # hour
+    start_hour = int(sunrise.split(":")[0])
+    end_hour = int(sunset.split(":")[0])
+    daylight_time = [start_hour + offset, end_hour - offset]
 
 def readable_cam_time() -> str:
     return datetime.now().strftime("%H:%M:%S")
@@ -154,8 +165,13 @@ def get_brightness(picam, now):
     # luxlabel = ["undef", "dark", "dim", "normal", "bright", "too dark", "too bright"]
 
     luxdata["luxcategory"] = luxcategory
-    # if light_level != set_brightness.last_light_level:
-    ms.setLux(luxcategory) # this also sets "autostdby" for bad light conditions
+    # do not set luxcategory=5 during daylight_time
+    if now.hour < daylight_time[0] or now.hour >= daylight_time[1]:
+        ms.setLux(luxcategory)            # night: report real category, incl. 5 (too dark) for standby
+    elif luxcategory != 5:
+        ms.setLux(luxcategory)            # day: suppress spurious "too dark" readings
+
+    # if light_level != set_brightness.last_light_level: -> ms.set*() is cached and only updated if changed.
     # ms.setLuxRaw(f'{metalux} at {luxdata["timestamp"]}, gain {gain}/ expo {exposure}')
     ms.setLuxRaw(f'Lux {metalux}/ gain {gain}/ expo {exposure}') # format for desktop widgets.py
     if now.minute % 15 == 0 or get_brightness.last_logged_minute == -1: # log every 15 minutes or at first call
@@ -457,6 +473,7 @@ def main():
     ms.emptyVidDateStr()
     # ms.setUpmode(1) # direct upload
     ms.setLux(3) # set luxcategory to normal
+    setDaylightTime()
 
     if testmode:
         camRecorder = CamRecorder()
