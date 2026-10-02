@@ -313,22 +313,11 @@ class Baseline:
         sample.events.append(f"REACQ {step_g:+.1f}g spread={spread:.0f}")
         return abs(candidate - self.offset) < 0.5 * hxScale # return remaining to further correct baseline
 
-    # ---- single entry point for emergency recovery ----
-    # `cautious=True`: platform state is unknown (ARRIVAL/PRESENT/DEPARTURE
-    #   stuck) — a bird might still be on it, so take one capped attempt only.
-    # `cautious=False`: platform is expected empty (IDLE) — safe to loop
-    #   toward full convergence.
-    # Returns an event string; caller never needs to know about bursts,
-    # spread checks, or attempt counts.
-    def recover(self, sample: Sample, cautious: bool, max_attempts: int = 5) -> str:
-        if cautious:
-            return "REACQ_OK" if self.reacquire(sample) else "REACQ_FAIL"
-
+    def recover(self, sample: Sample, max_attempts: int = 5) -> str:
         for _ in range(max_attempts):
             if self.reacquire(sample):
                 return "REACQ_OK"
-        return "REACQ_INCOMPLETE"
-    
+        return "REACQ_INCOMPLETE"    
 # ============================================================
 # NoiseGuard (Welford's StdDev, rolling window)
 # ============================================================
@@ -480,7 +469,6 @@ class WeightFSM:
 
     def check_timeout(self, sample, baseline) -> str | None:
         current_time = time.monotonic()
-
         timed_out = False
         cautious = False
 
@@ -511,7 +499,10 @@ class WeightFSM:
             return None
 
         old = STATE_NAME[self.state]
-        result = baseline.recover(sample, cautious=cautious)
+        if cautious:
+            result = "TIMEOUT_NO_RECOVER"
+        else:
+            result = baseline.recover(sample)
         sample.events.append(result)
 
         self.force_idle(current_time)
