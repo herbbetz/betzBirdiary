@@ -414,7 +414,7 @@ def get_camera_events(
             event = event_row["event"]
             if event == "cam_FIFO":
                 break
-            if event == "cam_SND_MVMNT_FNSHD":
+            if event == "cam_SND_MV_ok":
                 recordings += 1
                 break
             if event == "cam_STDBY":

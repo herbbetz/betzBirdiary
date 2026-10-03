@@ -281,7 +281,7 @@ def analyze_camera_events(rows:list[dict],camera_events:list[dict])->dict:
             if event["datetime"]>=fifo_time
         ]
         for event in following:
-            if event["event"]=="cam_SND_MVMNT_FNSHD":
+            if event["event"]=="cam_SND_MV_ok":
                 match["recording"]=True
                 break
             if event["event"] in ("cam_CLR_Q","cam_STDBY"):
