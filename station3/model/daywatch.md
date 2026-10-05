@@ -18,6 +18,8 @@
 
 - Die JPG Images und ihre Diagnosen im `prefix.csv` sind  auf `ramdisk` und werden mit jedem Reboot gelöscht.
 
+- `birdclassify2C.py` erzeugt dabei ein `ramdisk/model2.html` als *Iframe* für seine WebGUI-Statistik am Anfang von `actions - daywatch`.
+
 - Die Geschwindigkeit der `tflite runtime` wäre auf dem Raspberry durch verschiedene Maßnahmen sogar noch steigerbar, z.B. Python threads (`interpreter = Interpreter(model_path=MODEL_PATH, num_threads=4)`= XNNPACK delegate, PIL decoder buffer, input tensor preallocation.
 
 - *Tensorflow Lite C API* ermöglicht die Anwendung trainierter Modelle in C ohne Umweg über Python. Auch diese API wäre noch beschleunigbar durch *NEON acceleration /XNNPACK threads /zero-copy tensors*.

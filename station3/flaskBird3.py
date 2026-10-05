@@ -411,7 +411,7 @@ def daygallery():
                if model2_on:
                     html_segments.append(f'<div id="{current_comb_prefix}">{groupIdx} <a href="{vidURL_prev}">{currentprefix}</a></div><hr>')
                else:
-                    html_segments.append(f'<div id="{current_comb_prefix}">{groupIdx} upload requires model2</div><hr>')    
+                    html_segments.append(f'<div id="{current_comb_prefix}">{groupIdx} {currentprefix} (upload requires model2)</div><hr>')    
                # html += f'lastDEBUG: groupIdx={groupIdx}: csv={current_comb_prefix}, video={vidURL_prev}, videolinktext={currentprefix}'
 
             # 2. Start the NEW group's row
@@ -437,7 +437,7 @@ def daygallery():
         if model2_on:
             html_segments.append(f'<div id="{current_comb_prefix}">{groupIdx} <a href="{vidURL_prev}">{currentprefix}</a></div><hr>')
         else:
-            html_segments.append(f'<div id="{current_comb_prefix}">{groupIdx} upload requires model2</div><hr>')    
+            html_segments.append(f'<div id="{current_comb_prefix}">{groupIdx} {currentprefix} (upload requires model2)</div><hr>')    
 
     html_segments.append("</body></html>")
     # Join everything cleanly with newlines

@@ -386,7 +386,7 @@ def main():
 
 
     # --------------------------------------------------
-    # write ramdisk/model2.json for bird statistics
+    # write ramdisk/model2.html iframe for bird statistics
     # --------------------------------------------------
 
     top_label_idx = keep[0]["label_idx"] if len(keep) > 0 and keep[0]["confidence"] > MIN_CONFIDENCE else None
@@ -395,25 +395,26 @@ def main():
         date_str = datetime.datetime.now().strftime("%y-%m-%d-%H-%M")
         new_entry = [date_str, top_label_idx]
 
+        stats = []
+        '''
         # Keep file as one valid JSON array: [[date, idx], ...]
         statfname = os.path.join(IMG_DIR, f"{MODEL_NAME}.json")
-        stats = []
         if os.path.exists(statfname):
             try:
                 with open(statfname, "r", encoding="utf-8") as f:
                     stats = json.load(f)
             except json.JSONDecodeError:
                 stats = [] # Handle corrupted/empty files
- 
+        '''
         stats.append(new_entry)
 
         # Keep only the last 1000 entries to prevent ramdisk bloat
         if len(stats) > 1000:
             stats = stats[-1000:]
-
+        '''
         with open(statfname, "w", encoding="utf-8") as f:
             json.dump(stats, f)    
-
+        '''
         # count absolute counts to a dictionary counts = {label_idx0: count0, ...}
         counts = {}
         for entry in stats:
@@ -434,57 +435,79 @@ def main():
         """ 
         html += """
         <style>
-        body {
-            margin: 0;
-        }
+            body {
+                margin: 0;
+                font-family: system-ui, sans-serif;
+            }
 
-        .container {
-            display: flex;
-        }
+            .container {
+                display: flex;
+            }
 
-        .sidebar {
-            width: 25%;
-            padding: 10px;
-            box-sizing: border-box;
-        }
-
-        .content {
-            width: 75%;
-            padding: 10px;
-            box-sizing: border-box;
-        }
-
-        table {
-            border-collapse: collapse;
-            width: 100%;
-            max-width: 700px;
-        }
-
-        td {
-            padding: 10px;
-        }
-
-        tr {
-            border-bottom: 1px solid #ddd;
-        }
-
-        @media (max-width: 768px) {
             .sidebar {
+                width: 25%;
+                padding: 10px;
+                box-sizing: border-box;
+            }
+
+            .barline {
                 display: none;
             }
 
             .content {
-                width: 100%;
+                width: 75%;
+                padding: 10px;
+                box-sizing: border-box;
             }
 
             table {
+                border-collapse: collapse;
                 width: 100%;
+                max-width: 700px;
             }
-        }
+
+            td {
+                padding: 10px;
+            }
+
+            tr {
+                border-bottom: 1px solid #ddd;
+            }
+
+            @media (max-width: 768px) {
+                .container {
+                    flex-direction: column;
+                }
+
+                .sidebar {
+                    display: none;
+                }
+
+                .barline {
+                    display: block;
+                    width: 100%;
+                    padding: 8px 10px;
+                    box-sizing: border-box;
+                    background-color: #f5f5f5;
+                    border-bottom: 1px solid #ddd;
+                    font-size: 0.85rem;
+                    color: #555;
+                }
+
+                .content {
+                    width: 100%;
+                }
+
+                table {
+                    width: 100%;
+                }
+            }
         </style>
         """
-        html += "</head>\n<body><div class='container'><div class='sidebar'>\n" 
-        html += f"<h2>{MODEL_NAME}</h2>Statistics\n<p>confidence &gt;{MIN_CONFIDENCE}%</p></div><div class='content'>\n<table>\n"
+        html += "</head>\n<body><div class='container'>\n" 
+        html += f"<div class='sidebar'><h2>{MODEL_NAME}</h2>Statistics<p>confidence &gt;{MIN_CONFIDENCE}%</p></div>\n"
+        html += f"<div class='barline'>{MODEL_NAME} · confidence &gt;{MIN_CONFIDENCE}%</div>\n"
+        html += "<div class='content'><table>\n"
         for idx, count in sorted_counts:
             bird_name = labels[idx][:15] # 15 leftmost chars
             relcnt = round(count/len(stats) * 100)
