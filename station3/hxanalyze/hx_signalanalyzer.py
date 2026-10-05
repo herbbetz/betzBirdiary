@@ -2,14 +2,17 @@
 """
 hx_signalanalyzer.py
 Analyze SignalLogger output and camera recorder events.
-Reads metadata from SignalLogger header:
-weightThreshold
-threshold_off
-weightlimit
-hxScale
-CAMERA_DELAY
-FSM states:
-IDLE ARRIVAL PRESENT OVERSIZE DEPARTURE
+Definitions:
+hx triggers       : all CAMERA_TRIGGER events in signal_hx.csv
+completed visits  : visits containing CAMERA_TRIGGER and DEPARTURE_TRIGGER in signal_hx.csv (cancelled arrivals are not counted)
+FIFO events       : all cam_FIFO entries in cam_event.csv
+matched FIFO      : cam_FIFO within 0..2 s after a CAMERA_TRIGGER (compared signal_hx.csv to cam_event.csv)
+unrelated FIFO    : cam_FIFO without such a trigger (e.g. sent by flaskBird as manual snapshot order to mainFoBird3.py)
+followed by recording : cam_SND_MV_ok entries from cam_event.csv
+all cam_SND_MV_* entries except _ok: remaining sends (noack, upfail, uplimit, keeplocal) from cam_event.csv
+blocked by CLR_Q: cam_CLR_Q (queued trigger dropped after a recording, never a FIFO)
+blocked by STDBY: cam_STDBY (logged after its FIFO) entries (hx triggers and flaskBird triggers)
+Identities: all triggers = FIFO + CLR_Q; FIFO = SND_MV_* + STDBY
 """
 from datetime import datetime,timedelta
 import csv
@@ -19,6 +22,7 @@ import matplotlib.pyplot as plt
 JUMP_G=3.0
 IDLE_BAD_TIME=5.0
 THRESHOLD_OFF_FACTOR=0.7
+CAMERA_MATCH_SECONDS=2.0
 
 def get_threshold_off(weight_threshold:float)->float:
     """The one place where threshold_off is defined."""
@@ -138,6 +142,7 @@ def reconstruct_visits(rows:list[dict],periods:list[tuple[str,int,int]])->tuple[
                 weights=[row["weight"] for row in period]
                 current["mean"]=sum(weights)/len(weights)
                 current["peak"]=max(current["peak"],max(weights))
+                current["trigger"]=any(row_has_event(row,"CAMERA_TRIGGER") for row in period)
         elif state=="OVERSIZE":
             over={"arrival":period[0]["time"],"duration":period[-1]["mono_t"]-period[0]["mono_t"],"peak":max(row["weight"] for row in period)}
         elif state=="DEPARTURE":
@@ -147,19 +152,12 @@ def reconstruct_visits(rows:list[dict],periods:list[tuple[str,int,int]])->tuple[
                 over=None
             elif current:
                 current["leave"]=period[0]["time"]
+                current["departure"]=any(row_has_event(row,"DEPARTURE_TRIGGER") for row in period)
         elif state=="IDLE":
-            if current:
+            if current and current.get("trigger") and current.get("departure"):
                 current["idle"]=period[0]["time"]
-                if "stay" not in current:
-                    current["stay"]=0.0
-                    current["mean"]=0.0
                 visits.append(current)
-                current=None
-    if current:
-        if "stay" not in current:
-            current["stay"]=0.0
-            current["mean"]=0.0
-        visits.append(current)
+            current=None
     if over:
         oversize.append(over)
     return visits,oversize
@@ -236,83 +234,40 @@ def print_oversize(oversize:list[dict])->None:
     else:
         print("none")
 
-def analyze_camera_events(rows:list[dict],camera_events:list[dict])->dict:
-    camera_triggers=[]
-    for row in rows:
-        if row_has_event(row,"CAMERA_TRIGGER"):
-            camera_triggers.append({
-                "row":row,
-                "datetime":row["dt"]
-            })
-    fifo_events=[
-        event for event in camera_events
-        if event["event"]=="cam_FIFO"
-    ]
-    matched_fifo=[]
-    unrelated_fifo=[]
-    used_fifo=set()
-    for trigger in camera_triggers:
-        trigger_time=trigger["datetime"]
-        candidates=[
-            (index,event)
-            for index,event in enumerate(fifo_events)
-            if index not in used_fifo
-            and timedelta(0)<=event["datetime"]-trigger_time<=timedelta(seconds=2)
-        ]
-        if candidates:
-            index,event=min(
-                candidates,
-                key=lambda item:item[1]["datetime"]
-            )
-            used_fifo.add(index)
-            matched_fifo.append({
-                "trigger":trigger,
-                "fifo":event,
-                "recording":False,
-                "blocked":None
-            })
-    for index,event in enumerate(fifo_events):
-        if index not in used_fifo:
-            unrelated_fifo.append(event)
-    for match in matched_fifo:
-        fifo_time=match["fifo"]["datetime"]
-        following=[
-            event for event in camera_events
-            if event["datetime"]>=fifo_time
-        ]
-        for event in following:
-            if event["event"]=="cam_SND_MV_ok":
-                match["recording"]=True
-                break
-            if event["event"] in ("cam_CLR_Q","cam_STDBY"):
-                match["blocked"]=event["event"]
-                break
-    return {
-        "hx_triggers":len(camera_triggers),
-        "matched_fifo":matched_fifo,
-        "unrelated_fifo":unrelated_fifo,
-        "recordings":sum(match["recording"] for match in matched_fifo),
-        "clr_q":sum(match["blocked"]=="cam_CLR_Q" for match in matched_fifo),
-        "stdby":sum(match["blocked"]=="cam_STDBY" for match in matched_fifo)
-    }
+def get_camera_events(rows:list[dict],camera_events:list[dict])->dict:
+    triggers=[row["dt"] for row in rows if row_has_event(row,"CAMERA_TRIGGER")]
+    fifo=[event for event in camera_events if event["event"]=="cam_FIFO"]
+    used=set()
+    for trigger in triggers:
+        hits=[i for i,event in enumerate(fifo) if i not in used and timedelta(0)<=event["datetime"]-trigger<=timedelta(seconds=CAMERA_MATCH_SECONDS)]
+        if hits:
+            used.add(min(hits,key=lambda i:fifo[i]["datetime"]))
+    count=lambda name:sum(event["event"]==name for event in camera_events)
+    sent=sum(event["event"].startswith("cam_SND_MV_") for event in camera_events)
+    return {"hx_triggers":len(triggers), "fifo":len(fifo),
+            "matched_fifo":len(used), "unrelated_fifo":len(fifo)-len(used),
+            "recordings":count("cam_SND_MV_ok"),"other_sent":sent-count("cam_SND_MV_ok"),
+            "clr_q":count("cam_CLR_Q"),"stdby":count("cam_STDBY")}
 
 def print_camera_events(camera_analysis:dict)->None:
     print()
     print("Camera events")
     print("-------------")
-    print(f"hx triggers             : {camera_analysis['hx_triggers']}")
-    print(f"FIFO triggers           : {len(camera_analysis['matched_fifo'])}")
+    print(f"FIFO events (all)       : {camera_analysis['fifo']}")
+    print(f"matched FIFO events     : {camera_analysis['matched_fifo']}")
+    print(f"unrelated FIFO events   : {camera_analysis['unrelated_fifo']}")
     print(f"followed by recording   : {camera_analysis['recordings']}")
+    print(f"other cam_SND_MV_*      : {camera_analysis['other_sent']}")
     print(f"blocked by CLR_Q        : {camera_analysis['clr_q']}")
     print(f"blocked by STDBY        : {camera_analysis['stdby']}")
-    print(f"unrelated FIFO events   : {len(camera_analysis['unrelated_fifo'])}")
 
-def print_visit_statistics(visits:list[dict],oversize:list[dict])->None:
+def print_visit_statistics(visits:list[dict],oversize:list[dict],hx_triggers:int)->None:
     print()
     print("Visit statistics")
     print("----------------")
-    print(f"visits   : {len(visits)}")
-    print(f"oversize : {len(oversize)}")
+    print(f"hx triggers      : {hx_triggers}")
+    print(f"completed visits : {len(visits)}")
+    print(f"oversize         : {len(oversize)}")
     if visits:
         durations=[visit["stay"] for visit in visits]
         print()
@@ -389,7 +344,7 @@ def print_summary(visits:list[dict],oversize:list[dict])->None:
     print()
     print("Summary")
     print("-------")
-    print(f"visits   : {len(visits)}")
+    print(f"completed visits : {len(visits)}")
     if visits:
         print(f"mean stay: {sum(v['stay'] for v in visits)/len(visits):.1f} s")
         print(f"longest  : {max(v['stay'] for v in visits):.1f} s")
@@ -472,7 +427,7 @@ def main()->None:
         print("no samples found")
         sys.exit(1)
     weight_threshold=meta.get("weightThreshold",0)
-    weightlimit=meta.get("weightlimit",0)
+    # weightlimit=meta.get("weightlimit",0)
     hx_scale=meta.get("hxScale",0)
     print()
     print(f"samples : {len(rows)}")
@@ -483,8 +438,8 @@ def main()->None:
     visits,oversize=reconstruct_visits(rows,periods)
     print_baseline_statistics(rows,meta)
     print_oversize(oversize)
-    print_visit_statistics(visits,oversize)
-    camera_analysis=analyze_camera_events(rows,camera_events)
+    camera_analysis=get_camera_events(rows,camera_events)
+    print_visit_statistics(visits,oversize,camera_analysis["hx_triggers"])
     print_camera_events(camera_analysis)
     print_idle_statistics(rows)
     threshold_off=get_threshold_off(weight_threshold)

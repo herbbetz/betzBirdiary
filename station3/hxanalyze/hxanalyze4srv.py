@@ -3,6 +3,17 @@
 hxanalyze4srv.py
 Analyze SignalLogger output for the Flask /hxreport endpoint.
 This module is independent of hx_signalanalyzer.py.
+Definitions:
+hx triggers       : all CAMERA_TRIGGER events in signal_hx.csv
+completed visits  : visits containing CAMERA_TRIGGER and DEPARTURE_TRIGGER in signal_hx.csv (cancelled arrivals are not counted)
+FIFO events       : all cam_FIFO entries in cam_event.csv
+matched FIFO      : cam_FIFO within 0..2 s after a CAMERA_TRIGGER (compared signal_hx.csv to cam_event.csv)
+unrelated FIFO    : cam_FIFO without such a trigger (e.g. sent by flaskBird as manual snapshot order to mainFoBird3.py)
+followed by recording : cam_SND_MV_ok entries from cam_event.csv
+all cam_SND_MV_* entries except _ok: remaining sends (noack, upfail, uplimit, keeplocal) from cam_event.csv
+blocked by CLR_Q: cam_CLR_Q (queued trigger dropped after a recording, never a FIFO)
+blocked by STDBY: cam_STDBY (logged after its FIFO) entries (hx triggers and flaskBird triggers)
+Identities: all triggers = FIFO + CLR_Q; FIFO = SND_MV_* + STDBY
 """
 from datetime import datetime, timedelta
 import os
@@ -14,6 +25,26 @@ THRESHOLD_OFF_FACTOR = 0.7
 def get_threshold_off(weight_threshold: float) -> float:
     """The one place where threshold_off is defined."""
     return weight_threshold * THRESHOLD_OFF_FACTOR
+
+def reconstruct_datetimes(rows:list[dict])->None:
+    """Assign a full datetime to each row from its %H:%M:%S time string.
+
+    When the clock rolls past midnight (current < previous), increment the day
+    so the X-axis stays continuous and flows to the right.
+    """
+    if not rows:
+        return
+    base_date=datetime(2026,1,1)
+    current_date=base_date
+    prev_time=None
+    for row in rows:
+        t=datetime.strptime(row["time"],"%H:%M:%S")
+        row["dt"]=current_date.replace(hour=t.hour,minute=t.minute,second=t.second)
+        if prev_time is not None and row["dt"]<prev_time:
+            current_date+=timedelta(days=1)
+            row["dt"]=current_date.replace(hour=t.hour,minute=t.minute,second=t.second)
+        prev_time=row["dt"]
+
 def read_signal_file(filename: str) -> tuple[dict, list[dict], list[str]]:
     meta = {}
     rows = []
@@ -45,53 +76,33 @@ def read_signal_file(filename: str) -> tuple[dict, list[dict], list[str]]:
             row["events"] = row["events"].strip()
             rows.append(row)
 
-    # Assign full datetime with midnight-rollover.
-    base_date = datetime(2026, 1, 1)
-    current_date = base_date
-    prev_dt = None
-    for row in rows:
-        t = datetime.strptime(row["time"], "%H:%M:%S")
-        row["dt"] = current_date.replace(
-            hour=t.hour, minute=t.minute, second=t.second
-        )
-        if prev_dt is not None and row["dt"] < prev_dt:
-            current_date += timedelta(days=1)
-            row["dt"] = current_date.replace(
-                hour=t.hour, minute=t.minute, second=t.second
-            )
-        prev_dt = row["dt"]
+    reconstruct_datetimes(rows)
+    return meta,rows,header
 
-    return meta, rows, header
-
-def read_camera_file(filename: str) -> list[dict]:
-    rows = []
-    with open(filename, encoding="utf-8") as file:
-        header = file.readline().strip().split(",")
-        for line in file:
-            values = line.strip().split(",")
-            if len(values) != len(header):
+def read_camera_events(filename:str)->list[dict]:
+    events=[]
+    with open(filename,encoding="utf-8") as f:
+        header=f.readline().strip().split(",")
+        for line in f:
+            values=line.strip().split(",")
+            if len(values)!=len(header):
                 continue
-            row = dict(zip(header, values))
-            row["weight"] = float(row["weight"])
-            rows.append(row)
-
-    # Assign full datetime with midnight-rollover (same anchor as signal).
-    base_date = datetime(2026, 1, 1)
-    current_date = base_date
-    prev_dt = None
-    for row in rows:
-        t = datetime.strptime(row["date"], "%H:%M:%S")
-        row["date_dt"] = current_date.replace(
-            hour=t.hour, minute=t.minute, second=t.second
-        )
-        if prev_dt is not None and row["date_dt"] < prev_dt:
-            current_date += timedelta(days=1)
-            row["date_dt"] = current_date.replace(
-                hour=t.hour, minute=t.minute, second=t.second
-            )
-        prev_dt = row["date_dt"]
-
-    return rows
+            row=dict(zip(header,values))
+            try:
+                row["weight"]=float(row["weight"])
+            except (KeyError,ValueError):
+                continue
+            events.append(row)
+    current_date=datetime(2026,1,1)
+    prev_dt=None
+    for row in events:
+        t=datetime.strptime(row["date"],"%H:%M:%S")
+        row["datetime"]=current_date.replace(hour=t.hour,minute=t.minute,second=t.second)
+        if prev_dt is not None and row["datetime"]<prev_dt:
+            current_date+=timedelta(days=1)
+            row["datetime"]=current_date.replace(hour=t.hour,minute=t.minute,second=t.second)
+        prev_dt=row["datetime"]
+    return events
 
 def split_periods(
     rows: list[dict]
@@ -106,80 +117,43 @@ def split_periods(
             state = row["state"]
     periods.append((state, start, len(rows) - 1))
     return periods
-def reconstruct_visits(
-    rows: list[dict],
-    periods: list[tuple[str, int, int]]
-) -> tuple[list[dict], list[dict]]:
-    visits = []
-    oversize = []
-    current = None
-    over = None
-    for state, start, end in periods:
-        period = rows[start:end + 1]
-        if state == "ARRIVAL":
-            current = {
-                "arrival": period[0]["time"],
-                "arrival_i": start,
-                "peak": max(
-                    row["weight"]
-                    for row in period
-                )
-            }
-        elif state == "PRESENT":
+
+def reconstruct_visits(rows:list[dict],periods:list[tuple[str,int,int]])->tuple[list[dict],list[dict]]:
+    visits=[]
+    oversize=[]
+    current=None
+    over=None
+    for state,start,end in periods:
+        period=rows[start:end+1]
+        if state=="ARRIVAL":
+            current={"arrival":period[0]["time"],"arrival_i":start,"peak":max(row["weight"] for row in period)}
+        elif state=="PRESENT":
             if current:
-                current["present"] = period[0]["time"]
-                current["present_i"] = start
-                current["stay"] = (
-                    period[-1]["mono_t"]
-                    - period[0]["mono_t"]
-                )
-                weights = [
-                    row["weight"]
-                    for row in period
-                ]
-                current["mean"] = (
-                    sum(weights) / len(weights)
-                )
-                current["peak"] = max(
-                    current["peak"],
-                    max(weights)
-                )
-        elif state == "OVERSIZE":
-            over = {
-                "arrival": period[0]["time"],
-                "duration": (
-                    period[-1]["mono_t"]
-                    - period[0]["mono_t"]
-                ),
-                "peak": max(
-                    row["weight"]
-                    for row in period
-                )
-            }
-        elif state == "DEPARTURE":
+                current["present"]=period[0]["time"]
+                current["present_i"]=start
+                current["stay"]=period[-1]["mono_t"]-period[0]["mono_t"]
+                weights=[row["weight"] for row in period]
+                current["mean"]=sum(weights)/len(weights)
+                current["peak"]=max(current["peak"],max(weights))
+                current["trigger"]=any(row_has_event(row,"CAMERA_TRIGGER") for row in period)
+        elif state=="OVERSIZE":
+            over={"arrival":period[0]["time"],"duration":period[-1]["mono_t"]-period[0]["mono_t"],"peak":max(row["weight"] for row in period)}
+        elif state=="DEPARTURE":
             if over:
-                over["leave"] = period[0]["time"]
+                over["leave"]=period[0]["time"]
                 oversize.append(over)
-                over = None
+                over=None
             elif current:
-                current["leave"] = period[0]["time"]
-        elif state == "IDLE":
-            if current:
-                current["idle"] = period[0]["time"]
-                if "stay" not in current:
-                    current["stay"] = 0.0
-                    current["mean"] = 0.0
+                current["leave"]=period[0]["time"]
+                current["departure"]=any(row_has_event(row,"DEPARTURE_TRIGGER") for row in period)
+        elif state=="IDLE":
+            if current and current.get("trigger") and current.get("departure"):
+                current["idle"]=period[0]["time"]
                 visits.append(current)
-                current = None
-    # also add the last visit if it was not closed by a DEPARTURE or IDLE
-    if current:
-        if "stay" not in current:
-            current["stay"] = 0.0
-            current["mean"] = 0.0
-        visits.append(current)
+            current=None
     if over:
         oversize.append(over)
-    return visits, oversize
+    return visits,oversize
 
 def get_configuration(meta: dict) -> dict:
     weight_threshold = meta.get("weightThreshold", 0)
@@ -235,6 +209,7 @@ def get_baseline_statistics(rows: list[dict], meta: dict) -> dict:
         })
         last_offset = offset
     return result
+
 def get_oversize(oversize: list[dict]) -> list[dict]:
     return [
         {
@@ -245,32 +220,14 @@ def get_oversize(oversize: list[dict]) -> list[dict]:
         }
         for event in oversize
     ]
-def get_visit_statistics(
-    visits: list[dict],
-    oversize: list[dict]
-) -> dict:
-    camera_triggers = sum(
-        1 for visit in visits
-        if visit["stay"] >= 0
-    )
-    departures = 0
-    result = {
-        "visits": len(visits),
-        "camera_trigger": camera_triggers,
-        "departures": departures,
-        "oversize": len(oversize)
-    }
+
+def get_visit_statistics(visits:list[dict],oversize:list[dict],hx_triggers:int)->dict:
+    result={"hx_triggers":hx_triggers,"completed_visits":len(visits),"oversize":len(oversize)}
     if visits:
-        durations = [
-            visit["stay"]
-            for visit in visits
-        ]
-        result["visit_durations"] = {
-            "minimum": min(durations),
-            "maximum": max(durations),
-            "mean": sum(durations) / len(durations)
-        }
+        durations=[visit["stay"] for visit in visits]
+        result["visit_durations"]={"minimum":min(durations),"maximum":max(durations),"mean":sum(durations)/len(durations)}
     return result
+
 def get_idle_statistics(rows: list[dict]) -> dict | None:
     idle = [
         row["weight"]
@@ -285,6 +242,7 @@ def get_idle_statistics(rows: list[dict]) -> dict | None:
         "maximum": max(idle),
         "peak_to_peak": max(idle) - min(idle)
     }
+
 def find_idle_warnings(
     rows: list[dict],
     threshold_off: float
@@ -327,6 +285,7 @@ def find_idle_warnings(
                 (bad_start, duration, bad_max)
             )
     return idle_warnings
+
 def get_warnings(
     idle_warnings: list[tuple[dict, float, float]],
     oversize: list[dict]
@@ -348,6 +307,7 @@ def get_warnings(
         "found": bool(warnings),
         "items": warnings
     }
+
 def get_offset_discontinuities(
     rows: list[dict],
     hx_scale: float
@@ -370,93 +330,32 @@ def get_offset_discontinuities(
             })
         last = offset
     return discontinuities
-def get_camera_events(
-    rows: list[dict],
-    camera_rows: list[dict]
-) -> dict:
-    hx_triggers = [
-        row for row in rows
-        if row_has_event(row, "CAMERA_TRIGGER")
-    ]
-    fifo_rows = [
-        row for row in camera_rows
-        if row["event"] == "cam_FIFO"
-    ]
-    matched_fifo = set()
-    recordings = 0
-    blocked_clr_q = 0
-    blocked_stdby = 0
-    for trigger in hx_triggers:
-        trigger_time = trigger["dt"]
-        deadline = (
-            trigger_time
-            + timedelta(seconds=CAMERA_MATCH_SECONDS)
-        )
-        match_index = None
-        for index, fifo in enumerate(fifo_rows):
-            if index in matched_fifo:
-                continue
-            if (
-                fifo["date_dt"] >= trigger_time
-                and fifo["date_dt"] <= deadline
-            ):
-                match_index = index
-                break
-            if fifo["date_dt"] > deadline:
-                break
-        if match_index is None:
-            continue
-        matched_fifo.add(match_index)
-        fifo = fifo_rows[match_index]
-        fifo_position = camera_rows.index(fifo)
-        following = camera_rows[fifo_position + 1:]
-        for event_row in following:
-            event = event_row["event"]
-            if event == "cam_FIFO":
-                break
-            if event == "cam_SND_MV_ok":
-                recordings += 1
-                break
-            if event == "cam_STDBY":
-                blocked_stdby += 1
-                break
-            if event == "cam_CLR_Q":
-                blocked_clr_q += 1
-                break
-    unrelated_fifo = len(fifo_rows) - len(matched_fifo)
-    return {
-        "hx_triggers": len(hx_triggers),
-        "fifo_triggers": len(matched_fifo),
-        "recordings": recordings,
-        "blocked_clr_q": blocked_clr_q,
-        "blocked_stdby": blocked_stdby,
-        "unrelated_fifo": unrelated_fifo
-    }
-def get_summary(
-    visits: list[dict],
-    oversize: list[dict]
-) -> dict:
-    result = {
-        "visits": len(visits)
-    }
+
+def get_camera_events(rows:list[dict],camera_events:list[dict])->dict:
+    triggers=[row["dt"] for row in rows if row_has_event(row,"CAMERA_TRIGGER")]
+    fifo=[event for event in camera_events if event["event"]=="cam_FIFO"]
+    used=set()
+    for trigger in triggers:
+        hits=[i for i,event in enumerate(fifo) if i not in used and timedelta(0)<=event["datetime"]-trigger<=timedelta(seconds=CAMERA_MATCH_SECONDS)]
+        if hits:
+            used.add(min(hits,key=lambda i:fifo[i]["datetime"]))
+    count=lambda name:sum(event["event"]==name for event in camera_events)
+    sent=sum(event["event"].startswith("cam_SND_MV_") for event in camera_events)
+    return {"hx_triggers":len(triggers), "fifo":len(fifo),
+            "matched_fifo":len(used), "unrelated_fifo":len(fifo)-len(used),
+            "recordings":count("cam_SND_MV_ok"),"other_sent":sent-count("cam_SND_MV_ok"),
+            "clr_q":count("cam_CLR_Q"),"stdby":count("cam_STDBY")}
+
+def get_summary(visits:list[dict],oversize:list[dict])->dict:
+    result={"completed_visits":len(visits)}
     if visits:
-        result["mean_stay"] = (
-            sum(
-                visit["stay"]
-                for visit in visits
-            ) / len(visits)
-        )
-        result["longest"] = max(
-            visit["stay"]
-            for visit in visits
-        )
-        result["highest"] = max(
-            visit["peak"]
-            for visit in visits
-        )
+        result["mean_stay"]=sum(visit["stay"] for visit in visits)/len(visits)
+        result["longest"]=max(visit["stay"] for visit in visits)
+        result["highest"]=max(visit["peak"] for visit in visits)
     if oversize:
-        result["oversize"] = len(oversize)
+        result["oversize"]=len(oversize)
     return result
+ 
 def create_plot(
     rows: list[dict],
     periods: list[tuple[str, int, int]],
@@ -556,82 +455,39 @@ def create_plot(
     plt.tight_layout()
     plt.savefig(output_path)
     plt.close(fig)
-def analyze_csv(
-    signal_filename: str,
-    camera_filename: str
-) -> dict:
+
+def analyze_csv(signal_filename:str,camera_filename:str)->dict:
     if not os.path.isfile(signal_filename):
-        return {"signal_csv": False}
+        return {"signal_csv":False}
     if not os.path.isfile(camera_filename):
-        return {
-            "signal_csv": True,
-            "cam_event": False
-        }
-    meta, rows, _ = read_signal_file(signal_filename)
-    camera_rows = read_camera_file(camera_filename)
+        return {"signal_csv":True,"cam_event":False}
+    meta,rows,_=read_signal_file(signal_filename)
+    camera_events=read_camera_events(camera_filename)
     if not rows:
-        return {
-            "signal_csv": True,
-            "cam_event": True,
-            "samples": 0
-        }
-    weight_threshold = meta.get("weightThreshold", 0)
-    weightlimit = meta.get("weightlimit", 0)
-    hx_scale = meta.get("hxScale", 0)
-    startup_offset = meta.get("startup_offset", 0)
-    periods = split_periods(rows)
-    visits, oversize = reconstruct_visits(
-        rows,
-        periods
-    )
-    idle_warnings = find_idle_warnings(
-        rows,
-        get_threshold_off(weight_threshold)
-    )
-    output_path = os.path.join(
-        os.path.dirname(signal_filename),
-        "signal_timeline.svg"
-    )
-    create_plot(
-        rows,
-        periods,
-        weight_threshold,
-        startup_offset,
-        hx_scale,
-        output_path
-    )
+        return {"signal_csv":True,"cam_event":True,"samples":0}
+    weight_threshold=meta.get("weightThreshold",0)
+    hx_scale=meta.get("hxScale",0)
+    startup_offset=meta.get("startup_offset",0)
+    periods=split_periods(rows)
+    visits,oversize=reconstruct_visits(rows,periods)
+    camera_analysis=get_camera_events(rows,camera_events)
+    idle_warnings=find_idle_warnings(rows,get_threshold_off(weight_threshold))
+    output_path=os.path.join(os.path.dirname(signal_filename),"signal_timeline.svg")
+    create_plot(rows,periods,weight_threshold,startup_offset,hx_scale,output_path)
     return {
-        "signal_csv": True,
-        "cam_event": True,
-        "samples": len(rows),
-        "first": rows[0]["time"],
-        "last": rows[-1]["time"],
-        "configuration": get_configuration(meta),
-        "baseline_statistics": get_baseline_statistics(
-            rows,
-            meta
-        ),
-        "oversize_events": get_oversize(oversize),
-        "visit_statistics": get_visit_statistics(
-            visits,
-            oversize
-        ),
-        "camera_events": get_camera_events(
-            rows,
-            camera_rows
-        ),
-        "idle_statistics": get_idle_statistics(rows),
-        "warnings": get_warnings(
-            idle_warnings,
-            oversize
-        ),
-        "offset_discontinuities": get_offset_discontinuities(
-            rows,
-            hx_scale
-        ),
-        "summary": get_summary(
-            visits,
-            oversize
-        ),
-        "timeline": "/ramdisk/signal_timeline.svg"
+        "signal_csv":True,
+        "cam_event":True,
+        "samples":len(rows),
+        "first":rows[0]["time"],
+        "last":rows[-1]["time"],
+        "configuration":get_configuration(meta),
+        "baseline_statistics":get_baseline_statistics(rows,meta),
+        "oversize_events":get_oversize(oversize),
+        "visit_statistics":get_visit_statistics(visits,oversize,camera_analysis["hx_triggers"]),
+        "camera_events":camera_analysis,
+        "idle_statistics":get_idle_statistics(rows),
+        "warnings":get_warnings(idle_warnings,oversize),
+        "offset_discontinuities":get_offset_discontinuities(rows,hx_scale),
+        "summary":get_summary(visits,oversize),
+        "timeline":"/ramdisk/signal_timeline.svg"
     }
