@@ -30,7 +30,7 @@ DEPENDENCIES=(
     python3-matplotlib
     python3-psutil
 )
-
+# module 'csv' replaced by .split(,) in hxanalyze/hxanalyze4srv.py
 echo "--- Checking and installing dependencies ---"
 
 for package in "${DEPENDENCIES[@]}"; do

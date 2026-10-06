@@ -46,8 +46,8 @@ if [ -f "$TEMPLATE_DIR/birdlogrotate" ]; then
 fi
 
 echo "--- 3. Installing Systemd Services ---"
-# Copy all unit files first
-ALL_UNITS=("bird-startup.service" "bird15m.service" "bird15m.timer" "premidnight.service" "premidnight.timer")
+# Copy all unit files first, 5 services and 2 timers
+ALL_UNITS=("bird-startup.service" "bird15m.service" "bird15m.timer" "hxFiBird.service" "premidnight.service" "premidnight.timer" "startLateBird.service")
 
 for unit in "${ALL_UNITS[@]}"; do
     if [ -f "$TEMPLATE_DIR/$unit" ]; then
