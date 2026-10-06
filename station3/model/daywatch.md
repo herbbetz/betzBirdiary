@@ -18,7 +18,7 @@
 
 - Die JPG Images und ihre Diagnosen im `prefix.csv` sind  auf `ramdisk` und werden mit jedem Reboot gelöscht.
 
-- `birdclassify2C.py` erzeugt dabei ein `ramdisk/model2.html` als *Iframe* für seine WebGUI-Statistik am Anfang von `actions - daywatch`.
+- `birdclassify2C.py` erzeugt dabei ein `ramdisk/model2.html` als *Iframe* für seine WebGUI-Statistik am Anfang von `actions - daywatch`. In `ramdisk/model2.json` sammeln sich dabei die vorangegangenen Ergebnisse aller Klassifizierungsvorgänge.
 
 - Die Geschwindigkeit der `tflite runtime` wäre auf dem Raspberry durch verschiedene Maßnahmen sogar noch steigerbar, z.B. Python threads (`interpreter = Interpreter(model_path=MODEL_PATH, num_threads=4)`= XNNPACK delegate, PIL decoder buffer, input tensor preallocation.
 

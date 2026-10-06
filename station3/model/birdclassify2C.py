@@ -387,6 +387,7 @@ def main():
 
     # --------------------------------------------------
     # write ramdisk/model2.html iframe for bird statistics
+    # model2.json is cumulating the results from all previous classifications (format: [[date, labelIdx], ...])
     # --------------------------------------------------
 
     top_label_idx = keep[0]["label_idx"] if len(keep) > 0 and keep[0]["confidence"] > MIN_CONFIDENCE else None
@@ -396,8 +397,8 @@ def main():
         new_entry = [date_str, top_label_idx]
 
         stats = []
-        '''
-        # Keep file as one valid JSON array: [[date, idx], ...]
+        
+        # Keep file as one valid JSON array: [[date, labelIdx], ...]
         statfname = os.path.join(IMG_DIR, f"{MODEL_NAME}.json")
         if os.path.exists(statfname):
             try:
@@ -405,16 +406,16 @@ def main():
                     stats = json.load(f)
             except json.JSONDecodeError:
                 stats = [] # Handle corrupted/empty files
-        '''
+        
         stats.append(new_entry)
 
         # Keep only the last 1000 entries to prevent ramdisk bloat
         if len(stats) > 1000:
             stats = stats[-1000:]
-        '''
+        
         with open(statfname, "w", encoding="utf-8") as f:
             json.dump(stats, f)    
-        '''
+        
         # count absolute counts to a dictionary counts = {label_idx0: count0, ...}
         counts = {}
         for entry in stats:
