@@ -279,7 +279,9 @@ def send_movement(circ_output, picam, wght, stop_event, preTrigImg, liveLogger):
     # "ramdisk/daydir" would have to be created first
     daydir = birdpath['ramdisk']
     model = "model"
-    imgCnt, imgMax = 0, 30 # one img is below 20 kB, so enough space on ramdisk
+    # one img is below 20 kB, so enough space on ramdisk
+    # maxOldImg = 3 in stills_lux() means with imgMax = 30, there remain 30 - 3 = 27 posttrigger images (daydir/1697041234567.3.jpg ... daydir/1697041234567.29.jpg)
+    imgCnt, imgMax = 0, 30 
     videoUrlStr = movementStartStr.replace(":", "").replace(" ", "_")
 
     # pre-trigger images are captured in the main loop and stored in preTrigImg, which is a list of filenames
@@ -290,16 +292,27 @@ def send_movement(circ_output, picam, wght, stop_event, preTrigImg, liveLogger):
             os.rename(oldName, newName)
             imgCnt += 1
     preTrigImg.clear()  # empty the renamed list for reuse as oldimg[] in main() and below calling stills_lux() in this function
+    # time.perf_counter() is monotonic and only for time diff, time.time() is different and returns seconds.msecs since epoch (1.1.1970)
+    # explore capture time for 1 img:
+    imgName = f"{daydir}/{videoUrlStr}.{imgCnt}.jpg"
+    t0_img = time.perf_counter()
+    capture_img(picam, imgName)
+    t_cap = time.perf_counter() - t0_img
+    imgCnt += 1
+    ms.log(f"single img capture time: {t_cap:.3f} sec")
 
     # for video with circ output (dashcam):
     stop_event.clear()   # ensure clean state
     outmem = io.BytesIO()
     circ_output.fileoutput = outmem
     circ_output.start()
-
     # instead of 'time.sleep(videodurate)' poll for stop_event from readBalance():
     ms.log(f"video started at {datetime.now()}")
-     # time.perf_counter() is monotonic and only for time diff, time.time() is different and returns seconds.msecs since epoch (1.1.1970)
+    growth = 1.08
+    n = imgMax - imgCnt # remaining images to capture
+    allSleep = max(videodurate - n*t_cap, 0.0)
+    # distribute allSleep over n intervals in a geometric series with growth factor 'growth', so that the last interval is the longest
+    sleep = allSleep * (growth - 1) / (growth**n - 1) if n > 0 else 0.0
     deadline = time.perf_counter() + videodurate
     while time.perf_counter() < deadline:
         # Check for stop signal first
@@ -315,7 +328,8 @@ def send_movement(circ_output, picam, wght, stop_event, preTrigImg, liveLogger):
             # ms.log(f"img#{imgCnt} taken at {time.time()}")
             imgCnt += 1
             # record img interval:
-            time.sleep(0.1) 
+            time.sleep(sleep)
+            sleep *= growth 
         else:
             # Once 30 images are taken, explicitly drop into a longer, 
             # low-overhead sleep to protect the CPU until the deadline hits
