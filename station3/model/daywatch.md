@@ -8,6 +8,8 @@
 
 - Der Vorteil der beschränkten Imageanzahl ist, dass damit die KI-Klassifizierung schnell erfolgt (weil maximal 30 analysierte Bilder) und damit das Video ab der ersten Klassifizierung durch `model2` (Ausschluss von Leervideo) zeitnah hochgeladen wird.
 
+- Videos kürzer als `videodurate` (abgekürzt durch Vogelabflug) habe also auch weniger Bilder für die KI. Das ist auf der birdiary Plattform (`model0`) anders, wo die Frames im Nachhinein bei bekannter Framegesamtzahl extrahiert werden, also bei kürzeren Videos einfach ein höherer Prozentsatz zur Erlangung von z.B. 30 Frames.
+
 - In `mainFoBird3.py` werden erst die Pretrigger Images (ein `rolling buffer` der sowieso der WebIF-Darstellung dient) in `ramdisk/yyyy-mm-dd_hhMMss.msecs.X.jpg (z.B. X = 0 bis 2)` umbenannt, da die Kameraauslösung selbst Zeit benötigt. Anschließend werden parallel zum Videorecording weitere Images aufgenommen bis `X = 29` (s.u.). Das Videorecording ist ja ebenfalls an das `circular buffer pretrigger video` drangehängt.
 
 - mehrere KI-Modelle im Vergleich (in der Reihenfolge ihrer zeitlichen Verfügbarkeit):
