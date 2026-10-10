@@ -39,7 +39,7 @@ elapsed "flaskBird3.py +sleep 1"
 # after flaskBird, needs time to find cmd 'ifconfig':
 # mainFoBird.py contains the only FIFO reader in child process:
 # python3 mainAckBird2.py &>> logs/main.log & # watch logs live on flask webserver or in terminal, using 'tail -f ~station/logs/main.log' or 'less +F ~station/logs/main.log'
-setsid $PYTHON "$APPDIR/mainFoBird3.py" > /dev/null 2>&1 & # >> "$APPDIR/logs/main.log" 2>&1 & # birdpipe reader
+setsid $PYTHON "$APPDIR/mainFoBird3.py" >> "$APPDIR/ramdisk/cam.log" 2>&1 & # birdpipe reader
 # setsid $PYTHON "$APPDIR/mainFoBird3.py" test > /dev/null 2>&1 &
 sleep 1 # the child process takes time to establish
 elapsed "mainFoBird3.py +sleep 1"
