@@ -299,7 +299,7 @@ def send_movement(circ_output, picam, wght, stop_event, preTrigImg, liveLogger):
     capture_img(picam, imgName)
     t_cap = time.perf_counter() - t0_img
     imgCnt += 1
-    ms.log(f"single img capture time: {t_cap:.3f} sec")
+    ms.log(f"single img capture time: {t_cap:.3f} sec") # typically 0.007 secs
 
     # for video with circ output (dashcam):
     stop_event.clear()   # ensure clean state

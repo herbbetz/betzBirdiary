@@ -4,7 +4,7 @@
 
 - 30 aus jedem Vogelvideo ausgekoppelte JPG Images werden nach KI-ermittelter Erkennungsrate auf die zwei eindeutigsten vogelhaltigen Bilder reduziert.
 
-- Erst wurden die Posttrigger-Images im 0.1 sec Takt aufgenommen, festgelegt auf 27 (= 30 minus 3 pretrigger Images) Bilder in 3 Sekunden. Ab Sekunde 4 post Trigger wurden also  keine Bilder mehr für die KI-Analyse gemacht. Der Takt wurde später als geometrische Serie auf `videodurate (mainFoBird3.py)` besser verteilt, so dass am Anfang die meisten, am Ende aber auch noch Images gemacht werden.
+- Erst wurden die Posttrigger-Images im 0.1 sec Takt aufgenommen, festgelegt auf 27 (= 30 minus 3 pretrigger Images) Bilder in 3 Sekunden. Ab Sekunde 4 post Trigger wurden also  keine Bilder mehr für die KI-Analyse gemacht. Der Takt wurde später als geometrische Serie auf `videodurate (mainFoBird3.py)` besser verteilt, so dass am Anfang die meisten, am Ende aber auch noch Images gemacht werden. Die Kamera benötigt für ein Bild nur 0.007 secs .
 
 - Der Vorteil der beschränkten Imageanzahl ist, dass damit die KI-Klassifizierung schnell erfolgt (weil maximal 30 analysierte Bilder) und damit das Video ab der ersten Klassifizierung durch `model2` (Ausschluss von Leervideo) zeitnah hochgeladen wird.
 
