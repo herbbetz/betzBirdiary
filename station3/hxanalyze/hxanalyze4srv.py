@@ -434,8 +434,8 @@ def create_plot(
             camera_triggers,
             ymin=0,
             ymax=max(weights) * 1.1 if max(weights) > 0 else 1,
-            color="blue",
-            linestyle="-",
+            color="gray",
+            linestyle=":",
             alpha=0.6,
             linewidth=1,
             label="CAMERA_TRIGGER"

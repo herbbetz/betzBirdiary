@@ -39,6 +39,7 @@ import msgBird as ms
 hxPolarity = 1 if hxPolScaleOff[0] == 1 else -1
 hxScale = abs(hxPolScaleOff[1])
 if hxScale == 0: hxScale = 600
+spreadlimit = max(hxPolScaleOff[3], 3000)  # defined in calibrateHx.py, used in Baseline startup
 
 @dataclass
 class Sample:
@@ -103,7 +104,7 @@ class MedianFilter:
 SETTLE_TIME = 2.0      # startup settle before sampling
 MAX_WINDOW_TIME = 60.0 # max time to wait for a stable startup window
 WINDOW_SAMPLES = 120   # samples per startup stability window
-SPREAD_LIMIT = 3000    # startup: p10-p90 ADC spread considered "quiet"
+SPREAD_LIMIT = spreadlimit    # startup: p10-p90 ADC spread considered "quiet"
 MAX_ATTEMPTS = 3       # startup retries with relaxed spread limit
 IDLE_WINDOW = 20   # IDLE: samples that must be quiet before the offset follows, ~3 s at 0.157 s/tick, equal to the post-departure cooldown
 
@@ -203,7 +204,7 @@ class NoiseGuard:
         if len(self.diffs) < self.min_ready: return 0.0
         d = np.array(self.diffs)
         mad = np.median(np.abs(d - np.median(d)))
-        return float(1.4826 * mad / np.sqrt(2) / hxScale)
+        return float(1.4826 * mad / np.sqrt(2) / hxScale) # 1.4826 * MAD is a robust estimate of stddev (1.48 = 1/0.67), divide by sqrt(2) for differences, divide by hxScale for grams
 
 # ============================================================
 # FSM
@@ -404,12 +405,14 @@ def rezero(sample: Sample) -> None:
         sys.exit(1)   # distinct code: "give the shell script a retry"
 
 rezero(sample)
-CRIT_NOISE = 6.0  # critical sigma in grams (retune: sigma is now a difference-based estimate)
+CRIT_NOISE = 6.0  # sigma in grams on the median-filtered scale (MEDIAN_GAIN applied)
 MEDIAN_SAMPLES = 7
+MEDIAN_GAIN = 1.2533 / np.sqrt(MEDIAN_SAMPLES)  # std of a median of N white samples relative to one sample, ~0.47 for N=7
 NOISEGUARD_SAMPLES = 210
 NOISE_K = 3.0      # 3 * sigma is over 95%
 MAX_THRESHOLD = 15
 median = MedianFilter(size=MEDIAN_SAMPLES)
+
 noiseguard = NoiseGuard(window_samples=NOISEGUARD_SAMPLES)
 for _ in range(MEDIAN_SAMPLES):  # pre-fill MedianFilter only
     sample.raw_sample = hx.read()
@@ -443,7 +446,7 @@ try:
         median.update(sample)
         baseline.process(sample)
         noiseguard.add_sample(sample.raw_sample)
-        sample.sigma = noiseguard.current_std_grams()
+        sample.sigma = noiseguard.current_std_grams() * MEDIAN_GAIN
         if fsm.state == STATE_IDLE: fsm.set_threshold(min(weightThreshold + NOISE_K * sample.sigma, MAX_THRESHOLD))
         sample.threshold = fsm.threshold_on
         event = fsm.process_weight(sample)

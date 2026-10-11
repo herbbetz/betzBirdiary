@@ -44,7 +44,7 @@ def get_mean(sensor, num_vals):
     spread = max_val - min_val
 
     print(f"median: {median_val}, spread: {spread} ({min_val} to {max_val})")
-    return median_val
+    return median_val, spread
 
 
 # ---------------- Stop hxFiBird if running ----------------
@@ -76,7 +76,7 @@ print("HX711 ready.\n")
 # ---------------- Measure unloaded baseline ----------------
 input("Remove all weights from scale and press ENTER...")
 time.sleep(2)
-mean_no_load = get_mean(hx, NUM_VALS)
+mean_no_load, spread_no_load = get_mean(hx, NUM_VALS)
 
 
 # ---------------- Measure known weight ----------------
@@ -92,7 +92,7 @@ while True:
     print("Enter a positive numeric value.")
 
 time.sleep(2)
-mean_load = get_mean(hx, NUM_VALS)
+mean_load, spread_load = get_mean(hx, NUM_VALS)
 
 
 # ---------------- Compute scale factor ----------------
@@ -136,10 +136,12 @@ for _ in range(10):
 # ---------------- Save configuration ----------------
 offset = round(offset)
 scale_factor = abs(round(scale_factor))
+spread_limit = max(spread_no_load, spread_load, 2000)  # Ensure minimum spread limit of 2000
+spread_limit = int(spread_limit) + 1000 # Convert to integer for JSON compatibility
 
-print(f"\nSaving: hxOffset={offset}, hxScale={scale_factor}")
+print(f"\nSaving: polarity={polarity}, scale_factor={scale_factor}, offset={offset}, spread_limit={spread_limit}")
 # update_config_json({"hxOffset": offset, "hxScale": scale_factor})
-update_config_json({"hxPolScaleOff": [polarity, scale_factor, offset]})
+update_config_json({"hxPolScaleOff": [polarity, scale_factor, offset, spread_limit]})
 
 # ---------------- Cleanup ----------------
 hx.close()

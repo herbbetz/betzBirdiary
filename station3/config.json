@@ -29,7 +29,8 @@
   "hxPolScaleOff": [
     -1,
     533,
-    179109
+    179109,
+    5000
   ],
   "dhtPin": 16,
   "hxDataPin": 17,
