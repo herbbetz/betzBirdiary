@@ -11,4 +11,4 @@
 - `hxFiBirdStateCt.py` und `mainFoBird3.py` enthalten beide einen *LiveLogger*, der das Gewichtssignal bzw. Lumensignal über einen Endpoint in `flaskBird3.py` durch `hxsignal.html` bzw. `luxsignal.html` im WebGUI darstellt (Button `action - HX Signal` bzw. `- Lux Signal`).
 - Button `action - HX Reset` und `hx_reset.html` ermöglichen einen Reset der Waage, wenn sie gerade als leer beobachtet wird (innerhalb `hxFiBirdStateCt.py` via `flaskBird*.py & msgBird.py`). 
 
-- Der Output von `hxanalyze4srv.py` erfolgt in `hx-report.html`.
+- Der Output von `hxanalyze4srv.py` erfolgt in `hx-report.html`. Labels verändert man in beiden.
