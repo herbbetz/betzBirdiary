@@ -234,7 +234,7 @@ class WeightFSM:
         self.idle_cooldown_t0 = 0.0
         self._cooldown_duration = 3.0
         self.camera_sent = False
-        self.weight_at_arrival = 0.0
+        self.weights: list[float] = []
         self.set_threshold(threshold_on)
         self.handlers = {STATE_IDLE: self.state_idle, STATE_ARRIVAL: self.state_arrival, STATE_PRESENT: self.state_present,
                          STATE_DEPARTURE: self.state_departure, STATE_OVERSIZE: self.state_oversize}
@@ -263,11 +263,10 @@ class WeightFSM:
         self.state = new_state
         self.state_t0 = time.monotonic()
         self.reset()
-        if new_state == STATE_ARRIVAL: self.weight_at_arrival = sample.weight
+        if new_state == STATE_ARRIVAL: self.weights = []
         if new_state == STATE_PRESENT:
             self.present_t0 = self.state_t0
             self.camera_sent = False
-            if self.weight_at_arrival <= 0: self.weight_at_arrival = sample.weight
         if new_state == STATE_DEPARTURE: self.departure_t0 = self.state_t0
         if old_state == STATE_DEPARTURE and new_state == STATE_IDLE:
             self.idle_cooldown_t0 = self.state_t0
@@ -281,8 +280,14 @@ class WeightFSM:
         self.camera_sent = True
         return True
 
+    def bird_weight(self) -> int:  # median over ARRIVAL+PRESENT, never <= 0 (-1 means departure)
+        bweight = max(1, round(float(np.median(self.weights)))) if self.weights else 1
+        return bweight
+
     def process_weight(self, sample) -> str | None:
-        return self.handlers[self.state](sample)
+        event = self.handlers[self.state](sample)
+        if self.state in (STATE_ARRIVAL, STATE_PRESENT): self.weights.append(sample.weight)
+        return event
 
     def state_idle(self, sample) -> str | None:
         if time.monotonic() - self.idle_cooldown_t0 < self._cooldown_duration:
@@ -462,7 +467,7 @@ try:
             event = None
         if fsm.camera_trigger():
             sample.events.append("CAMERA_TRIGGER")
-            send_fifo(int(sample.weight))
+            send_fifo(fsm.bird_weight())
         elif event and "->DEPARTURE" in event:
             sample.events.append("DEPARTURE_TRIGGER")
             send_fifo(-1)

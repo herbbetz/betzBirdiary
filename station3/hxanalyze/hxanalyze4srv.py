@@ -18,7 +18,8 @@ Identities: all triggers = FIFO + CLR_Q; FIFO = SND_MV_* + STDBY
 from datetime import datetime, timedelta
 import os
 import matplotlib.pyplot as plt
-JUMP_G = 3.0
+from matplotlib.ticker import FuncFormatter # for log y-axis formatter
+# weightThreshold and weightlimit are taken from the signal_hx.csv metadata, not from configBird3.
 IDLE_BAD_TIME = 5.0
 CAMERA_MATCH_SECONDS = 2.0
 THRESHOLD_OFF_FACTOR = 0.7
@@ -308,10 +309,8 @@ def get_warnings(
         "items": warnings
     }
 
-def get_offset_discontinuities(
-    rows: list[dict],
-    hx_scale: float
-) -> list[dict]:
+def get_offset_discontinuities(rows:list[dict],hx_scale:float,jump_g:float)->list[dict]:
+    if not jump_g: return [] # e.g. weightThreshold not in CSV
     discontinuities = []
     if not rows or hx_scale == 0:
         return discontinuities
@@ -322,7 +321,7 @@ def get_offset_discontinuities(
             (last - offset)
             / abs(hx_scale)
         )
-        if abs(delta_g) > JUMP_G:
+        if abs(delta_g) > jump_g:
             discontinuities.append({
                 "time": row["time"],
                 "jump": delta_g,
@@ -343,7 +342,7 @@ def get_camera_events(rows:list[dict],camera_events:list[dict])->dict:
     sent=sum(event["event"].startswith("cam_SND_MV_") for event in camera_events)
     return {"hx_triggers":len(triggers), "fifo":len(fifo),
             "matched_fifo":len(used), "unrelated_fifo":len(fifo)-len(used),
-            "recordings":count("cam_SND_MV_ok"),"other_sent":sent-count("cam_SND_MV_ok"),
+            "recordings uploaded":count("cam_SND_MV_ok"),"other_sent":sent-count("cam_SND_MV_ok"),
             "clr_q":count("cam_CLR_Q"),"stdby":count("cam_STDBY")}
 
 def get_summary(visits:list[dict],oversize:list[dict])->dict:
@@ -362,6 +361,7 @@ def create_plot(
     weight_threshold: float,
     startup_offset: float,
     hx_scale: float,
+    weightlimit: float,
     output_path: str
 ) -> None:
     times = [row["dt"] for row in rows]
@@ -378,6 +378,8 @@ def create_plot(
     ]
     threshold_off = get_threshold_off(weight_threshold)
     fig, ax = plt.subplots(figsize=(11, 4))
+    ax.set_yscale("symlog",base=5,linthresh=5) # log(5) y-axis, linear between -5 and +5. log(1+|w|) as 0 cannot be shown ( log(1)=0 and log(0) -> -infinity ).
+    ax.yaxis.set_major_formatter(FuncFormatter(lambda v,_:f"{v:g}"))
     ax.plot(
         times,
         weights,
@@ -433,7 +435,7 @@ def create_plot(
         ax.vlines(
             camera_triggers,
             ymin=0,
-            ymax=max(weights) * 1.1 if max(weights) > 0 else 1,
+            ymax=weightlimit,
             color="gray",
             linestyle=":",
             alpha=0.6,
@@ -445,6 +447,7 @@ def create_plot(
         times[0] + timedelta(hours=1)
     )
     ax.set_xlim(times[0], plot_end)
+    ax.set_ylim(-25,weightlimit)
     ax.xaxis.set_major_formatter(
         plt.matplotlib.dates.DateFormatter("%H:%M")
     )
@@ -473,7 +476,7 @@ def analyze_csv(signal_filename:str,camera_filename:str)->dict:
     camera_analysis=get_camera_events(rows,camera_events)
     idle_warnings=find_idle_warnings(rows,get_threshold_off(weight_threshold))
     output_path=os.path.join(os.path.dirname(signal_filename),"signal_timeline.svg")
-    create_plot(rows,periods,weight_threshold,startup_offset,hx_scale,output_path)
+    create_plot(rows,periods,weight_threshold,startup_offset,hx_scale,meta.get("weightlimit",300),output_path)
     return {
         "signal_csv":True,
         "cam_event":True,
@@ -487,7 +490,7 @@ def analyze_csv(signal_filename:str,camera_filename:str)->dict:
         "camera_events":camera_analysis,
         "idle_statistics":get_idle_statistics(rows),
         "warnings":get_warnings(idle_warnings,oversize),
-        "offset_discontinuities":get_offset_discontinuities(rows,hx_scale),
+        "offset_discontinuities":get_offset_discontinuities(rows,hx_scale,weight_threshold),
         "summary":get_summary(visits,oversize),
         "timeline":"/ramdisk/signal_timeline.svg"
     }
