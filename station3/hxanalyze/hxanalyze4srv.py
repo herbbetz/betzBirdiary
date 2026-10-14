@@ -9,7 +9,7 @@ completed visits  : visits containing CAMERA_TRIGGER and DEPARTURE_TRIGGER in si
 FIFO events       : all cam_FIFO entries in cam_event.csv
 matched FIFO      : cam_FIFO within 0..2 s after a CAMERA_TRIGGER (compared signal_hx.csv to cam_event.csv)
 unrelated FIFO    : cam_FIFO without such a trigger (e.g. sent by flaskBird as manual snapshot order to mainFoBird3.py)
-followed by recording : cam_SND_MV_ok entries from cam_event.csv
+recordings uploaded : cam_SND_MV_ok entries from cam_event.csv
 all cam_SND_MV_* entries except _ok: remaining sends (noack, upfail, uplimit, keeplocal) from cam_event.csv
 blocked by CLR_Q: cam_CLR_Q (queued trigger dropped after a recording, never a FIFO)
 blocked by STDBY: cam_STDBY (logged after its FIFO) entries (hx triggers and flaskBird triggers)
@@ -342,7 +342,7 @@ def get_camera_events(rows:list[dict],camera_events:list[dict])->dict:
     sent=sum(event["event"].startswith("cam_SND_MV_") for event in camera_events)
     return {"hx_triggers":len(triggers), "fifo":len(fifo),
             "matched_fifo":len(used), "unrelated_fifo":len(fifo)-len(used),
-            "recordings uploaded":count("cam_SND_MV_ok"),"other_sent":sent-count("cam_SND_MV_ok"),
+            "recordings_uploaded":count("cam_SND_MV_ok"),"other_sent":sent-count("cam_SND_MV_ok"),
             "clr_q":count("cam_CLR_Q"),"stdby":count("cam_STDBY")}
 
 def get_summary(visits:list[dict],oversize:list[dict])->dict:
