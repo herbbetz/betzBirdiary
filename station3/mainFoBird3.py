@@ -299,7 +299,7 @@ def send_movement(circ_output, picam, wght, stop_event, preTrigImg, liveLogger):
     capture_img(picam, imgName)
     t_cap = time.perf_counter() - t0_img
     imgCnt += 1
-    ms.log(f"single img capture time: {t_cap:.3f} sec") # typically 0.007 secs
+    ms.log(f"single img capture time: {t_cap:.3f} sec")
 
     # for video with circ output (dashcam):
     stop_event.clear()   # ensure clean state
@@ -351,6 +351,12 @@ def send_movement(circ_output, picam, wght, stop_event, preTrigImg, liveLogger):
     posttrigger.seek(0)
     full_video = posttrigger.read()
     '''
+    if localsave or wght == 0.0: # testmode 'localsave' activated above or weight 0.0 for snapshot without a bird
+        ms.log("Localsave mode: skipping upload")
+        ms.log(f"full_video size: {len(full_video)} bytes")
+        write_binVideo(movementStartStr, full_video)
+        ms.log("Test video saved locally in /keep.")
+        return "SND_MV_keeplocal"
 
     # AI-classification:
     # .Popen runs asynchronously, .call does not
@@ -362,13 +368,6 @@ def send_movement(circ_output, picam, wght, stop_event, preTrigImg, liveLogger):
         stdout=sys.stdout,
         stderr=sys.stderr
     )
-
-    if localsave:
-        ms.log("Localsave mode: skipping upload")
-        ms.log(f"full_video size: {len(full_video)} bytes")
-        write_binVideo(movementStartStr, full_video)
-        ms.log("Test video saved locally in /keep.")
-        return "SND_MV_keeplocal"
 
     deadline = time.perf_counter() + video_ack_timeout
     while time.perf_counter() < deadline:

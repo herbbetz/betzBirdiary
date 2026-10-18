@@ -12,6 +12,10 @@ if [[ $EUID -ne 0 ]]; then
     echo "$0 not running as root" >> $LOGFILE 2>&1
     exit 1
 fi
+# register a PID in the sharedBird pids.json file, so other processes can find it
+pidreg() { PYTHONPATH="$APPDIR" "$PYTHON" -c "from sharedBird import pids; pids().$1('hxFiBird.sh'$2)"; }
+pidreg set_pid ", $$"
+trap 'pidreg remove_pid ""' EXIT
 # no 'sudo chown' because we are root
 if [ ! -p "$FIFO" ]; then
     mkfifo "$FIFO"

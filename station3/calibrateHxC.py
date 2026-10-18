@@ -5,7 +5,7 @@ Workflow: stop hxFiBird, measure unloaded median, measure known weight, compute 
 """
 import ctypes, os, signal, sys, time
 import numpy as np
-from sharedBird import roundFlt, readPID
+from sharedBird import roundFlt, pids
 from configBird3 import birdpath, hxDataPin, hxClckPin, update_config_json
 
 NUM_VALS = 100
@@ -49,18 +49,10 @@ def get_median(num_vals: int) -> tuple[float, float]:
     return median_val, spread
 
 # ---------------- Stop hxFiBird if running (it holds the GPIO lines) ----------------
-hxFiPID = readPID(1)
-if hxFiPID != -1:
-    try:
-        pid = int(hxFiPID)
-        print(f"Stopping hxFiBird (PID {pid})...")
-        os.kill(pid, signal.SIGTERM)
-        for _ in range(50):  # wait up to 5 s; os.kill(pid, 0) raises ProcessLookupError once the process is gone
-            time.sleep(0.1)
-            os.kill(pid, 0)
-    except ProcessLookupError: print("hxFiBird stopped.")
-    except Exception as e: print(f"Could not stop hxFiBird: {e}")
-else: print("hxFiBird not running.")
+if os.geteuid() != 0: sys.exit(f"Run as root: sudo python3 {sys.argv[0]}")
+processes_to_kill = ["hxFiBird.sh", "hxFiBirdStateCt.py"] # run as root, therefore calibrate as sudo
+p = pids()
+p.kill_list(processes_to_kill)
 
 print("\nInitializing HX711...")
 hx = HX711_CT()

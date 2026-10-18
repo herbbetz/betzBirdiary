@@ -62,8 +62,9 @@ def init(): # first create empty msg file
             writemsg(message)
 
 def writemsg(msg): # also as init() before readmsg()
-    with open(filename, 'w') as jfile:
+    with open(filename, 'a') as jfile:
         fcntl.flock(jfile, fcntl.LOCK_EX) # will wait for other locks to close
+        jfile.truncate(0)  # clear file before writing
         try:
             json.dump(msg, jfile) # write
         finally:

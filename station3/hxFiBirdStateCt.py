@@ -27,13 +27,13 @@ from datetime import datetime
 import ctypes
 import errno
 import os
-import sys
+import sys, signal
 import time
 import numpy as np
 import urllib.parse
 import urllib.error
 import urllib.request
-from sharedBird import writePID, clearPID, getTestmode
+from sharedBird import pids, getTestmode
 from configBird3 import birdpath, hxDataPin, hxClckPin, hxPolScaleOff, weightThreshold, weightlimit
 import msgBird as ms
 hxPolarity = 1 if hxPolScaleOff[0] == 1 else -1
@@ -376,11 +376,6 @@ class NullRecorder:
     def log(self, *args, **kwargs) -> None:
         pass
 
-# ============================================================
-# MAIN PROGRAM
-# ============================================================
-fifo = birdpath["fifo"]
-
 def send_fifo(value: int) -> None:
     try: fd = os.open(fifo, os.O_WRONLY | os.O_NONBLOCK)
     except OSError as e:
@@ -392,23 +387,28 @@ def send_fifo(value: int) -> None:
         if e.errno in (errno.EAGAIN, errno.EWOULDBLOCK): ms.log(f"send_fifo({value}): pipe full, trigger dropped", terminal=False)
         else: raise
 
+def rezero(sample: Sample) -> None:
+    try: baseline.startup(sample)
+    except RuntimeError as e:
+        ms.log(f"Startup calibration failed: {e}")
+        sys.exit(1)   # distinct code: "give the shell script a retry"
+# ============================================================
+# MAIN PROGRAM
+# ============================================================
+signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))  # lets the finally block run
+fifo = birdpath["fifo"]
 ms.init()
 testmode = False
 if len(sys.argv) > 1 and sys.argv[1] == "test": testmode = True
 if getTestmode() > 0: testmode = True
 ms.log(f"Testmode of {sys.argv[0]}" if testmode else sys.argv[0])
 ms.log(f"... starting at {time.ctime()}")
-writePID(1)
+p = pids()
+pname = os.path.basename(sys.argv[0])
+p.set_pid(pname, os.getpid())
 hx = HX711_CT(testmode=testmode)
 sample = Sample()
 baseline = Baseline(hx)
-
-def rezero(sample: Sample) -> None:
-    try: baseline.startup(sample)
-    except RuntimeError as e:
-        ms.log(f"Startup calibration failed: {e}")
-        sys.exit(1)   # distinct code: "give the shell script a retry"
-
 rezero(sample)
 CRIT_NOISE = 6.0  # sigma in grams on the median-filtered scale (MEDIAN_GAIN applied)
 MEDIAN_SAMPLES = 7
@@ -481,5 +481,5 @@ except (KeyboardInterrupt, SystemExit):
 finally:
     hx.close()
     ms.clearScaleready()
-    clearPID(1)
+    p.remove_pid(pname)
     ms.log(f"{sys.argv[0]} stopped {time.ctime()}")
