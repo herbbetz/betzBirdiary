@@ -6,6 +6,7 @@ Blogs auf [Github](https://herbbetz.github.io/betzBirdiary/) oder lokal:
 
 |Monat   |Blog  |Thema    |
 | -------- | --------------------------------------------------------- | ------- |
+|Okt '26	|[1x1 der Waage](./2026-10-20-scale101/index.md) |Waage	|
 |Juli'26  |[hx711 Signalfehler](./2026-07-29-scaleglitch/index.md)             |Waage  |
 |April'26          |[Bird Sounds](./2026-04-11-sndmodel/index.md)                                                            |BirdNet        |
 | Febr.26 | [Edge-KI in betzbird](./2026-02-10-tflite/index.md) | KI Vogel-Bild-Erkennung |

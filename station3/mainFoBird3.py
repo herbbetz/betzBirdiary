@@ -355,6 +355,11 @@ def send_movement(circ_output, picam, wght, stop_event, preTrigImg, liveLogger):
         ms.log("Localsave mode: skipping upload")
         ms.log(f"full_video size: {len(full_video)} bytes")
         write_binVideo(movementStartStr, full_video)
+        movementData = {
+            "start_date": movementStartStr,
+            "weight": wght
+        }
+        write_gallery(movementData) # decision to write to keep/gallery.js for local WebGUI review
         ms.log("Test video saved locally in /keep.")
         return "SND_MV_keeplocal"
 
