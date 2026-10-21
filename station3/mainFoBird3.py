@@ -37,7 +37,7 @@ from sharedBird import fifoExists, getTestmode, write_gallery, write_binVideo
 from configBird3 import serverUrl, boxId, vidsize, losize, luxThreshold, luxLimit, upmaxcnt, recordstep, videodurate, hflip_val, vflip_val, sun, birdpath
 
 testmode = False # define outside any block ('if __name__ == "__main__":' also is a block) and use 'global testmode' in all functions, that write to it (only main()), but not in the ones that only read it.
-localsave = False
+localsave = False # if True, do not upload to server, but save locally in /keep and /keep/gallery.js
 
 daylight_time = [9, 15] # 9:00 to 15:00, do not set luxcategory=5 during this time
 sunrise = sun[1] # from configBird3.py
@@ -361,6 +361,7 @@ def send_movement(circ_output, picam, wght, stop_event, preTrigImg, liveLogger):
         }
         write_gallery(movementData) # decision to write to keep/gallery.js for local WebGUI review
         ms.log("Test video saved locally in /keep.")
+        subprocess.call(f"bash {birdpath['appdir']}/mdroid.sh VideoOrdered_keepdir", shell=True)
         return "SND_MV_keeplocal"
 
     # AI-classification:
@@ -548,7 +549,7 @@ def main():
                     weight = bQueue.get()
                     camRecorder.log(weight, "FIFO")
 
-                    if ms.getAnyStandby() == 1:
+                    if ms.getAnyStandby() == 1 and weight != 0.0: # let snapshot weight 0.0 bypass standby
                         camRecorder.log(weight, "STDBY")
                         time.sleep(0.2)
                         continue

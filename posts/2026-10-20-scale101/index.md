@@ -1,8 +1,8 @@
 ---
 layout: default
 title: "1x1 der Waage"
-date: 2026-07-29
-permalink: /posts/2026-07-29-scaleglitch/
+date: 2026-10-20
+permalink: /posts/2026-10-20-scale101/
 ---
 <!--keywords[Drift,Offset,Polarität,Sigma,Spread,Waage]-->
 
@@ -18,7 +18,7 @@ Ein einfaches Zahlenbeispiel: Die Waage liefert unbelastet 100tausend Counts (AD
 
 - Dieser Spread, auch als *Grundrauschen* oder *Noise* der Waage bezeichnet, ist das eigentlich problematische und kann die labile Elektronik der Waage kurzfristig und andauernd besonders bei feuchtwindigen Aussenverhältnissen so schwanken lassen als wäre ein Vogel von z.B. 8 Gramm anwesend. Das führt dann zu Fehlauslösern mit falsch positiven Leervideos, wenn nicht der zeitliche Gewichtsablauf oder die Kameraauswertung über eine vogelerkennende lokale KI zugezogen werden.
 
-- Dieser Noise ist als Gauss Glockenkurve darstellbar, also bei weniger Schwankung eine schmale Glocke, bei mehr Schwankung eine breitere. Die Breite der Glocke wird üblicher Weise als **Sigma** ausgedrückt, das ist die Glockenbreite auf ca. 2/3 ihrer Höhe. 3 * Sigma entsprechen ca. 95% der Glockenbreite. Der obige Spread von `6000 counts` entspricht dann einem Sigma von ca. `2000 (6000/3)` oder 2 Gramm .
+- Dieser Noise ist als Gauss Glockenkurve darstellbar, also bei weniger Schwankung eine schmale Glocke, bei mehr Schwankung eine breitere. Die Breite der Glocke wird üblicher Weise durch **Sigma** ausgedrückt, das ist die **halbe** Glockenbreite auf ca. 2/3 ihrer Höhe. 3 * Sigma entsprechen ca. 99% der Glockenbreite. Der obige Spread von `6000 counts` entspricht dann einem Sigma von ca. `1000 (6000/3/2)` oder 1 Gramm .
 
 - Mit steigendem Sigma ist eine automatische Erhöhung der Triggerschwelle sinnvoll. Ab etwa 6 Gramm Sigma können leichtere Vögel (unter 15 Gramm) durch die Waage allein nicht mehr zuverlässig erkannt werden.
 

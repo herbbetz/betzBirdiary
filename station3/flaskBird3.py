@@ -7,6 +7,7 @@ import json # for reading in json file
 import psutil # for detecting ssh/sftp/scp on port 22
 import subprocess
 import os # for os.remove() and BASE_DIR
+import errno # for OSError errno.ENXIO
 import threading, time # for client inactivity monitoring
 from datetime import datetime
 import markdown
@@ -244,9 +245,8 @@ def upload():
       fd = os.open(fifo_path, os.O_WRONLY | os.O_NONBLOCK)
       with os.fdopen(fd, 'w') as f:
          f.write('0.0\n')
-   except BlockingIOError:
-      # No reader is currently connected
-      ms.log("Flask finds no fifo reader")
+   except OSError as e:
+      ms.log("Flask finds no fifo reader" if e.errno == errno.ENXIO else f"Error writing to FIFO: {e}")
    except Exception as e:
       ms.log(f"Error writing to FIFO: {e}")
 

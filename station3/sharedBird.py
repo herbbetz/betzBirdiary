@@ -87,9 +87,9 @@ def getTestmode():
         # If the property is missing, treat testmode as disabled.
         return data.get("testmode", 0)
     except json.JSONDecodeError:
-        return {"error": "Invalid JSON"}, 500
+        return 0 # {"error": "Invalid JSON"}, 500
     except OSError as error:
-        return {"error": f"Could not read JSON file: {error}"}, 500
+        return 0 # {"error": f"Could not read JSON file: {error}"}, 500
 
 class pids:
     def __init__(self):
