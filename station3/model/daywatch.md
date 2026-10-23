@@ -4,13 +4,15 @@
 
 - 30 aus jedem Vogelvideo ausgekoppelte JPG Images werden nach KI-ermittelter Erkennungsrate auf die zwei eindeutigsten vogelhaltigen Bilder reduziert.
 
-- Erst wurden die Posttrigger-Images im 0.1 sec Takt aufgenommen, festgelegt auf 27 (= 30 minus 3 pretrigger Images) Bilder in 3 Sekunden. Ab Sekunde 4 post Trigger wurden also  keine Bilder mehr für die KI-Analyse gemacht. Der Takt wurde später als geometrische Serie auf `videodurate (mainFoBird3.py)` besser verteilt, so dass am Anfang die meisten, am Ende aber auch noch Images gemacht werden. Die Kamera benötigt für ein Bild nur 0.007 secs .
+- Erst wurden die Posttrigger-Images im 0.1 sec Takt aufgenommen, festgelegt auf 27 (= 30 minus 3 pretrigger Images) Bilder in 3 Sekunden. Ab Sekunde 4 post Trigger wurden also  keine Bilder mehr für die KI-Analyse gemacht. Der Takt wurde später als geometrische Serie auf `videodurate (mainFoBird3.py)` besser verteilt, so dass am Anfang die meisten, am Ende aber auch noch Images gemacht werden.
 
 - Der Vorteil der beschränkten Imageanzahl ist, dass damit die KI-Klassifizierung schnell erfolgt (weil maximal 30 analysierte Bilder) und damit das Video ab der ersten Klassifizierung durch `model2` (Ausschluss von Leervideo) zeitnah hochgeladen wird.
 
-- Videos kürzer als `videodurate` (abgekürzt durch Vogelabflug) habe also auch weniger Bilder für die KI. Das ist auf der birdiary Plattform (`model0`) anders, wo die Frames im Nachhinein bei bekannter Framegesamtzahl extrahiert werden, also bei kürzeren Videos einfach ein höherer Prozentsatz zur Erlangung von z.B. 30 Frames.
-
 - In `mainFoBird3.py` werden erst die Pretrigger Images (ein `rolling buffer` der sowieso der WebIF-Darstellung dient) in `ramdisk/yyyy-mm-dd_hhMMss.msecs.X.jpg (z.B. X = 0 bis 2)` umbenannt, da die Kameraauslösung selbst Zeit benötigt. Anschließend werden parallel zum Videorecording weitere Images aufgenommen bis `X = 29` (s.u.). Das Videorecording ist ja ebenfalls an das `circular buffer pretrigger video` drangehängt.
+
+  **Es gibt einen Grenzfall, wenn `msecs = 0`, weil es dann ganz wegfällt und der `split(.)` dann versagt.**
+
+- `write_video_metadata() in mainFoBird3.py` schreibt die Video-Metadata (`weight`) nach `ramdisk/yyyy-mm-dd_hhMMss.msecs.txt`, wo `flaskBird3.py` sie in Endpoint `/daywatch` einfügt.
 
 - mehrere KI-Modelle im Vergleich (in der Reihenfolge ihrer zeitlichen Verfügbarkeit):
 

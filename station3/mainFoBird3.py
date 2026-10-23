@@ -53,6 +53,11 @@ def setDaylightTime() -> None:
 def readable_cam_time() -> str:
     return datetime.now().strftime("%H:%M:%S")
 
+def write_video_metadata(videoUrlStr: str, weight: float) -> None:
+    metadata_file = os.path.join(birdpath["ramdisk"], f"{videoUrlStr}.txt")
+    with open(metadata_file, "w") as f:
+        f.write(f"{weight} grams\n")
+
 ### Recorders
 class CamRecorder:
     def __init__(self) -> None:
@@ -374,6 +379,8 @@ def send_movement(circ_output, picam, wght, stop_event, preTrigImg, liveLogger):
         stdout=sys.stdout,
         stderr=sys.stderr
     )
+
+    write_video_metadata(videoUrlStr, wght)
 
     deadline = time.perf_counter() + video_ack_timeout
     while time.perf_counter() < deadline:

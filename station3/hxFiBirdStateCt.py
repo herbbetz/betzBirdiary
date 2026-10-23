@@ -280,9 +280,9 @@ class WeightFSM:
         self.camera_sent = True
         return True
 
-    def bird_weight(self) -> int:  # median over ARRIVAL+PRESENT, never <= 0 (-1 means departure)
-        bweight = max(1, round(float(np.median(self.weights)))) if self.weights else 1
-        return bweight
+    def bird_weight(self) -> int:  # max over ARRIVAL+PRESENT: hops and smeared landings only pull values down; never <= 0 (-1 means departure)
+        return max(1, round(max(self.weights))) if self.weights else 1
+        # round(float(np.median(self.weights))) often underestimates the bird weight because hops and smeared landings pull the median down, so use max instead
 
     def process_weight(self, sample) -> str | None:
         event = self.handlers[self.state](sample)

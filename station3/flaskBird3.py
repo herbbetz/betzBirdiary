@@ -156,6 +156,7 @@ def timeseries_svg(json_file, key_param):
         return Response(svg, mimetype="image/svg+xml")
     
 def render_csv_block(basedir, prefix):
+    # /daywatch endpoint
     model2_on = False
     csv_path = f"{birdpath['appdir']}/{basedir}/{prefix}.csv" #os.path.join(basedir, f"{prefix}.csv")
     if not os.path.exists(csv_path):
@@ -174,6 +175,14 @@ def render_csv_block(basedir, prefix):
          html += f"<div class='csv-line'>{elems[0]}: {elems[3]} {elems[2]}%</div><br>\n"
     html += "</div>\n"
     return html, model2_on
+
+def render_meta_line(basedir, prefix):
+    # /daywatch endpoint
+    meta_path = f"{birdpath['appdir']}/{basedir}/{prefix}.txt"
+    if not os.path.exists(meta_path):
+        return ""
+    with open(meta_path, "r", encoding="utf-8") as f:
+        return f"<div class='meta-line'>{f.read().strip()}</div>"
 
 app = Flask(__name__, static_folder='.')
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0 # disable cacheing
@@ -409,7 +418,7 @@ def daygallery():
                html_segments.append(csv_block)
                # validate.html points it's back button to /daywatch#id, so no target="_blank":
                if model2_on:
-                    html_segments.append(f'<div id="{current_comb_prefix}">{groupIdx} <a href="{vidURL_prev}">{currentprefix}</a></div><hr>')
+                    html_segments.append(f'<div id="{current_comb_prefix}">{groupIdx} <a href="{vidURL_prev}">{currentprefix}</a></div> {render_meta_line(dayimg_dir, current_comb_prefix)}<hr>')
                else:
                     html_segments.append(f'<div id="{current_comb_prefix}">{groupIdx} {currentprefix} (upload requires model2)</div><hr>')    
                # html += f'lastDEBUG: groupIdx={groupIdx}: csv={current_comb_prefix}, video={vidURL_prev}, videolinktext={currentprefix}'
@@ -435,9 +444,9 @@ def daygallery():
         html_segments.append(csv_block)
         # validate.html points it's back button to /daywatch#id, so no target="_blank":
         if model2_on:
-            html_segments.append(f'<div id="{current_comb_prefix}">{groupIdx} <a href="{vidURL_prev}">{currentprefix}</a></div><hr>')
+            html_segments.append(f'<div id="{current_comb_prefix}">{groupIdx} <a href="{vidURL_prev}">{currentprefix}</a></div> {render_meta_line(dayimg_dir, current_comb_prefix)}<hr>')
         else:
-            html_segments.append(f'<div id="{current_comb_prefix}">{groupIdx} {currentprefix} (upload requires model2)</div><hr>')    
+            html_segments.append(f'<div id="{current_comb_prefix}">{groupIdx} {currentprefix} (upload requires model2)</div><hr>')
 
     html_segments.append("</body></html>")
     # Join everything cleanly with newlines
