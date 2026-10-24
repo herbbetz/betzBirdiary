@@ -1,6 +1,9 @@
 <!--keywords[connectivity,mtr,online,ping,upload]-->
 
+## Connection Test zu wiediversistmeingarten.org
+
 - `mtr-tiny` (my traceroute) erweitert `ping`
+- siehe Endpoints `/ping` und `/curl` in `flaskBird3.py` und `curltest.html`
 
 ```bash
 ping -c 200 -i 0.2 fritz.box (200 packets with interval 0.2 secs)
