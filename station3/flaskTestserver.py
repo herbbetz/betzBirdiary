@@ -1,6 +1,6 @@
 import os
 import psutil
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, Response
 import subprocess
 from datetime import datetime
 # Import the entire module so you can use the module prefix
@@ -45,77 +45,23 @@ def shutdown():
     else:
         return send_from_directory(app.static_folder, 'shutdown.html')
 
-@app.route("/api/report-data")
-# selectstations.html submits to layouter '/stations/rb_report.html' with GET parameters station_name and station_id
-def api_rarebirds():
-    station_name = request.args.get('station_name')
-    station_id = request.args.get('station_id')
-    # DEBUG PRINT: Watch this terminal output after starting flask from terminal!
-    print(f"--- Flask Received: Name={station_name}, ID={station_id} ---")
-    # module imported above as rb, so we can call rb.setStation() and rb.getHTML()
-    rb.setStation(station_name, station_id)
-    report_data = rb.getReport()
-    return jsonify(report_data)
+@app.route("/ping")
+def ping():
+    def gen():
+        p = subprocess.Popen(["ping", "-c", "20", "-i", "0.5", "wiediversistmeingarten.org"], stdout=subprocess.PIPE, text=True)
+        for line in p.stdout: yield line
+    return Response(gen(), mimetype="text/plain")
 
+@app.route("/curl")
+def curl():
+    fmt = "%{time_namelookup} %{time_connect} %{time_appconnect} %{time_starttransfer} %{time_total} %{http_code}"
+    r = subprocess.run(["curl", "-o", "/dev/null", "-s", "-w", fmt, "https://wiediversistmeingarten.org"], capture_output=True, text=True, timeout=30)
+    try: dns, tcp, tls, ttfb, total, code = r.stdout.split()
+    except ValueError: return Response(f"<pre>curl failed: {r.stderr}</pre>", status=502, mimetype="text/html")
+    t = [float(x) * 1000 for x in (dns, tcp, tls, ttfb, total)]
+    rows = [("DNS", t[0]), ("TCP", t[1] - t[0]), ("TLS", t[2] - t[1]), ("Server wait", t[3] - t[2]), ("Download", t[4] - t[3])]
+    body = "".join(f"<tr><td>{n}</td><td>{v:.1f} ms</td></tr>" for n, v in rows)
+    return Response(f"<h3>HTTP {code}, total {t[4]:.0f} ms</h3><table border=1>{body}</table>", mimetype="text/html")
 
-# 1. Define a global lock flag OUTSIDE the function context 
-# to keep track of state across multiple browser refreshes.
-VK_SCRIPT_RUNNING = False
-
-@app.route("/videoking")
-def monthlyking():
-    global VK_SCRIPT_RUNNING
-    
-    today = datetime.today()
-    CURRENT_MONTH = today.strftime("%Y-%m")
-    TARGET_MONTH = prev_month(CURRENT_MONTH)
-    OUTPUT_FILE = f"vk{TARGET_MONTH}.html"
-    
-    # 2. Fix the Relative Path Trap: Force absolute path combining BASE_DIR
-    STATIONS_DIR = os.path.join(BASE_DIR, "stations")
-    OUT_PATH = os.path.join(STATIONS_DIR, OUTPUT_FILE)
-    
-    print(f"\n[FLASK DEBUG] Checking for VideoKing report...")
-    print(f"[FLASK DEBUG] Expected Path: {OUT_PATH}")
-    print(f"[FLASK DEBUG] File Exists Status: {os.path.exists(OUT_PATH)}")
-    
-    # If file exists, reset the lock and serve it!
-    if os.path.exists(OUT_PATH):
-        VK_SCRIPT_RUNNING = False  # Reset lock for next month
-        print(f"[FLASK DEBUG] Serving file directly.")
-        return send_from_directory(STATIONS_DIR, OUTPUT_FILE)
-        
-    else:
-        print(f"[FLASK DEBUG] File not found yet. Lock status: {VK_SCRIPT_RUNNING}")
-        
-        # 3. True concurrency lock check
-        if not VK_SCRIPT_RUNNING:
-            VK_SCRIPT_RUNNING = True
-            SCRIPT_PATH = os.path.join(STATIONS_DIR, "vk_lastmonth_pag.py")
-            
-            # Windows-safe command array execution (much safer than shell=True strings)
-            cmd = ["python", SCRIPT_PATH]
-            
-            print(f"[FLASK DEBUG] Launching background process: {cmd}")
-            subprocess.Popen(cmd) 
-
-        return f"""
-        <!doctype html>
-        <html>
-            <head>
-                <meta http-equiv="refresh" content="15;url=/videoking">
-                <meta name="viewport" content="width=device-width, initial-scale=1">
-                <title>Wait...</title>
-                <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-                <link rel="stylesheet" href="/bird.css">
-            </head>
-            <body>
-                <h3>Compiling VideoKing stats for {TARGET_MONTH}...</h3>
-                <p>Expected target location:<br><code>{OUT_PATH}</code></p>
-                <strong>This page updates automatically every 15 seconds. Please wait...</strong>
-            </body>
-        </html>
-        """
-    
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080, debug=False)
+    app.run(host='0.0.0.0', port=8081, debug=False)
