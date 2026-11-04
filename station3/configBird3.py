@@ -120,6 +120,7 @@ try:
     birdweather_token = _config['birdweather_token']
     geoloc           = _config['geoloc']
     sun              = _config['sun']
+    sundown          = _config['sundown']
     version          = _config['version'] # set by 'config-yaml.sh ANONconfig.yml'
 except KeyError as e:
     # ms.log(f"Missing config key: {e}")

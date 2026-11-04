@@ -131,10 +131,10 @@ th {
   const allConfigKeys = [
     'serverUrl', 'boxId', 'boxName', 'deleteKey', 'upmaxcnt', 'videodurate', 'hflip_val', 'vflip_val', 'vidsize', 'losize',
     'luxThreshold', 'luxLimit', 'weightlimit', 'weightThreshold', 'hxPolScaleOff', 'dhtPin', 'hxDataPin', 'hxClckPin', 'recordstep',
-    'heatdown', 'mdroid_key', 'wapp_key', 'wapp_phone', 'tasmota_ip', 'mqtt_broker', 'birdweather_token', 'geoloc', 'sun', 'version'
+    'heatdown', 'mdroid_key', 'wapp_key', 'wapp_phone', 'tasmota_ip', 'mqtt_broker', 'birdweather_token', 'geoloc', 'sun', 'sundown', 'version'
   ];
 
-  const editableKeys = ['boxId','boxName', 'upmaxcnt', 'videodurate', 'recordstep', 'heatdown', 'wapp_key', 'wapp_phone', 'tasmota_ip', 'mqtt_broker', 'birdweather_token'];
+  const editableKeys = ['boxId','boxName', 'upmaxcnt', 'videodurate', 'recordstep', 'heatdown', 'wapp_key', 'wapp_phone', 'tasmota_ip', 'mqtt_broker', 'birdweather_token', 'sundown'];
 
   const comments = {
     "serverUrl": "birdiary API for uploads",
@@ -165,6 +165,7 @@ th {
     "birdweather_token": "for birdNET sound platform",
     "geoloc": "Latitude / Longitude for sunset & birdweather",
     "sun": "Sunlight times (sunrise, sunset)",
+    "sundown": "Turn on shutdown at sundown (on/off)",
     "version": "version date"
   };
 

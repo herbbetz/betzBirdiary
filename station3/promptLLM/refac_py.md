@@ -12,6 +12,7 @@ Hobbyist developer in Python/Javascript/C/Bash searching for clean, readable, an
 - Do not delete comments, only correct them or add them as one line if suitable.
 - Return the refactored code in a single code block
 - Follow PEP 8 style resp. ESLint/Google or GNU C Style and ShellCheck guidelines. No additional empty blank lines or lines just for one parenthesis.
+- Code style: use readable named declarations (`function name() {}`) instead of arrow-function chains or curried lambdas. Use descriptive variable names and short explanatory comments (e.g. algorithm names).
 - Use type annotations for function arguments and return values.
 - Prefer small, single-purpose functions.
 - Keep explanations to under 150 words.

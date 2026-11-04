@@ -20,7 +20,8 @@ PYTHON=/usr/bin/python3
 # REPLACED BY SYSTEMD TIMER:
 # */15 * * * * $PYTHON $APPDIR/dhtBird3.py >> /dev/null # $APPDIR/logs/dht_sun.log 2>&1
 # shut down on sunset:
-*/16 17-22 * * * $PYTHON $APPDIR/sunset3.py >> /dev/null 2>&1 # $APPDIR/logs/dht_sun.log 2>&1
+# sunset in munich is between 16:19 (december) and 21:19 (june), DST considered
+*/25 16-21 * * * $PYTHON $APPDIR/sunset3.py >> /dev/null 2>&1 # $APPDIR/logs/dht_sun.log 2>&1
 # shut down station at 18:54 daily before disconnecting mains at 19:00 :
 54 21 * * * bash $APPDIR/tasmotaDown.sh eveningDown >> /dev/null 2>&1 # $APPDIR/logs/down.log 2>&1
 # run system update on the first of each month around noon:
