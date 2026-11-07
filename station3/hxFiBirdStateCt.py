@@ -474,7 +474,7 @@ try:
         read_time = readable_time()
         signal_logger.log(sample, read_time)
         live_logger.log(sample)
-        ms.log(f"{read_time} {sample.weight:.2f}g {STATE_NAME[sample.state]}", terminal=False)
+        ms.log(f"{read_time} {sample.weight:.2f}g {STATE_NAME[sample.state]} σ {sample.sigma:.2f}g", terminal=False)
         time.sleep(0.15)
 except (KeyboardInterrupt, SystemExit):
     ms.log(f"shutdown {sys.argv[0]}")
