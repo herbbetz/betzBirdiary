@@ -1,3 +1,10 @@
+**eigene Anmerkung**: Die folgende Anleitung der Uni Münster von 2023 beinhaltet einige Fehler:
+
+- Kein Sensor sollte an 5V angeschlossen werden, da sein Ausgangssignal dann die ungeschützten GPIO-Pins des Raspberry gefährdet, die auf 3.3V ausgelegt sind. Insbes. der HX711 hat bei 5V einen sehr hohen Baseline Noise.
+- Das Elektro-Kompartment braucht unbedingt ein Dach gegen Mäuseschaden und außerdem Lüftungsschlitze zur Kühlung.
+- Der Kamera sollte Glas und nicht eintrübendes Plexiglas vorgesetzt werden. Die Raspicam v1.3 sollte mit einem Lens-Fokustool bestellt werden.
+- Die Vogelstange kann etwas größer ausfallen, dann sind aber auch größere Vögel (Tauben 250g) zu erwarten.
+
 | Teil | Anzahl | Shop |
 | --- | --- | --- |
 | RaspberryPi 4 B, 2 GB Kit | 1 | [BerryBase](https://www.google.com/url?q=https://www.berrybase.de/raspberry-pi-4-computer-modell-b-2gb-elementary-kit?c%3D2383&sa=D&source=editors&ust=1749468971152614&usg=AOvVaw2yQCLE9PYzm_o5aOymM1JJ) |
