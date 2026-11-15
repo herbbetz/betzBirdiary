@@ -7,6 +7,7 @@ FIFO="$APPDIR/ramdisk/birdpipe"
 MAX_RETRIES=5
 RETRY_DELAY=5
 attempt=0
+HXARGS="filter"  # "test": log signal_hx.csv (already a var in vidmesg.json), "filter": low-pass; drop "filter" for the unfiltered comparison run
 
 if [[ $EUID -ne 0 ]]; then
     echo "$0 not running as root" >> $LOGFILE 2>&1
@@ -31,9 +32,9 @@ TOTAL_CPUS=$(nproc --all)
 while [ $attempt -lt $MAX_RETRIES ]; do
     attempt=$((attempt + 1))
     if [ "$TOTAL_CPUS" -ge 4 ]; then
-        taskset -c 3 chrt -f 80 "$PYTHON" "$APPDIR/hxFiBirdStateCt.py" | tee -a "$LOGFILE" 2>&1
+        taskset -c 3 chrt -f 80 "$PYTHON" "$APPDIR/hxFiBirdStateCt.py" "$HXARGS" | tee -a "$LOGFILE" 2>&1
     else
-        chrt -f 80 "$PYTHON" "$APPDIR/hxFiBirdStateCt.py" | tee -a "$LOGFILE" 2>&1
+        chrt -f 80 "$PYTHON" "$APPDIR/hxFiBirdStateCt.py" "$HXARGS" | tee -a "$LOGFILE" 2>&1
     fi
     exit_code=${PIPESTATUS[0]}
 

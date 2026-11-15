@@ -2,9 +2,9 @@
 hxFiBirdStateCt.py
 dependent on c/libhx711.so
 
-HX711 -> MedianFilter -> Baseline -> WeightFSM -> Recorders
+HX711 -> MedianFilter -> [LowPass] -> Baseline -> WeightFSM -> Recorders
 
-raw    : median-filtered HX711 reading
+raw    : median-filtered HX711 reading (with "filter" additionally low-passed)
 offset : zero reference (baseline)
 weight : (raw - offset) / hxScale * hxPolarity
 
@@ -17,7 +17,8 @@ The whole logic:
 
 IDLE -> ARRIVAL -> PRESENT -> DEPARTURE -> IDLE
 Camera triggers CAMERA_DELAY seconds after entering PRESENT, a DEPARTURE trigger is sent on PRESENT->DEPARTURE.
-Optional command line argument "test" enables SignalLogger (ramdisk: signal_hx.csv, hxFiBird.log).
+Optional command line arguments (any order): "test" enables SignalLogger (ramdisk: signal_hx.csv, hxFiBird.log),
+"filter" adds a one-pole low-pass after the MedianFilter, measures sigma on the filtered signal and sets CAMERA_DELAY to 0 (the filter lag replaces it). Without "filter" nothing changes.
 Offline analysis of signal_hx.csv with hx_signalanalyzer.py.
 Direction aware load cell: weight is positive on load, hxPolarity is set by calibrateHx.py.
 """
@@ -97,6 +98,19 @@ class MedianFilter:
     def update(self, sample: Sample) -> None:
         self.buf.append(sample.raw_sample)
         sample.raw = int(np.median(self.buf))
+
+class LowPass:
+    def __init__(self, tau: float) -> None:
+        self.tau = tau
+        self.y: float | None = None
+        self.t = 0.0
+
+    # one-pole IIR low-pass (exponential moving average); alpha from the real time step, so irregular sampling is handled
+    def update(self, t: float, x: float) -> float:
+        if self.y is None: self.y = float(x)
+        else: self.y += (1 - np.exp(-(t - self.t) / self.tau)) * (x - self.y)
+        self.t = t
+        return self.y
 
 # ============================================================
 # BASELINE: the only place that moves the offset
@@ -205,6 +219,23 @@ class NoiseGuard:
         d = np.array(self.diffs)
         mad = np.median(np.abs(d - np.median(d)))
         return float(1.4826 * mad / np.sqrt(2) / hxScale) # 1.4826 * MAD is a robust estimate of stddev (1.48 = 1/0.67), divide by sqrt(2) for differences, divide by hxScale for grams
+
+# ============================================================
+# FilteredNoise: robust noise of the low-passed signal (replaces NoiseGuard with "filter")
+# ============================================================
+class FilteredNoise:
+    def __init__(self, window_samples: int = 400, min_ready_samples: int = 100) -> None:
+        self.buf = deque(maxlen=window_samples)
+        self.min_ready = min_ready_samples
+
+    def add_sample(self, raw: float) -> None:
+        self.buf.append(raw)
+
+    # 1.4826 * MAD of the deviations from the window median; sample-to-sample differences (NoiseGuard) would hide the slow noise a low-pass leaves
+    def current_std_grams(self) -> float:
+        if len(self.buf) < self.min_ready: return 0.0
+        v = np.array(self.buf)
+        return float(1.4826 * np.median(np.abs(v - np.median(v))) / hxScale)
 
 # ============================================================
 # FSM
@@ -398,11 +429,15 @@ def rezero(sample: Sample) -> None:
 signal.signal(signal.SIGTERM, lambda *_: sys.exit(0))  # lets the finally block run
 fifo = birdpath["fifo"]
 ms.init()
-testmode = False
-if len(sys.argv) > 1 and sys.argv[1] == "test": testmode = True
+args = sys.argv[1:]
+testmode = "test" in args
+use_filter = "filter" in args  # optional low-pass after the MedianFilter, off by default
+FILTER_TAU = 2.0  # seconds: noise falls with 1/sqrt(tau), a step needs about 3 tau to settle
+if use_filter: CAMERA_DELAY = 0.0  # the filter lag of 3-5 s replaces the camera delay
 if getTestmode() > 0: testmode = True
 ms.log(f"Testmode of {sys.argv[0]}" if testmode else sys.argv[0])
 ms.log(f"... starting at {time.ctime()}")
+ms.log(f"low-pass filter on, tau {FILTER_TAU} s" if use_filter else "low-pass filter off")
 p = pids()
 pname = os.path.basename(sys.argv[0])
 p.set_pid(pname, os.getpid())
@@ -418,7 +453,8 @@ NOISE_K = 3.0      # 3 * sigma is over 95%
 MAX_THRESHOLD = 15
 median = MedianFilter(size=MEDIAN_SAMPLES)
 
-noiseguard = NoiseGuard(window_samples=NOISEGUARD_SAMPLES)
+lowpass = LowPass(FILTER_TAU)
+noiseguard = FilteredNoise() if use_filter else NoiseGuard(window_samples=NOISEGUARD_SAMPLES)
 for _ in range(MEDIAN_SAMPLES):  # pre-fill MedianFilter only
     sample.raw_sample = hx.read()
     median.update(sample)
@@ -449,9 +485,14 @@ try:
             rezero(sample)
             continue
         median.update(sample)
+        if use_filter: sample.raw = int(round(lowpass.update(sample.t, sample.raw)))  # low-passed raw replaces the median output
         baseline.process(sample)
-        noiseguard.add_sample(sample.raw_sample)
-        sample.sigma = noiseguard.current_std_grams() * MEDIAN_GAIN
+        if use_filter:
+            if fsm.state == STATE_IDLE: noiseguard.add_sample(sample.raw)  # IDLE only, so birds do not inflate sigma
+            sample.sigma = noiseguard.current_std_grams()
+        else:
+            noiseguard.add_sample(sample.raw_sample)
+            sample.sigma = noiseguard.current_std_grams() * MEDIAN_GAIN
         if fsm.state == STATE_IDLE: fsm.set_threshold(min(weightThreshold + NOISE_K * sample.sigma, MAX_THRESHOLD))
         sample.threshold = fsm.threshold_on
         event = fsm.process_weight(sample)
