@@ -4,7 +4,7 @@ title: "1x1 der Waage"
 date: 2026-10-20
 permalink: /posts/2026-10-20-scale101/
 ---
-<!--keywords[Drift,Offset,Polarität,Sigma,Spread,Waage]-->
+<!--keywords[Bode_Plot,Drift,Filter,Offset,Polarität,Sigma,Spread,Waage]-->
 
 - Der Sitzbalken am Vogelhaus ist eine Waage, die die Kameraaufzeichnung auslöst. Die Sitzstange sitzt auf einem Aluminiumbalken, der sich bei Last leicht verbiegt, was durch vier Widerstände von 1 kOhm gemessen wird, die dem Aluminium aufgeklebt und als Wheatstone Bridge verschaltet sind. 
 - Die analoge Widerstandsänderung der Wheatstone Bridge wird durch die hx711 Platine in Digitalwerte - sog. **ADC (analog digital count)** übersetzt, die dann von dem C-Treiber `station3/c/libhx711.so` ausgelesen werden, der wiederum in das Pythonscript `hxFiBirdStateCt.py` oder `calibrateHxC.py` eingebunden ist. Beide Pythonskripte werden durch Bashskripte `hxFiBird.sh bzw. calibrateScale.sh` als Wrapper gestartet, das `hxFiBird.sh` wiederum beim Booten durch `hxFiBird.service` (systemd Service).
@@ -35,3 +35,23 @@ Blau ist die Gewichtsschwankung, Orange ist das hxOffset, das softwareseitig st�
 Auf eine Minute gespreizt, sieht das halblogarithmisch etwa so aus (`LiveLogger aus hxFiBirdStateCt.py`):
 
 ![](hx_livelogger261016.jpg)
+
+## Frequenzfilter
+
+Eine effektive Massnahme, das Outdoor Grundrauschen der Waage zu vermindern, ist die Frequenzfilterung des Signals der unbelasteten Waage. In `check_noise.py` wird das Grundrauschen in mehrere Frequenbänder zerlegt. Für jedes der Frequenzbänder ergibt sich dann ein Rauschanteil (Sigma), vermehrt in den höheren Frequenzbändern. Anschließend werden in `hxFiBirdStateCt.py` nur die unteren rauscharmen Frequenzen durchgelassen, ein softwaremässiger `low pass filter`. Glücklicherweise werden Vogellandungen durch diese Filterung kaum betroffen, abgesehen von einer geringen Triggerlatenz von ca. 3 Sekunden.
+
+Beispiel aus der Analyse des Grundrauschens mit `check_noise.py` vor Implementierung des Filters:
+
+​	686 samples in 60 sek, 11.40 Hz, **sigma 11.46 g** , PSD = power spectral density
+
+​	
+
+| Frequenzband |Sigma (g) |PSD (g^2/Hz)|
+| ------------ | ---- | ----|
+| 0.0- 0.1 Hz  | 0.37 | 1.159 |
+| 0.1- 0.3 Hz  | 0.66 | 2.230 |
+| 0.3- 1.0 Hz  | 2.77 | 10.913 |
+| 1.0- 3.0 Hz  | 5.59 | 15.666 |
+| 3.0- 5.0 Hz  | 4.54 | 10.366 |
+
+Daraus ermittelt sich eine `cut-off frequency` von `0.08 Hz`. Die `cut-off frequency` ist die Stelle der Absenkung um `3 dB (Phase -45°)`. `f_c = 1/(2π·τ) with τ = 2 sec`. Näheres siehe [Bode Plot](bode_plot_lowpass_tau_2s.md).
