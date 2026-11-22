@@ -104,6 +104,7 @@ try:
     losize           = tuple(_config['losize'])
     luxThreshold     = _config['luxThreshold']
     luxLimit         = _config['luxLimit']
+    focus            = _config['focus'] # manual focus value (cm = 100 / focus value), set by flaskBird3.py from vidshot3.html slider, used by mainFoBird3.py to set focus of camera lens
     weightlimit      = _config['weightlimit']
     weightThreshold  = _config['weightThreshold']
     hxPolScaleOff    = _config['hxPolScaleOff'] # created by calibrateHx.py

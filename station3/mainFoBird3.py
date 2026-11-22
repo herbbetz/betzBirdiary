@@ -30,11 +30,12 @@ from picamera2 import Picamera2
 from picamera2.encoders import H264Encoder, Quality
 from picamera2.outputs import FileOutput, CircularOutput
 import libcamera
+from libcamera import controls
 import importlib.metadata # only for picamera2 version printing, because there is no 'picamera2.__version__'
 
 import msgBird as ms
 from sharedBird import fifoExists, getTestmode, write_gallery, write_binVideo
-from configBird3 import serverUrl, boxId, vidsize, losize, luxThreshold, luxLimit, upmaxcnt, recordstep, videodurate, hflip_val, vflip_val, sun, birdpath
+from configBird3 import serverUrl, boxId, vidsize, losize, luxThreshold, luxLimit, focus, upmaxcnt, recordstep, videodurate, hflip_val, vflip_val, sun, birdpath, update_config_json
 
 testmode = False # define outside any block ('if __name__ == "__main__":' also is a block) and use 'global testmode' in all functions, that write to it (only main()), but not in the ones that only read it.
 localsave = False # if True, do not upload to server, but save locally in /keep and /keep/gallery.js
@@ -42,6 +43,15 @@ localsave = False # if True, do not upload to server, but save locally in /keep 
 daylight_time = [9, 15] # 9:00 to 15:00, do not set luxcategory=5 during this time
 sunrise = sun[1] # from configBird3.py
 sunset = sun[2] # from configBird3.py
+
+def setFocus(picam, focus_value):
+    # focus in cm = 100 / focus value (= LensPosition in dioptres), e.g. 100/20=5cm
+    if focus_value > 0:
+        picam.set_controls({"AfMode": controls.AfModeEnum.Manual, "LensPosition": focus_value})
+        ms.log(f"Manual focus {100 / focus_value} cm (LensPosition={focus_value})")
+    else:
+        picam.set_controls({"AfMode": controls.AfModeEnum.Continuous})
+        ms.log("Continuous autofocus enabled")
 
 def setDaylightTime() -> None:
     global daylight_time
@@ -476,7 +486,7 @@ def cleanAndExit(child):
     # picam.close() is handled by the 'with' block
 
 def main():
-    global testmode, localsave
+    global testmode, localsave, focus
     ms.init()
     # Check for available camera
     if not Picamera2.global_camera_info():
@@ -539,6 +549,9 @@ def main():
         '''
         now = datetime.now()
         get_brightness(picam, now) # Set initial brightness, also calls whitebalance(picam)
+        focus_old = focus
+        ms.setFocus(focus)
+        setFocus(picam, focus)
 
         # for circular output:
         encoder = H264Encoder() # for no circ_output this is moved into send_movement() and the following 3 lines are omitted
@@ -593,12 +606,17 @@ def main():
                     )
 
                 else:
+                    focus = ms.getFocus()
+                    if focus != focus_old:
+                        focus_old = focus
+                        setFocus(picam, focus)
                     stills_lux(picam, oldimg, liveLogger) 
                 time.sleep(sleepTime)
 
         except Exception as e:
             ms.log(f"Exception in main loop: {e}")
         finally:
+            update_config_json({"focus": focus})
             cleanAndExit(child1)
 
 if __name__ == "__main__":

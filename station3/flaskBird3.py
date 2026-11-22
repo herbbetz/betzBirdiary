@@ -349,6 +349,14 @@ def msgJSON2():
 
 # @app.route('/hoursjson', methods = ['GET']) ->  see acknowledge\flaskBird.py
 
+@app.route('/focus')
+# focusSlider in vidshot3.html calls this 
+def focus():
+    value = request.args.get("focus", type=float) # query param ?focus=20 (focus cm = 100 / focus value)
+    if value is None: return "invalid focus", 400
+    ms.setFocus(value)
+    return "ok" # 200 returned by default
+
 # remove mp4 and record from gallery.js, 'del' button in gallery3.html handled by it's sendDelRec(recId):
 @app.route('/delrecord', methods=['POST'])
 def delrecord():

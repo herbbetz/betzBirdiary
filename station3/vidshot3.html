@@ -21,6 +21,10 @@
         </div>
         <div class="rowed">
             <a href="config3.html" class="button">actions</a>
+            <div id="focus">
+                <input type="range" id="fslider" min="0" max="20" step="0.1" value="0" style="width:100px">
+                <div id="flabel"></div>
+            </div>
         </div>
     </div>
     <h2>Umwelt</h2>
@@ -79,6 +83,8 @@
             vidmsg: document.getElementById('vidmsg'),
             rawmsg: document.getElementById('msgdata'),
             calcmsg: document.getElementById('calcdata'),
+            fslider: document.getElementById("fslider"),
+            flabel: document.getElementById("flabel"),
             tabcolor: document.querySelector("meta[name=theme-color]"),
             icon: document.querySelector("link[rel~='icon']")
         };
@@ -113,7 +119,7 @@
             envir: [" ", " ", " "],
             lines: new Array(5).fill(''), 
             sysmon: [],
-            saved: { ImgNum: 0, linecnt: 0, envirEvt: 0, sysmonEvt: 0 },
+            saved: { ImgNum: 0, linecnt: 0, envirEvt: 0, sysmonEvt: 0, focus: null }, // focus:null instead of 0 forces update on first fetch, esp. if config.json has focus=0 (AFocus)
             fetchPromises: [],
             recordingsecs: 0
         };
@@ -128,6 +134,20 @@
                 dom.page2.classList.remove('active');
             }
         }
+
+        // slider runs left->right 0..20, focus runs 20.0..0.0, so invert
+        function getFocus() { return 20 - parseFloat(fslider.value); }
+        function updateFocusLabel() {
+            const focus = getFocus();
+            flabel.textContent = focus === 0 ? "auto focus" : Math.round(100 / focus) + " cm focus";
+        }
+        function sendFocus() {
+            // relative URL: same origin as the Flask server that serves this page, so no CORS needed
+            fetch("/focus?focus=" + getFocus().toFixed(1)).catch(console.error);
+        }
+
+        fslider.addEventListener("input", updateFocusLabel);
+        fslider.addEventListener("change", sendFocus); // fires on release
 
         dom.stdbyimg.addEventListener('click', function(e) {
             fetch(URLS.stdby, { method: 'GET' })
@@ -356,6 +376,13 @@
 
                 // Logger lines
                 updateLogLines(data['linecnt'], data['linetxt']);
+
+                // Update the focus slider
+                if (data['focus'] !== state.saved.focus) { // sync slider with vidmsg.json
+                    dom.fslider.value = 20 - data['focus'];
+                    state.saved.focus = data['focus'];
+                }
+                updateFocusLabel(); 
             } catch (error) {
                 setText(dom.online, "Offline or error: " + (error?.message ?? error));
             }

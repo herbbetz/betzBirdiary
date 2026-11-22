@@ -1,57 +1,58 @@
 {
-  "serverUrl": "https://wiediversistmeingarten.org/api/",
-  "boxId": "87bab185-7630-461c-85e6-c04cXXXXXXXX",
-  "boxName": "Betzbirdiary",
-  "deleteKey": "XXXX",
-  "upmaxcnt": 0,
-  "videodurate": 8,
-  "hflip_val": 1,
-  "vflip_val": 1,
-  "vidsize": [
-    800,
-    600
-  ],
-  "losize": [
-    320,
-    240
-  ],
-  "luxThreshold": [
-    1500,
-    3000,
-    5000
-  ],
-  "luxLimit": [
-    400,
-    20000
-  ],
-  "weightlimit": 300,
-  "weightThreshold": 8,
-  "hxPolScaleOff": [
-    -1,
-    533,
-    179109,
-    5000
-  ],
-  "dhtPin": 16,
-  "hxDataPin": 17,
-  "hxClckPin": 23,
-  "recordstep": 15,
-  "heatdown": 75,
-  "mdroid_key": "f9d9d0d0-f205-4ce2-a2d6-XXXXXXXX",
-  "wapp_key": "XXXXXXXX",
-  "wapp_phone": "49XXXXXXXX",
-  "tasmota_ip": "192.168.X.X",
-  "mqtt_broker": "X",
-  "birdweather_token": "X",
-  "geoloc": [
-    "48.533509",
-    "12.137590"
-  ],
-  "sun": [
-    "20260318",
-    "06:16",
-    "18:21"
-  ],
-  "sundown": "off",
-  "version": "2026-03-18"
+    "serverUrl": "https://wiediversistmeingarten.org/api/",
+    "boxId": "87bab185-7630-461c-85e6-c04cf5bab180",
+    "boxName": "Betzbirdiary",
+    "deleteKey": "09f09fa9bae3a2c30d9e60ebd03c5881",
+    "upmaxcnt": 0,
+    "videodurate": 8,
+    "hflip_val": 1,
+    "vflip_val": 1,
+    "vidsize": [
+        800,
+        600
+    ],
+    "losize": [
+        320,
+        240
+    ],
+    "luxThreshold": [
+        1500,
+        3000,
+        5000
+    ],
+    "luxLimit": [
+        400,
+        20000
+    ],
+    "focus": 0,
+    "weightlimit": 300,
+    "weightThreshold": 8,
+    "hxPolScaleOff": [
+        -1,
+        521,
+        175564,
+        78351
+    ],
+    "dhtPin": 16,
+    "hxDataPin": 17,
+    "hxClckPin": 23,
+    "recordstep": 15,
+    "heatdown": 75,
+    "mdroid_key": "f9d9d0d0-f205-4ce2-a2d6-58752613c975",
+    "wapp_key": 2524734,
+    "wapp_phone": 4987163678,
+    "tasmota_ip": "192.168.178.81",
+    "mqtt_broker": "X",
+    "birdweather_token": "5TEm2nt4rSHxpangi7FsNpb4",
+    "geoloc": [
+        "48.533509",
+        "12.137590"
+    ],
+    "sun": [
+        "20261114",
+        "07:18",
+        "16:33"
+    ],
+    "sundown": "on",
+    "version": "2026-11-04"
 }

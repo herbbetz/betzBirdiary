@@ -9,7 +9,6 @@ from sharedBird import prev_month
 
 # Initialize Flask app
 # We explicitly set static_folder=None so it doesn't conflict with our custom root route
-app = Flask(__name__)
 app = Flask(__name__, static_folder='.')
 app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0 # disable cacheing
 # Get the absolute path of the directory where server.py lives
@@ -36,6 +35,13 @@ def serve_static(filename):
     from the same directory.
     """
     return send_from_directory(BASE_DIR, filename)
+
+@app.route('/focus')
+def focus():
+    value = request.args.get("focus", type=float) # query param ?focus=12.5
+    if value is None: return "invalid focus", 400
+    print(f"focus={value}")
+    return "ok" # 200 returned by default
 
 @app.route('/shutdown')
 def shutdown():
