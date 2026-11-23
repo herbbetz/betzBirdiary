@@ -27,7 +27,7 @@ from configBird3 import birdpath
 #   classified: 0 or 1, set by AI model2 and (birdclassify2C.py) and evaluated in mainFoBird3.py to decide upload
 #   manhxreset: 0 or 1, manual emergency baseline reset (via flaskBird3.py) of hxFiBirdStateCt.py
 #   (testmode: 0 or 1, toggled by testmodeconfirm.html / flaskBird3.py in lastdown.json)
-#   focus: manual focus value (cm = 100 / focus value), set by flaskBird3.py from vidshot3.html slider, used by mainFoBird3.py to set focus of camera lens
+#   focus: manual focus value (cm = 100 / dioptres), 0=auto_focus, -1=no_focus_control, set by flaskBird3.py from vidshot3.html slider, used by mainFoBird3.py to set focus of camera lens
 message = {"imgid": 0, "lastvid": "", "vidcnt": 0, "linecnt": 0, "linetxt": "", "envirEvt": 0, "sysmonEvt": 0,
            "upmode": 0, "confirm": 0, "standby": 0, "clientactive": 0, "lux": 0, "luxraw": "", "recording": 0,
            "scaleready": 0, "classified": 0, "manhxreset": 0, "focus": 0} # define dictionary

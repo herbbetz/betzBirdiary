@@ -21,7 +21,7 @@
         </div>
         <div class="rowed">
             <a href="config3.html" class="button">actions</a>
-            <div id="focus">
+            <div id="focus" hidden>
                 <input type="range" id="fslider" min="0" max="20" step="0.1" value="0" style="width:100px">
                 <div id="flabel"></div>
             </div>
@@ -83,6 +83,7 @@
             vidmsg: document.getElementById('vidmsg'),
             rawmsg: document.getElementById('msgdata'),
             calcmsg: document.getElementById('calcdata'),
+            focus: document.getElementById("focus"),
             fslider: document.getElementById("fslider"),
             flabel: document.getElementById("flabel"),
             tabcolor: document.querySelector("meta[name=theme-color]"),
@@ -376,13 +377,13 @@
 
                 // Logger lines
                 updateLogLines(data['linecnt'], data['linetxt']);
-
                 // Update the focus slider
                 if (data['focus'] !== state.saved.focus) { // sync slider with vidmsg.json
-                    dom.fslider.value = 20 - data['focus'];
                     state.saved.focus = data['focus'];
+                    dom.focus.hidden = data['focus'] < 0; // -1 = camera without focus control, > -1 means dom.focus.hidden = false
+                    if (data['focus'] >= 0) dom.fslider.value = 20 - data['focus'];
                 }
-                updateFocusLabel(); 
+                if (data['focus'] >= 0) updateFocusLabel();                
             } catch (error) {
                 setText(dom.online, "Offline or error: " + (error?.message ?? error));
             }

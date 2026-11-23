@@ -46,6 +46,10 @@ sunset = sun[2] # from configBird3.py
 
 def setFocus(picam, focus_value):
     # focus in cm = 100 / focus value (= LensPosition in dioptres), e.g. 100/20=5cm
+    if "AfMode" not in picam.camera_controls: # fixed-focus sensor, e.g. ov5647 (cam v1)
+        ms.setFocus(-1) # -1 means "no focus control"
+        ms.log("Camera has no autofocus, focus ignored")
+        return
     if focus_value > 0:
         picam.set_controls({"AfMode": controls.AfModeEnum.Manual, "LensPosition": focus_value})
         ms.log(f"Manual focus {100 / focus_value} cm (LensPosition={focus_value})")
@@ -616,7 +620,8 @@ def main():
         except Exception as e:
             ms.log(f"Exception in main loop: {e}")
         finally:
-            update_config_json({"focus": focus})
+            if focus > -1:
+                update_config_json({"focus": focus})
             cleanAndExit(child1)
 
 if __name__ == "__main__":
