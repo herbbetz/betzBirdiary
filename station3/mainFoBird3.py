@@ -44,9 +44,9 @@ daylight_time = [9, 15] # 9:00 to 15:00, do not set luxcategory=5 during this ti
 sunrise = sun[1] # from configBird3.py
 sunset = sun[2] # from configBird3.py
 
-def setFocus(picam, focus_value):
+def setFocus(picam, focus_value, is_v3) -> None:
     # focus in cm = 100 / focus value (= LensPosition in dioptres), e.g. 100/20=5cm
-    if "AfMode" not in picam.camera_controls: # fixed-focus sensor, e.g. ov5647 (cam v1)
+    if not is_v3: # fixed-focus sensor, e.g. ov5647 (cam v1)
         ms.setFocus(-1) # -1 means "no focus control"
         ms.log("Camera has no autofocus, focus ignored")
         return
@@ -529,17 +529,23 @@ def main():
     child1.start()
     camera_transform = libcamera.Transform(hflip=hflip_val, vflip=vflip_val)
 
+    # vidsize, losize for PiCam v1.3 is (800,600)(320,240); v3 (imx708): 16:9 sensor, so a 4:3 stream loses a quarter of the width; sizes <= 1536x864 select a mode that reads only the central 2/3 of the array
     with Picamera2() as picam:
-        config = picam.create_video_configuration(
-            main={"size": vidsize, "format": "RGB888"},
-            lores={"size": losize, "format": "YUV420"},
-            transform=camera_transform
-        )
+        is_v3 = "AfMode" in picam.camera_controls # fixed-focus ov5647 (v1,v2) has no AfMode
+        main_size, lores_size, sensor = vidsize, losize, None
+        if is_v3: # widen both streams by 4/3 (main to a multiple of 16, lores to even) and force the full-field 2304x1296 mode
+            main_size = (round(vidsize[0] * 4 / 3 / 16) * 16, vidsize[1])
+            lores_size = (round(losize[0] * 4 / 3 / 2) * 2, losize[1])
+            sensor = {"output_size": (2304, 1296), "bit_depth": 10}
+        config = picam.create_video_configuration(main={"size": main_size, "format": "RGB888"}, lores={"size": lores_size, "format": "YUV420"}, sensor=sensor, transform=camera_transform)
 
         # encoder = H264Encoder() in send_movement()
         picam.configure(config)
         time.sleep(0.5)
         picam.start()
+        # debug:
+        print(f"Sensor: {picam.camera_configuration()['sensor']}, ScalerCrop: {picam.capture_metadata()['ScalerCrop']}")
+
         '''
         # "AnalogueGain" and "ExposureTime" are managed best by picamera2 itself
         camsetting = {
@@ -555,7 +561,7 @@ def main():
         get_brightness(picam, now) # Set initial brightness, also calls whitebalance(picam)
         focus_old = focus
         ms.setFocus(focus)
-        setFocus(picam, focus)
+        setFocus(picam, focus, is_v3)
 
         # for circular output:
         encoder = H264Encoder() # for no circ_output this is moved into send_movement() and the following 3 lines are omitted
@@ -613,7 +619,7 @@ def main():
                     focus = ms.getFocus()
                     if focus != focus_old:
                         focus_old = focus
-                        setFocus(picam, focus)
+                        setFocus(picam, focus, is_v3)
                     stills_lux(picam, oldimg, liveLogger) 
                 time.sleep(sleepTime)
 
