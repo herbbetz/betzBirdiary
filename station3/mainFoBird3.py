@@ -52,7 +52,7 @@ def setFocus(picam, focus_value, is_v3) -> None:
         return
     if focus_value > 0:
         picam.set_controls({"AfMode": controls.AfModeEnum.Manual, "LensPosition": focus_value})
-        ms.log(f"Manual focus {100 / focus_value} cm (LensPosition={focus_value})")
+        ms.log(f"Manual focus {(100 / focus_value):.2f} cm (LensPosition={focus_value})")
     else:
         picam.set_controls({"AfMode": controls.AfModeEnum.Continuous})
         ms.log("Continuous autofocus enabled")
@@ -489,6 +489,10 @@ def cleanAndExit(child):
     sys.exit(0)
     # picam.close() is handled by the 'with' block
 
+def size16x9(height): # exact 16:9 size near the old height; width a multiple of 32, so the height stays even
+    width = round(height * 16 / 9 / 32) * 32
+    return (width, width * 9 // 16)
+
 def main():
     global testmode, localsave, focus
     ms.init()
@@ -529,14 +533,11 @@ def main():
     child1.start()
     camera_transform = libcamera.Transform(hflip=hflip_val, vflip=vflip_val)
 
-    # vidsize, losize for PiCam v1.3 is (800,600)(320,240); v3 (imx708): 16:9 sensor, so a 4:3 stream loses a quarter of the width; sizes <= 1536x864 select a mode that reads only the central 2/3 of the array
+    # vidsize, losize for PiCam v1.3 is (800,600)(320,240); v3 (imx708): full-field 2304x1296 mode with exact 16:9 streams, so nothing is cropped (about 66x41 deg)
     with Picamera2() as picam:
         is_v3 = "AfMode" in picam.camera_controls # fixed-focus ov5647 (v1,v2) has no AfMode
         main_size, lores_size, sensor = vidsize, losize, None
-        if is_v3: # widen both streams by 4/3 (main to a multiple of 16, lores to even) and force the full-field 2304x1296 mode
-            main_size = (round(vidsize[0] * 4 / 3 / 16) * 16, vidsize[1])
-            lores_size = (round(losize[0] * 4 / 3 / 2) * 2, losize[1])
-            sensor = {"output_size": (2304, 1296), "bit_depth": 10}
+        if is_v3: main_size, lores_size, sensor = size16x9(vidsize[1]), size16x9(losize[1]), {"output_size": (2304, 1296), "bit_depth": 10}
         config = picam.create_video_configuration(main={"size": main_size, "format": "RGB888"}, lores={"size": lores_size, "format": "YUV420"}, sensor=sensor, transform=camera_transform)
 
         # encoder = H264Encoder() in send_movement()
@@ -544,7 +545,7 @@ def main():
         time.sleep(0.5)
         picam.start()
         # debug:
-        print(f"Sensor: {picam.camera_configuration()['sensor']}, ScalerCrop: {picam.capture_metadata()['ScalerCrop']}")
+        #print(f"ScalerCrop: {picam.capture_metadata()['ScalerCrop']}")
 
         '''
         # "AnalogueGain" and "ExposureTime" are managed best by picamera2 itself
